@@ -399,21 +399,23 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-### Milestone 8: Scheduler & Automation ⏰
+### Milestone 8: Scheduler & Automation ✅
 
 **Goal:** Implement automatic periodic scraping
 
-- [ ] Implement scheduler (`src/scrapers/scheduler.js`)
-  - [ ] Use node-cron for scheduling
-  - [ ] Configure scrape interval from .env
-  - [ ] Run initial scrape on startup
-  - [ ] Schedule periodic re-scrapes (default: 2 hours)
-  - [ ] Handle scheduler errors
-  - [ ] Log all scrape operations
-- [ ] Integrate scheduler into main application
-- [ ] Add graceful shutdown handling
-- [ ] Test scheduler timing
-- [ ] Test re-scrape synchronization
+- [x] Implement scheduler (`src/scrapers/scheduler.js`)
+  - [x] Use node-cron for scheduling
+  - [x] Configure scrape interval from .env
+  - [x] Run initial scrape on startup
+  - [x] Schedule periodic re-scrapes (default: 2 hours)
+  - [x] Handle scheduler errors
+  - [x] Log all scrape operations
+- [x] Integrate scheduler into main application
+- [x] Add graceful shutdown handling
+- [x] Replace axios with native fetch (Node 18+)
+- [x] Fix sync service for re-scraping existing records
+- [x] Add EMAIL_NOTIFICATIONS_ENABLED config option
+- [ ] Test scheduler timing over extended period
 - [ ] Document scheduling configuration
 
 **Estimated Duration:** 1-2 days
