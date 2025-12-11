@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.1] - 2025-12-11
+
+### Fixed
+
+- **Instance Management**
+  - Database migrations now only run on instance 0 (prevents race conditions in PM2 cluster mode)
+  - Email service initialization now only runs on instance 0
+  - Scraper scheduler properly isolated to instance 0 (already implemented, now documented)
+  - Non-zero instances only start API server for load balancing
+  - Prevents duplicate migrations, scrapes, and email notifications in cluster deployments
+
+### Improved
+
+- **Build System**
+  - Build script now minifies and copies favicon.svg to dist/
+  - SVG minification removes whitespace, comments, and newlines
+  - Added favicon.svg size reporting in build output (0.57 KB)
+  - Both favicon.ico and favicon.svg now properly deployed to production
+
+---
+
 ## [1.3.0] - 2025-12-11
 
 ### Added

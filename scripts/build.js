@@ -71,20 +71,34 @@ async function build() {
     fs.writeFileSync(path.join(DIST_DIR, 'index.html'), html);
     console.log('✓ HTML minified\n');
 
-    // Copy favicon
-    console.log('Copying favicon...');
+    // Copy and minify favicon.svg
+    console.log('Processing favicon.svg...');
+    const faviconSvg = fs.readFileSync(path.join(PUBLIC_DIR, 'favicon.svg'), 'utf8');
+    const minifiedSvg = faviconSvg
+      .replace(/\s*\n\s*/g, ' ')     // Remove newlines and extra whitespace
+      .replace(/>\s+</g, '><')        // Remove whitespace between tags
+      .replace(/<!--.*?-->/g, '')     // Remove comments
+      .replace(/\s{2,}/g, ' ')        // Replace multiple spaces with single space
+      .trim();
+    fs.writeFileSync(path.join(DIST_DIR, 'favicon.svg'), minifiedSvg);
+    console.log('✓ favicon.svg minified and copied\n');
+
+    // Copy favicon.ico
+    console.log('Copying favicon.ico...');
     fs.copyFileSync(
       path.join(PUBLIC_DIR, 'favicon.ico'),
       path.join(DIST_DIR, 'favicon.ico')
     );
-    console.log('✓ Favicon copied\n');
+    console.log('✓ favicon.ico copied\n');
 
     // Report file sizes
     console.log('Build complete! File sizes:');
     const jsSize = fs.statSync(path.join(DIST_DIR, 'js/app.min.js')).size;
     const cssSize = fs.statSync(path.join(DIST_DIR, 'css/styles.min.css')).size;
+    const svgSize = fs.statSync(path.join(DIST_DIR, 'favicon.svg')).size;
     console.log(`  JavaScript: ${(jsSize / 1024).toFixed(2)} KB`);
     console.log(`  CSS: ${(cssSize / 1024).toFixed(2)} KB`);
+    console.log(`  Favicon SVG: ${(svgSize / 1024).toFixed(2)} KB`);
     console.log('\nAssets ready in dist/');
   } catch (error) {
     console.error('Build failed:', error);
