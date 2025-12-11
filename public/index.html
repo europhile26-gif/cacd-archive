@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CACD Archive - Daily Cause Lists</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Court of Appeal (Criminal Division) Archive</h1>
+        <p>Daily Cause List Archive</p>
+    </header>
+
+    <main>
+        <section class="controls">
+            <div class="search-box">
+                <input type="search" id="searchInput" placeholder="Search cases...">
+                <button id="searchBtn">Search</button>
+                <button id="clearBtn">Clear</button>
+            </div>
+
+            <div class="date-filters">
+                <button class="quick-date" data-offset="-1">Yesterday</button>
+                <button class="quick-date active" data-offset="0">Today</button>
+                <button class="quick-date" data-offset="1">Tomorrow</button>
+                <input type="date" id="dateFilter">
+            </div>
+
+            <div class="sort-controls">
+                <label>Sort by:
+                    <select id="sortBy">
+                        <option value="hearing_datetime">Date/Time</option>
+                        <option value="case_number">Case Number</option>
+                        <option value="created_at">Added to Archive</option>
+                    </select>
+                </label>
+                <label>
+                    <select id="sortOrder">
+                        <option value="desc">Newest First</option>
+                        <option value="asc">Oldest First</option>
+                    </select>
+                </label>
+            </div>
+        </section>
+
+        <section class="results">
+            <div class="results-info">
+                Showing <span id="resultCount">0</span> hearings
+            </div>
+
+            <div id="loadingIndicator" class="loading" style="display: none;">
+                Loading...
+            </div>
+
+            <div id="errorMessage" class="error" style="display: none;"></div>
+
+            <table id="hearingsTable">
+                <thead>
+                    <tr>
+                        <th>Date/Time</th>
+                        <th>Venue</th>
+                        <th>Case Number</th>
+                        <th>Case Details</th>
+                        <th>Hearing Type</th>
+                        <th>Judge</th>
+                    </tr>
+                </thead>
+                <tbody id="hearingsBody">
+                    <!-- Populated by JavaScript -->
+                </tbody>
+            </table>
+
+            <div class="pagination">
+                <button id="prevPage" disabled>Previous</button>
+                <span id="pageInfo">Page 1</span>
+                <button id="nextPage">Next</button>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>CACD Archive - Court of Appeal Criminal Division Daily Cause List Archive</p>
+        <p><a href="/api/docs">API Documentation</a></p>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
