@@ -1,19 +1,49 @@
-const pino = require('pino');
+/**
+ * Simple console-based logger
+ * PM2 handles log file management in production
+ */
+
 const config = require('../config/config');
 
-const logger = pino({
-  level: config.logging?.level || 'info',
-  transport:
-    config.env === 'development'
-      ? {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'HH:MM:ss',
-          ignore: 'pid,hostname'
-        }
-      }
-      : undefined
-});
+const LOG_LEVELS = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  debug: 3
+};
+
+const currentLevel = LOG_LEVELS[config.logging?.level || 'info'];
+
+function formatMessage(level, message, meta = {}) {
+  const timestamp = new Date().toISOString();
+  const metaStr = Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
+  return `[${timestamp}] ${level.toUpperCase()}: ${message}${metaStr}`;
+}
+
+const logger = {
+  error: (message, meta) => {
+    if (currentLevel >= LOG_LEVELS.error) {
+      console.error(formatMessage('error', message, meta));
+    }
+  },
+  
+  warn: (message, meta) => {
+    if (currentLevel >= LOG_LEVELS.warn) {
+      console.warn(formatMessage('warn', message, meta));
+    }
+  },
+  
+  info: (message, meta) => {
+    if (currentLevel >= LOG_LEVELS.info) {
+      console.log(formatMessage('info', message, meta));
+    }
+  },
+  
+  debug: (message, meta) => {
+    if (currentLevel >= LOG_LEVELS.debug) {
+      console.log(formatMessage('debug', message, meta));
+    }
+  }
+};
 
 module.exports = logger;

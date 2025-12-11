@@ -9,19 +9,8 @@ const config = require('../config/config');
 
 async function createServer() {
   const server = fastify({
-    logger: {
-      level: config.logLevel,
-      transport:
-        config.env === 'development'
-          ? {
-            target: 'pino-pretty',
-            options: {
-              translateTime: 'HH:MM:ss Z',
-              ignore: 'pid,hostname'
-            }
-          }
-          : undefined
-    }
+    logger: false, // Disable Fastify's built-in logger
+    disableRequestLogging: true
   });
 
   // CORS
@@ -79,7 +68,12 @@ async function createServer() {
 
   // Error handler
   server.setErrorHandler((error, request, reply) => {
-    server.log.error(error);
+    console.error('API Error:', {
+      method: request.method,
+      url: request.url,
+      error: error.message,
+      stack: error.stack
+    });
 
     const statusCode = error.statusCode || 500;
     const message = statusCode === 500 ? 'Internal Server Error' : error.message;

@@ -81,7 +81,7 @@ async function build() {
     const cssSize = fs.statSync(path.join(DIST_DIR, 'css/styles.min.css')).size;
     console.log(`  JavaScript: ${(jsSize / 1024).toFixed(2)} KB`);
     console.log(`  CSS: ${(cssSize / 1024).toFixed(2)} KB`);
-    console.log(`\nAssets ready in dist/`);
+    console.log('\nAssets ready in dist/');
   } catch (error) {
     console.error('Build failed:', error);
     process.exit(1);

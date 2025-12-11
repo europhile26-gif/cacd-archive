@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2025-12-11
+
+### Changed
+
+- Replaced pino logger with simple console-based logging
+- PM2 now handles all log file management in production
+- Logger maintains same API (info, warn, error, debug) with ISO 8601 timestamps
+- Disabled Fastify's built-in pino logger for cleaner output
+
+### Removed
+
+- Removed pino and pino-pretty packages (25 fewer dependencies)
+- Removed pino transport configuration complexity
+
+### Improved
+
+- Cleaner, more straightforward logging approach
+- Better stack trace visibility in all environments
+- Reduced package bloat and installation time
+
+---
+
 ## [1.0.0] - 2025-12-11
 
 ### Added
