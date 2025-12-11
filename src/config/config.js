@@ -7,6 +7,7 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
 const config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT, 10) || 3000,
+  appInstance: parseInt(process.env.NODE_APP_INSTANCE, 10) || 0,
 
   logging: {
     level: process.env.LOG_LEVEL || 'info'
