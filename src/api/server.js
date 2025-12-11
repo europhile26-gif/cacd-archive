@@ -4,19 +4,51 @@ const fastifyRateLimit = require('@fastify/rate-limit');
 const fastifySwagger = require('@fastify/swagger');
 const fastifySwaggerUI = require('@fastify/swagger-ui');
 const fastifyCors = require('@fastify/cors');
+const fastifyHelmet = require('@fastify/helmet');
 const path = require('path');
 const config = require('../config/config');
 
 async function createServer() {
   const server = fastify({
     logger: false, // Disable Fastify's built-in logger
-    disableRequestLogging: true
+    disableRequestLogging: true,
+    trustProxy: true // Enable if behind nginx/proxy
   });
 
-  // CORS
-  await server.register(fastifyCors, {
-    origin: true
+  // Security headers with Helmet
+  await server.register(fastifyHelmet, {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'cdn.jsdelivr.net'],
+        scriptSrc: ["'self'", "'unsafe-inline'", 'cdn.jsdelivr.net'],
+        imgSrc: ["'self'", 'data:'],
+        fontSrc: ["'self'", 'cdn.jsdelivr.net'],
+        connectSrc: ["'self'"]
+      }
+    },
+    crossOriginEmbedderPolicy: false, // Allow embedding Bootstrap resources
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true
+    }
   });
+
+  // CORS - configure based on environment
+  const corsOptions = config.api.cors.enabled
+    ? {
+        origin:
+          config.env === 'production' && config.api.cors.origins.length > 0
+            ? config.api.cors.origins
+            : true,
+        credentials: true
+      }
+    : false;
+
+  if (corsOptions !== false) {
+    await server.register(fastifyCors, corsOptions);
+  }
 
   // Rate limiting
   await server.register(fastifyRateLimit, {

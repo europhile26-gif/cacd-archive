@@ -54,6 +54,12 @@ const config = {
     rateLimit: {
       max: parseInt(process.env.API_RATE_LIMIT_MAX, 10) || 100,
       timeWindow: parseInt(process.env.API_RATE_LIMIT_WINDOW, 10) || 900000
+    },
+    cors: {
+      enabled: process.env.CORS_ENABLED !== 'false', // Default true for development
+      origins: process.env.CORS_ALLOWED_ORIGINS
+        ? process.env.CORS_ALLOWED_ORIGINS.split(',')
+        : []
     }
   },
 

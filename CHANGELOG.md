@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.2] - 2025-12-11
+
+### Added
+
+- **Security Hardening**
+  - Integrated @fastify/helmet for comprehensive HTTP security headers
+  - Content Security Policy (CSP) with Bootstrap CDN allowlist
+  - HSTS with 1-year max-age, subdomain inclusion, and preload support
+  - X-Frame-Options, X-Content-Type-Options, and other security headers
+  - Configurable CORS with environment-based origin restrictions
+  - Trust proxy configuration for proper IP detection behind reverse proxies
+  - Comprehensive security documentation in docs/security.md
+
+### Changed
+
+- **CORS Configuration**
+  - Added CORS_ENABLED environment variable (default: true)
+  - Added CORS_ALLOWED_ORIGINS for production origin whitelisting
+  - Development allows all origins, production requires explicit configuration
+  - Can be completely disabled for same-origin-only deployments
+
+### Security
+
+- HTTP security headers now active on all endpoints
+- Production-ready security posture for public deployment
+- Protection against clickjacking, MIME-sniffing, and XSS attacks
+- Rate limiting headers visible in responses
+
+---
+
 ## [1.3.1] - 2025-12-11
 
 ### Fixed
