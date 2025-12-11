@@ -32,5 +32,5 @@ module.exports = {
   createPool,
   getConnection,
   query,
-  closePool,
+  closePool
 };

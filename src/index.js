@@ -5,13 +5,16 @@ const pino = require('pino');
 
 const logger = pino({
   level: config.logLevel,
-  transport: config.env === 'development' ? {
-    target: 'pino-pretty',
-    options: {
-      translateTime: 'HH:MM:ss Z',
-      ignore: 'pid,hostname',
-    },
-  } : undefined,
+  transport:
+    config.env === 'development'
+      ? {
+        target: 'pino-pretty',
+        options: {
+          translateTime: 'HH:MM:ss Z',
+          ignore: 'pid,hostname'
+        }
+      }
+      : undefined
 });
 
 async function start() {
@@ -19,23 +22,23 @@ async function start() {
     logger.info('Starting CACD Archive application...');
     logger.info(`Environment: ${config.env}`);
     logger.info(`Port: ${config.port}`);
-    
+
     // Run migrations on startup
     logger.info('Running database migrations...');
     await runMigrations();
     logger.info('Migrations completed successfully');
-    
+
     // Start API server
     logger.info('Starting API server...');
     const server = await createServer();
     await server.listen({ port: config.port, host: '0.0.0.0' });
     logger.info(`API server listening on http://0.0.0.0:${config.port}`);
     logger.info(`API documentation available at http://0.0.0.0:${config.port}/api/docs`);
-    
+
     // TODO: Start scraper scheduler
     // logger.info('Starting scraper scheduler...');
     // startScraperScheduler();
-    
+
     logger.info('Application started successfully');
   } catch (error) {
     logger.error('Failed to start application:', error);

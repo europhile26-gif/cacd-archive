@@ -1,256 +1,257 @@
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    line-height: 1.6;
-    color: #333;
-    background-color: #f5f5f5;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background-color: #f5f5f5;
 }
 
 header {
-    background-color: #1a1a1a;
-    color: white;
-    padding: 2rem 1rem;
-    text-align: center;
+  background-color: #1a1a1a;
+  color: white;
+  padding: 2rem 1rem;
+  text-align: center;
 }
 
 header h1 {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
 }
 
 header p {
-    font-size: 1.1rem;
-    opacity: 0.9;
+  font-size: 1.1rem;
+  opacity: 0.9;
 }
 
 main {
-    max-width: 1400px;
-    margin: 2rem auto;
-    padding: 0 1rem;
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 0 1rem;
 }
 
 .controls {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 2rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .search-box {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .search-box input {
-    flex: 1;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
 }
 
 .search-box button {
-    padding: 0.75rem 1.5rem;
-    background-color: #0066cc;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
 }
 
 .search-box button:hover {
-    background-color: #0052a3;
+  background-color: #0052a3;
 }
 
 #clearBtn {
-    background-color: #666;
+  background-color: #666;
 }
 
 #clearBtn:hover {
-    background-color: #555;
+  background-color: #555;
 }
 
 .date-filters {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
 .quick-date {
-    padding: 0.75rem 1.5rem;
-    background-color: #f0f0f0;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
 }
 
 .quick-date:hover {
-    background-color: #e0e0e0;
+  background-color: #e0e0e0;
 }
 
 .quick-date.active {
-    background-color: #0066cc;
-    color: white;
-    border-color: #0066cc;
+  background-color: #0066cc;
+  color: white;
+  border-color: #0066cc;
 }
 
 #dateFilter {
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
 }
 
 .sort-controls {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .sort-controls label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .sort-controls select {
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
 }
 
 .results {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .results-info {
-    margin-bottom: 1rem;
-    font-weight: 500;
-    color: #666;
+  margin-bottom: 1rem;
+  font-weight: 500;
+  color: #666;
 }
 
 .loading {
-    text-align: center;
-    padding: 2rem;
-    color: #666;
+  text-align: center;
+  padding: 2rem;
+  color: #666;
 }
 
 .error {
-    background-color: #ffebee;
-    color: #c62828;
-    padding: 1rem;
-    border-radius: 4px;
-    margin-bottom: 1rem;
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
 }
 
 #hearingsTable {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 1rem;
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
 }
 
 #hearingsTable th,
 #hearingsTable td {
-    padding: 0.75rem;
-    text-align: left;
-    border-bottom: 1px solid #e0e0e0;
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 #hearingsTable th {
-    background-color: #f5f5f5;
-    font-weight: 600;
-    color: #333;
+  background-color: #f5f5f5;
+  font-weight: 600;
+  color: #333;
 }
 
 #hearingsTable tr:hover {
-    background-color: #f9f9f9;
+  background-color: #f9f9f9;
 }
 
 #hearingsTable tbody tr {
-    transition: background-color 0.2s;
+  transition: background-color 0.2s;
 }
 
 .no-results {
-    text-align: center;
-    padding: 2rem;
-    color: #999;
+  text-align: center;
+  padding: 2rem;
+  color: #999;
 }
 
 .pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
 }
 
 .pagination button {
-    padding: 0.5rem 1rem;
-    background-color: #0066cc;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+  padding: 0.5rem 1rem;
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 .pagination button:hover:not(:disabled) {
-    background-color: #0052a3;
+  background-color: #0052a3;
 }
 
 .pagination button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 #pageInfo {
-    color: #666;
+  color: #666;
 }
 
 footer {
-    text-align: center;
-    padding: 2rem 1rem;
-    color: #666;
-    margin-top: 2rem;
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #666;
+  margin-top: 2rem;
 }
 
 footer a {
-    color: #0066cc;
-    text-decoration: none;
+  color: #0066cc;
+  text-decoration: none;
 }
 
 footer a:hover {
-    text-decoration: underline;
+  text-decoration: underline;
 }
 
 @media (max-width: 768px) {
-    header h1 {
-        font-size: 1.5rem;
-    }
+  header h1 {
+    font-size: 1.5rem;
+  }
 
-    .controls {
-        padding: 1rem;
-    }
+  .controls {
+    padding: 1rem;
+  }
 
-    #hearingsTable {
-        font-size: 0.875rem;
-    }
+  #hearingsTable {
+    font-size: 0.875rem;
+  }
 
-    #hearingsTable th,
-    #hearingsTable td {
-        padding: 0.5rem;
-    }
+  #hearingsTable th,
+  #hearingsTable td {
+    padding: 0.5rem;
+  }
 }

@@ -40,6 +40,7 @@ STEPS:
 ```
 
 **Error Handling:**
+
 - Network timeout: Retry up to 3 times with increasing delays (5s, 10s, 20s)
 - Connection refused: Log error and exit (possible maintenance)
 - DNS resolution failure: Log error and exit
@@ -53,6 +54,7 @@ STEPS:
 The summary page contains a list of publications for the Royal Courts of Justice. Each publication is represented as a link with specific text patterns.
 
 **Expected Link Format:**
+
 ```
 Court of Appeal (Criminal Division) Daily Cause List [DATE] - English (Saesneg)
 ```
@@ -86,6 +88,7 @@ STEPS:
 The algorithm must identify links for **both today AND tomorrow** (if present) using the following criteria:
 
 **Required Components (ALL must be present, case-insensitive):**
+
 1. Phrase: "Court of Appeal"
 2. Division keyword: "Criminal" (or "Civil" for future extension)
 3. Day of month: e.g., "11" (as a number)
@@ -93,6 +96,7 @@ The algorithm must identify links for **both today AND tomorrow** (if present) u
 5. Year: "2025" (4-digit year)
 
 **Example Target Texts:**
+
 ```
 Court of Appeal (Criminal Division) Daily Cause List 11 December 2025 - English (Saesneg)
 Court of Appeal (civil division) daily cause list 12 Dec 2025 - English
@@ -100,8 +104,11 @@ COURT OF APPEAL Criminal Daily Cause List 11 december 2025
 ```
 
 **Actual HTML Structure:**
+
 ```html
-<a href="court-of-appeal-criminal-daily-cause-list?artefactId=...">Court of Appeal (Criminal Division) Daily Cause List 11 December 2025 - English (Saesneg)</a>
+<a href="court-of-appeal-criminal-daily-cause-list?artefactId=..."
+  >Court of Appeal (Criminal Division) Daily Cause List 11 December 2025 - English (Saesneg)</a
+>
 ```
 
 ### 4.2 Pseudocode
@@ -110,14 +117,14 @@ COURT OF APPEAL Criminal Daily Cause List 11 december 2025
 FUNCTION findCACDLinks(htmlDocument, division = "Criminal")
     // Parse HTML
     links = extractAllLinks(htmlDocument)
-    
+
     // Get today and tomorrow dates
     today = getCurrentDate()
     tomorrow = addDays(today, 1)
     targetDates = [today, tomorrow]
-    
+
     matchedLinks = []
-    
+
     // Search for links matching today OR tomorrow
     FOR EACH targetDate IN targetDates
         result = findLinkForDate(links, targetDate, division)
@@ -125,7 +132,7 @@ FUNCTION findCACDLinks(htmlDocument, division = "Criminal")
             matchedLinks.append(result)
         END IF
     END FOR
-    
+
     RETURN matchedLinks
 END FUNCTION
 
@@ -135,21 +142,21 @@ FUNCTION findLinkForDate(links, targetDate, division)
     monthFull = targetDate.monthName   // e.g., "December"
     monthShort = targetDate.monthAbbrev // e.g., "Dec"
     year = targetDate.year         // e.g., "2025"
-    
+
     FOR EACH link IN links
         linkText = link.text.trim()
         linkTextLower = linkText.toLowerCase()
-        
+
         // Check all required components (case-insensitive)
         IF containsCaseInsensitive(linkText, "Court of Appeal") AND
            containsCaseInsensitive(linkText, division) AND
            containsWord(linkText, day) AND
            (containsWord(linkText, monthFull) OR containsWord(linkText, monthShort)) AND
            containsWord(linkText, year) THEN
-            
+
             // Construct full URL if relative
             fullUrl = resolveUrl(link.href)
-            
+
             RETURN {
                 url: fullUrl,
                 linkText: linkText,
@@ -158,7 +165,7 @@ FUNCTION findLinkForDate(links, targetDate, division)
             }
         END IF
     END FOR
-    
+
     // No match found for this date
     RETURN null
 END FUNCTION
@@ -191,16 +198,19 @@ END FUNCTION
 ### 5.1 Edge Cases
 
 **Case 1: No Publication for Today**
+
 - **Scenario:** Court is not in session (weekend, holiday)
 - **Handling:** Return null/empty result with appropriate log message
 - **Expected Behavior:** System should gracefully skip scraping for this day
 
 **Case 2: Multiple Matches for Same Date**
+
 - **Scenario:** Multiple links match criteria for the same date (e.g., duplicate entries, updated version)
 - **Handling:** Take the first match for each unique date and log warning if duplicates found
 - **Expected Behavior:** System should find 0-2 links total (today and/or tomorrow)
 
 **Case 3: Date Format Variation**
+
 - **Scenario:** Date format differs from expected (e.g., "11th December 2025", "Dec 11, 2025")
 - **Handling:** Component-based matching handles most variations:
   - Ordinal suffixes (11th, 12th) are ignored by word boundary matching
@@ -208,13 +218,15 @@ END FUNCTION
   - Component order doesn't matter as long as all are present
 
 **Case 4: Link Text Variations**
+
 - **Scenario:** Minor text variations (whitespace, punctuation)
-- **Handling:** 
+- **Handling:**
   - Normalize whitespace (collapse multiple spaces)
   - Case-insensitive matching for key phrases
   - Flexible matching for "English" indicator
 
 **Case 5: Bilingual Content**
+
 - **Scenario:** Both English and Welsh versions present
 - **Handling:** Explicitly select English version
 - **Filter:** Must contain "English" or "Saesneg" in text, prefer "English"
@@ -341,17 +353,20 @@ Externalize the following parameters:
 Log the following information:
 
 **INFO Level:**
+
 - Fetch initiated with timestamp
 - Links discovered successfully (count and dates)
 - No links found for today/tomorrow (expected scenario)
 - Processing link for specific date
 
 **WARN Level:**
+
 - Multiple matching links found
 - Fallback strategy activated
 - Unexpected link text format
 
 **ERROR Level:**
+
 - HTTP errors (4xx, 5xx)
 - Network failures after all retries
 - Parsing errors
@@ -397,10 +412,10 @@ Log the following information:
 ## 10. Open Questions
 
 1. **Time Zone:** What timezone should be used for "today" and "tomorrow"? (Recommendation: Europe/London - GMT/BST)
-3. **Publication Time:** What time of day are lists typically published?
-4. **Welsh Version:** Should we ever fallback to Welsh version if English is unavailable?
-5. **Archive Access:** Can we access historical lists by modifying the URL pattern?
-6. **robots.txt:** What does the website's robots.txt specify about scraping frequency?
+2. **Publication Time:** What time of day are lists typically published?
+3. **Welsh Version:** Should we ever fallback to Welsh version if English is unavailable?
+4. **Archive Access:** Can we access historical lists by modifying the URL pattern?
+5. **robots.txt:** What does the website's robots.txt specify about scraping frequency?
 
 ---
 
@@ -418,6 +433,6 @@ Log the following information:
 
 ## Document History
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | 11 December 2025 | Initial | Initial algorithm specification |
+| Version | Date             | Author  | Changes                         |
+| ------- | ---------------- | ------- | ------------------------------- |
+| 1.0     | 11 December 2025 | Initial | Initial algorithm specification |

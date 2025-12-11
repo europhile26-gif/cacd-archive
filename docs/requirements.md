@@ -27,13 +27,16 @@ The UK Courts & Tribunals Judiciary publishes daily cause lists that are updated
 ### 2.2 Scope
 
 **In Scope (Phase 1):**
+
 - Court of Appeal (Criminal Division) Daily Cause List
 
 **Potential Future Scope:**
+
 - Court of Appeal (Civil Division) Daily Cause List
 - Other court division daily cause lists
 
 **Out of Scope:**
+
 - Real-time notifications
 - Legal analysis or interpretation of case data
 - User authentication and multi-user access (initially)
@@ -53,6 +56,7 @@ Court of Appeal (Criminal Division) Daily Cause List - Published daily in Englis
 ### 3.2 Core Functionality
 
 #### FR-001: Link Discovery
+
 - **Description:** The system must navigate to the summary of publications page and identify the correct daily cause list link
 - **Acceptance Criteria:**
   - System can identify the "Court of Appeal (Criminal Division) Daily Cause List" link for the current date
@@ -60,6 +64,7 @@ Court of Appeal (Criminal Division) Daily Cause List - Published daily in Englis
   - System handles date variations in link text
 
 #### FR-002: HTML Retrieval
+
 - **Description:** The system must follow the identified link and retrieve the full HTML content of the daily cause list
 - **Acceptance Criteria:**
   - System successfully retrieves complete HTML document
@@ -67,6 +72,7 @@ Court of Appeal (Criminal Division) Daily Cause List - Published daily in Englis
   - System respects rate limiting and robots.txt
 
 #### FR-003: Table Parsing
+
 - **Description:** The system must parse the primary table containing hearing information from the HTML document
 - **Acceptance Criteria:**
   - System identifies the correct table(s) within the document
@@ -75,6 +81,7 @@ Court of Appeal (Criminal Division) Daily Cause List - Published daily in Englis
   - System handles variations in table format
 
 #### FR-004: Data Storage
+
 - **Description:** The system must store parsed data in a relational database
 - **Acceptance Criteria:**
   - Data is stored in normalized database schema
@@ -83,6 +90,7 @@ Court of Appeal (Criminal Division) Daily Cause List - Published daily in Englis
   - Database integrity is maintained
 
 #### FR-005: Scheduling/Automation
+
 - **Description:** The system should be capable of running automatically on a scheduled basis
 - **Acceptance Criteria:**
   - System can be triggered via cron or similar scheduler
@@ -90,6 +98,7 @@ Court of Appeal (Criminal Division) Daily Cause List - Published daily in Englis
   - System handles failures without data corruption
 
 #### FR-006: Periodic Re-scraping
+
 - **Description:** The system must re-scrape the daily cause list at regular intervals throughout the day to capture updates
 - **Acceptance Criteria:**
   - System re-scrapes the same daily cause list every X hours (default: 2 hours)
@@ -98,6 +107,7 @@ Court of Appeal (Criminal Division) Daily Cause List - Published daily in Englis
   - System continues re-scraping until end of business day or list becomes unavailable
 
 #### FR-007: Data Synchronization
+
 - **Description:** The system must synchronize the database with the current state of the daily cause list, handling both additions and deletions
 - **Acceptance Criteria:**
   - System identifies and adds new records that appear in updated versions of the list
@@ -235,7 +245,6 @@ The project will be considered successful when:
 
 ## Document History
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | 11 December 2025 | Initial | Initial requirements document |
-
+| Version | Date             | Author  | Changes                       |
+| ------- | ---------------- | ------- | ----------------------------- |
+| 1.0     | 11 December 2025 | Initial | Initial requirements document |

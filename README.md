@@ -25,7 +25,7 @@ CACD Archive automatically scrapes, parses, and archives daily cause lists from 
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - MariaDB 10.5+
 - npm or yarn
 
@@ -97,16 +97,20 @@ SMTP_PASSWORD=your_smtp_password
 ### Endpoints
 
 **GET /api/v1/hearings**
+
 - Query hearings with filtering, sorting, and pagination
 - Parameters: `limit`, `offset`, `date`, `dateFrom`, `dateTo`, `caseNumber`, `search`, `division`, `sortBy`, `sortOrder`
 
 **GET /api/v1/hearings/:id**
+
 - Get single hearing by ID
 
 **GET /api/v1/dates**
+
 - Get list of available dates with hearing counts
 
 **GET /api/v1/health**
+
 - Health check endpoint
 
 Interactive API documentation available at `/api/docs` when running.

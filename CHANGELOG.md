@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planning Phase - 2025-12-11
 
 #### Added
+
 - Initial project requirements specification
 - Link discovery algorithm documentation
 - Table parsing algorithm documentation
@@ -18,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive project structure definition
 
 #### Documentation
+
 - `docs/requirements.md` - Functional and non-functional requirements
 - `docs/algorithm-link-discovery.md` - Link discovery algorithm specification
 - `docs/algorithm-table-parsing.md` - HTML table parsing algorithm specification
@@ -26,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CHANGELOG.md` - This file
 
 #### Design Decisions
+
 - Technology stack: Node.js, Fastify, MariaDB, cheerio
 - Process manager: PM2 in fork mode
 - Scraping frequency: Every 2 hours (configurable)
@@ -43,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned Features
 
 #### Core Functionality
+
 - [ ] Automated daily cause list scraping
 - [ ] Link discovery for today and tomorrow
 - [ ] HTML table parsing with cell inheritance
@@ -51,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Email alerts on parsing errors
 
 #### API
+
 - [ ] REST API with Fastify
 - [ ] GET /api/v1/hearings (list with filters)
 - [ ] GET /api/v1/hearings/:id (single hearing)
@@ -63,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Sorting and filtering
 
 #### Frontend
+
 - [ ] Web interface for browsing hearings
 - [ ] Search functionality
 - [ ] Date filters (yesterday/today/tomorrow)
@@ -72,6 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Responsive design
 
 #### Operations
+
 - [ ] Database migrations system
 - [ ] PM2 configuration for production
 - [ ] CLI tools (scrape-now, migrate, query)
@@ -81,6 +88,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Structured logging with pino
 
 #### Testing
+
 - [ ] Unit tests for core modules
 - [ ] Integration tests for API
 - [ ] End-to-end tests for scraping workflow
@@ -107,12 +115,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Notes
 
 ### Breaking Changes
+
 Breaking changes will be clearly marked with `⚠️ BREAKING` in future releases.
 
 ### Deprecations
+
 Deprecated features will be marked with `⚠️ DEPRECATED` and maintained for at least one minor version before removal.
 
 ### Security
+
 Security-related changes will be marked with `🔒 SECURITY` and released as soon as possible.
 
 ---

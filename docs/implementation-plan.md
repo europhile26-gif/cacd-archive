@@ -27,6 +27,7 @@ This document describes the technical implementation approach for the CACD Archi
 ### 2.2 Key Libraries
 
 **Backend:**
+
 - `fastify` - Fast web framework with built-in validation
 - `@fastify/swagger` - API documentation
 - `@fastify/swagger-ui` - Interactive API documentation
@@ -41,13 +42,16 @@ This document describes the technical implementation approach for the CACD Archi
 - `pino` - Fast JSON logger (included with Fastify)
 
 **Database Migrations:**
+
 - `node-pg-migrate` alternative: custom migration system or `umzug` with mysql2
 
 **Development:**
+
 - `nodemon` - Auto-restart on file changes
 - `esbuild` or `vite` - Frontend asset bundling (lightweight)
 
 **Frontend:**
+
 - jQuery (slim build for minimal size)
 - Vanilla JavaScript for table interactions
 - HTML5 + CSS3
@@ -55,6 +59,7 @@ This document describes the technical implementation approach for the CACD Archi
 ### 2.3 Rationale for Key Choices
 
 **Fastify vs Express:**
+
 - Fastify chosen for:
   - Better performance (2x faster than Express)
   - Built-in schema validation (JSON Schema)
@@ -63,6 +68,7 @@ This document describes the technical implementation approach for the CACD Archi
   - Built-in logging with pino
 
 **cheerio:**
+
 - jQuery-like syntax (familiar, easy to use)
 - Fast and lightweight
 - Server-side HTML parsing
@@ -215,7 +221,7 @@ const config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT, 10) || 3000,
   logLevel: process.env.LOG_LEVEL || 'info',
-  
+
   database: {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT, 10) || 3306,
@@ -223,17 +229,17 @@ const config = {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT, 10) || 10,
-    timezone: '+00:00', // Store in UTC, convert for display
+    timezone: '+00:00' // Store in UTC, convert for display
   },
-  
+
   scraping: {
     intervalHours: parseInt(process.env.SCRAPE_INTERVAL_HOURS, 10) || 2,
     summaryPageUrl: process.env.SUMMARY_PAGE_URL,
     userAgent: process.env.USER_AGENT,
     requestTimeout: parseInt(process.env.REQUEST_TIMEOUT, 10) || 10000,
-    maxRetries: parseInt(process.env.MAX_RETRIES, 10) || 3,
+    maxRetries: parseInt(process.env.MAX_RETRIES, 10) || 3
   },
-  
+
   email: {
     alertEmail: process.env.ALERT_EMAIL,
     smtp: {
@@ -242,22 +248,22 @@ const config = {
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
         user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-      },
+        pass: process.env.SMTP_PASSWORD
+      }
     },
-    from: process.env.EMAIL_FROM,
+    from: process.env.EMAIL_FROM
   },
-  
+
   api: {
     rateLimit: {
       max: parseInt(process.env.API_RATE_LIMIT_MAX, 10) || 100,
-      timeWindow: parseInt(process.env.API_RATE_LIMIT_WINDOW, 10) || 900000,
-    },
+      timeWindow: parseInt(process.env.API_RATE_LIMIT_WINDOW, 10) || 900000
+    }
   },
-  
+
   frontend: {
-    recordsPerPage: parseInt(process.env.RECORDS_PER_PAGE, 10) || 50,
-  },
+    recordsPerPage: parseInt(process.env.RECORDS_PER_PAGE, 10) || 50
+  }
 };
 
 // Validate required config
@@ -267,7 +273,7 @@ const required = [
   'email.alertEmail',
   'email.smtp.host',
   'email.smtp.auth.user',
-  'email.smtp.auth.pass',
+  'email.smtp.auth.pass'
 ];
 
 for (const key of required) {
@@ -289,6 +295,7 @@ module.exports = config;
 **Approach:** Simple SQL-based migrations with tracking table
 
 **Migration Table:**
+
 ```sql
 CREATE TABLE IF NOT EXISTS schema_migrations (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -303,36 +310,37 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 **Naming Convention:** `XXX_description.sql` where XXX is zero-padded number
 
 **001_initial_schema.sql:**
+
 ```sql
 -- Create hearings table
 CREATE TABLE IF NOT EXISTS hearings (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    
+
     -- Composite key components
     list_date DATE NOT NULL,
     case_number VARCHAR(50) NOT NULL,
     time VARCHAR(20) NOT NULL,
-    
+
     -- Datetime for sorting/filtering
     hearing_datetime DATETIME NOT NULL,
-    
+
     -- Case information
     venue VARCHAR(255),
     judge TEXT,
     case_details TEXT,
     hearing_type VARCHAR(255),
     additional_information TEXT,
-    
+
     -- Metadata
     division ENUM('Criminal', 'Civil') NOT NULL,
     source_url VARCHAR(500) NOT NULL,
     scraped_at TIMESTAMP NOT NULL,
     scrape_version INT DEFAULT 1,
-    
+
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
+
     -- Indexes
     UNIQUE KEY unique_hearing (list_date, case_number, time),
     INDEX idx_hearing_datetime (hearing_datetime),
@@ -354,7 +362,7 @@ const config = require('../config/config');
 
 async function runMigrations() {
   const connection = await mysql.createConnection(config.database);
-  
+
   try {
     // Create migrations table if not exists
     await connection.query(`
@@ -365,47 +373,43 @@ async function runMigrations() {
         applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB
     `);
-    
+
     // Get applied migrations
-    const [rows] = await connection.query(
-      'SELECT version FROM schema_migrations ORDER BY version'
-    );
-    const appliedVersions = new Set(rows.map(r => r.version));
-    
+    const [rows] = await connection.query('SELECT version FROM schema_migrations ORDER BY version');
+    const appliedVersions = new Set(rows.map((r) => r.version));
+
     // Get migration files
     const migrationsDir = path.join(__dirname, 'migrations');
-    const files = fs.readdirSync(migrationsDir)
-      .filter(f => f.endsWith('.sql'))
+    const files = fs
+      .readdirSync(migrationsDir)
+      .filter((f) => f.endsWith('.sql'))
       .sort();
-    
+
     // Apply pending migrations
     for (const file of files) {
       const version = file.replace('.sql', '');
-      
+
       if (appliedVersions.has(version)) {
         console.log(`Migration ${version} already applied, skipping`);
         continue;
       }
-      
+
       console.log(`Applying migration ${version}...`);
-      
-      const sql = fs.readFileSync(
-        path.join(migrationsDir, file),
-        'utf8'
-      );
-      
+
+      const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+
       await connection.beginTransaction();
-      
+
       try {
         // Execute migration SQL
         await connection.query(sql);
-        
+
         // Record migration
         await connection.query(
           'INSERT INTO schema_migrations (version, description) VALUES (?, ?)',
           [version, file]
         );
-        
+
         await connection.commit();
         console.log(`Migration ${version} applied successfully`);
       } catch (error) {
@@ -413,7 +417,7 @@ async function runMigrations() {
         throw new Error(`Migration ${version} failed: ${error.message}`);
       }
     }
-    
+
     console.log('All migrations applied successfully');
   } finally {
     await connection.end();
@@ -434,13 +438,13 @@ async function start() {
     // Run migrations on startup (both dev and prod)
     console.log('Running database migrations...');
     await runMigrations();
-    
+
     // Start API server
     await startAPIServer();
-    
+
     // Start scraper scheduler
     startScraperScheduler();
-    
+
     console.log('Application started successfully');
   } catch (error) {
     console.error('Failed to start application:', error);
@@ -464,6 +468,7 @@ start();
 Get list of hearings with filtering, sorting, and pagination.
 
 **Query Parameters:**
+
 - `limit` (integer, default: 50, max: 100) - Number of records to return
 - `offset` (integer, default: 0) - Pagination offset
 - `date` (date, format: YYYY-MM-DD) - Filter by list date
@@ -476,6 +481,7 @@ Get list of hearings with filtering, sorting, and pagination.
 - `sortOrder` (enum: asc, desc, default: desc) - Sort direction
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -509,10 +515,13 @@ Get list of hearings with filtering, sorting, and pagination.
 Get single hearing by ID.
 
 **Response:**
+
 ```json
 {
   "success": true,
-  "data": { /* hearing object */ }
+  "data": {
+    /* hearing object */
+  }
 }
 ```
 
@@ -521,6 +530,7 @@ Get single hearing by ID.
 Get list of available dates with hearing counts.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -539,6 +549,7 @@ Get list of available dates with hearing counts.
 Health check endpoint.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -568,16 +579,16 @@ async function createServer() {
         target: 'pino-pretty',
         options: {
           translateTime: 'HH:MM:ss Z',
-          ignore: 'pid,hostname',
-        },
-      },
-    },
+          ignore: 'pid,hostname'
+        }
+      }
+    }
   });
 
   // Rate limiting
   await server.register(fastifyRateLimit, {
     max: config.api.rateLimit.max,
-    timeWindow: config.api.rateLimit.timeWindow,
+    timeWindow: config.api.rateLimit.timeWindow
   });
 
   // Swagger documentation
@@ -586,30 +597,31 @@ async function createServer() {
       info: {
         title: 'CACD Archive API',
         description: 'Court of Appeal Criminal Division Daily Cause List Archive',
-        version: '1.0.0',
+        version: '1.0.0'
       },
       schemes: ['http', 'https'],
       consumes: ['application/json'],
-      produces: ['application/json'],
-    },
+      produces: ['application/json']
+    }
   });
 
   await server.register(fastifySwaggerUI, {
     routePrefix: '/api/docs',
     uiConfig: {
       docExpansion: 'list',
-      deepLinking: false,
-    },
+      deepLinking: false
+    }
   });
 
   // Serve static files
-  const staticDir = config.env === 'production'
-    ? path.join(__dirname, '../../dist')
-    : path.join(__dirname, '../../public');
+  const staticDir =
+    config.env === 'production'
+      ? path.join(__dirname, '../../dist')
+      : path.join(__dirname, '../../public');
 
   await server.register(fastifyStatic, {
     root: staticDir,
-    prefix: '/',
+    prefix: '/'
   });
 
   // Register routes
@@ -621,7 +633,7 @@ async function createServer() {
     server.log.error(error);
     reply.status(error.statusCode || 500).send({
       success: false,
-      error: error.message,
+      error: error.message
     });
   });
 
@@ -640,66 +652,70 @@ const { hearingsQuerySchema, hearingResponseSchema } = require('../schemas/heari
 
 async function hearingsRoutes(fastify, options) {
   // GET /api/v1/hearings
-  fastify.get('/hearings', {
-    schema: {
-      querystring: hearingsQuerySchema,
-      response: {
-        200: hearingResponseSchema,
-      },
+  fastify.get(
+    '/hearings',
+    {
+      schema: {
+        querystring: hearingsQuerySchema,
+        response: {
+          200: hearingResponseSchema
+        }
+      }
     },
-  }, async (request, reply) => {
-    const {
-      limit = 50,
-      offset = 0,
-      date,
-      dateFrom,
-      dateTo,
-      caseNumber,
-      search,
-      division,
-      sortBy = 'hearing_datetime',
-      sortOrder = 'desc',
-    } = request.query;
+    async (request, reply) => {
+      const {
+        limit = 50,
+        offset = 0,
+        date,
+        dateFrom,
+        dateTo,
+        caseNumber,
+        search,
+        division,
+        sortBy = 'hearing_datetime',
+        sortOrder = 'desc'
+      } = request.query;
 
-    const result = await getHearings({
-      limit: Math.min(limit, 100),
-      offset,
-      date,
-      dateFrom,
-      dateTo,
-      caseNumber,
-      search,
-      division,
-      sortBy,
-      sortOrder,
-    });
-
-    return {
-      success: true,
-      data: result.hearings,
-      pagination: {
-        limit,
+      const result = await getHearings({
+        limit: Math.min(limit, 100),
         offset,
-        total: result.total,
-      },
-    };
-  });
+        date,
+        dateFrom,
+        dateTo,
+        caseNumber,
+        search,
+        division,
+        sortBy,
+        sortOrder
+      });
+
+      return {
+        success: true,
+        data: result.hearings,
+        pagination: {
+          limit,
+          offset,
+          total: result.total
+        }
+      };
+    }
+  );
 
   // GET /api/v1/hearings/:id
   fastify.get('/hearings/:id', async (request, reply) => {
     const hearing = await getHearingById(request.params.id);
-    
+
     if (!hearing) {
       reply.code(404);
       return {
         success: false,
-        error: 'Hearing not found',
+        error: 'Hearing not found'
       };
     }
 
     return {
       success: true,
-      data: hearing,
+      data: hearing
     };
   });
 }
@@ -725,85 +741,82 @@ module.exports = hearingsRoutes;
 <!-- public/index.html -->
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CACD Archive - Daily Cause Lists</title>
-    <link rel="stylesheet" href="/css/styles.css">
-</head>
-<body>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
     <header>
-        <h1>Court of Appeal (Criminal Division) Archive</h1>
-        <p>Daily Cause List Archive</p>
+      <h1>Court of Appeal (Criminal Division) Archive</h1>
+      <p>Daily Cause List Archive</p>
     </header>
 
     <main>
-        <section class="controls">
-            <div class="search-box">
-                <input type="search" id="searchInput" placeholder="Search cases...">
-                <button id="searchBtn">Search</button>
-            </div>
+      <section class="controls">
+        <div class="search-box">
+          <input type="search" id="searchInput" placeholder="Search cases..." />
+          <button id="searchBtn">Search</button>
+        </div>
 
-            <div class="date-filters">
-                <button class="quick-date" data-offset="-1">Yesterday</button>
-                <button class="quick-date" data-offset="0">Today</button>
-                <button class="quick-date" data-offset="1">Tomorrow</button>
-                <input type="date" id="dateFilter">
-            </div>
+        <div class="date-filters">
+          <button class="quick-date" data-offset="-1">Yesterday</button>
+          <button class="quick-date" data-offset="0">Today</button>
+          <button class="quick-date" data-offset="1">Tomorrow</button>
+          <input type="date" id="dateFilter" />
+        </div>
 
-            <div class="sort-controls">
-                <label>Sort by:
-                    <select id="sortBy">
-                        <option value="hearing_datetime">Date/Time</option>
-                        <option value="case_number">Case Number</option>
-                        <option value="created_at">Added to Archive</option>
-                    </select>
-                </label>
-                <label>
-                    <select id="sortOrder">
-                        <option value="desc">Newest First</option>
-                        <option value="asc">Oldest First</option>
-                    </select>
-                </label>
-            </div>
-        </section>
+        <div class="sort-controls">
+          <label
+            >Sort by:
+            <select id="sortBy">
+              <option value="hearing_datetime">Date/Time</option>
+              <option value="case_number">Case Number</option>
+              <option value="created_at">Added to Archive</option>
+            </select>
+          </label>
+          <label>
+            <select id="sortOrder">
+              <option value="desc">Newest First</option>
+              <option value="asc">Oldest First</option>
+            </select>
+          </label>
+        </div>
+      </section>
 
-        <section class="results">
-            <div class="results-info">
-                Showing <span id="resultCount">0</span> hearings
-            </div>
+      <section class="results">
+        <div class="results-info">Showing <span id="resultCount">0</span> hearings</div>
 
-            <div id="loadingIndicator" class="loading" style="display: none;">
-                Loading...
-            </div>
+        <div id="loadingIndicator" class="loading" style="display: none;">Loading...</div>
 
-            <table id="hearingsTable">
-                <thead>
-                    <tr>
-                        <th>Date/Time</th>
-                        <th>Venue</th>
-                        <th>Case Number</th>
-                        <th>Case Details</th>
-                        <th>Hearing Type</th>
-                        <th>Judge</th>
-                    </tr>
-                </thead>
-                <tbody id="hearingsBody">
-                    <!-- Populated by JavaScript -->
-                </tbody>
-            </table>
+        <table id="hearingsTable">
+          <thead>
+            <tr>
+              <th>Date/Time</th>
+              <th>Venue</th>
+              <th>Case Number</th>
+              <th>Case Details</th>
+              <th>Hearing Type</th>
+              <th>Judge</th>
+            </tr>
+          </thead>
+          <tbody id="hearingsBody">
+            <!-- Populated by JavaScript -->
+          </tbody>
+        </table>
 
-            <div class="pagination">
-                <button id="prevPage" disabled>Previous</button>
-                <span id="pageInfo">Page 1</span>
-                <button id="nextPage">Next</button>
-            </div>
-        </section>
+        <div class="pagination">
+          <button id="prevPage" disabled>Previous</button>
+          <span id="pageInfo">Page 1</span>
+          <button id="nextPage">Next</button>
+        </div>
+      </section>
     </main>
 
     <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"></script>
     <script src="/js/app.js"></script>
-</body>
+  </body>
 </html>
 ```
 
@@ -811,145 +824,145 @@ module.exports = hearingsRoutes;
 
 ```javascript
 // public/js/app.js
-(function() {
-    'use strict';
+(function () {
+  'use strict';
 
-    const API_BASE = '/api/v1';
-    let currentPage = 0;
-    let currentFilters = {};
+  const API_BASE = '/api/v1';
+  let currentPage = 0;
+  let currentFilters = {};
 
-    // Initialize
-    $(document).ready(function() {
-        loadHearings();
-        attachEventHandlers();
+  // Initialize
+  $(document).ready(function () {
+    loadHearings();
+    attachEventHandlers();
+  });
+
+  function attachEventHandlers() {
+    $('#searchBtn').on('click', handleSearch);
+    $('#searchInput').on('keypress', function (e) {
+      if (e.which === 13) handleSearch();
     });
 
-    function attachEventHandlers() {
-        $('#searchBtn').on('click', handleSearch);
-        $('#searchInput').on('keypress', function(e) {
-            if (e.which === 13) handleSearch();
-        });
-        
-        $('.quick-date').on('click', handleQuickDate);
-        $('#dateFilter').on('change', handleDateFilter);
-        $('#sortBy, #sortOrder').on('change', loadHearings);
-        $('#prevPage').on('click', () => changePage(-1));
-        $('#nextPage').on('click', () => changePage(1));
+    $('.quick-date').on('click', handleQuickDate);
+    $('#dateFilter').on('change', handleDateFilter);
+    $('#sortBy, #sortOrder').on('change', loadHearings);
+    $('#prevPage').on('click', () => changePage(-1));
+    $('#nextPage').on('click', () => changePage(1));
+  }
+
+  function handleSearch() {
+    currentFilters.search = $('#searchInput').val();
+    currentPage = 0;
+    loadHearings();
+  }
+
+  function handleQuickDate(e) {
+    const offset = parseInt($(e.target).data('offset'));
+    const date = new Date();
+    date.setDate(date.getDate() + offset);
+    currentFilters.date = date.toISOString().split('T')[0];
+    currentPage = 0;
+    loadHearings();
+  }
+
+  function handleDateFilter(e) {
+    currentFilters.date = $(e.target).val();
+    currentPage = 0;
+    loadHearings();
+  }
+
+  function changePage(delta) {
+    currentPage += delta;
+    if (currentPage < 0) currentPage = 0;
+    loadHearings();
+  }
+
+  async function loadHearings() {
+    const limit = 50;
+    const offset = currentPage * limit;
+
+    const params = new URLSearchParams({
+      limit,
+      offset,
+      sortBy: $('#sortBy').val(),
+      sortOrder: $('#sortOrder').val(),
+      ...currentFilters
+    });
+
+    $('#loadingIndicator').show();
+    $('#hearingsTable').addClass('loading');
+
+    try {
+      const response = await fetch(`${API_BASE}/hearings?${params}`);
+      const result = await response.json();
+
+      if (result.success) {
+        renderHearings(result.data);
+        updatePagination(result.pagination);
+      } else {
+        showError('Failed to load hearings');
+      }
+    } catch (error) {
+      showError('Network error: ' + error.message);
+    } finally {
+      $('#loadingIndicator').hide();
+      $('#hearingsTable').removeClass('loading');
+    }
+  }
+
+  function renderHearings(hearings) {
+    const tbody = $('#hearingsBody');
+    tbody.empty();
+
+    if (hearings.length === 0) {
+      tbody.append('<tr><td colspan="6" class="no-results">No hearings found</td></tr>');
+      $('#resultCount').text('0');
+      return;
     }
 
-    function handleSearch() {
-        currentFilters.search = $('#searchInput').val();
-        currentPage = 0;
-        loadHearings();
-    }
+    hearings.forEach((hearing) => {
+      const row = $('<tr>').append(
+        $('<td>').text(formatDateTime(hearing.hearingDateTime)),
+        $('<td>').text(hearing.venue || '-'),
+        $('<td>').text(hearing.caseNumber),
+        $('<td>').text(hearing.caseDetails),
+        $('<td>').text(hearing.hearingType),
+        $('<td>').text(truncate(hearing.judge, 50))
+      );
+      tbody.append(row);
+    });
 
-    function handleQuickDate(e) {
-        const offset = parseInt($(e.target).data('offset'));
-        const date = new Date();
-        date.setDate(date.getDate() + offset);
-        currentFilters.date = date.toISOString().split('T')[0];
-        currentPage = 0;
-        loadHearings();
-    }
+    $('#resultCount').text(hearings.length);
+  }
 
-    function handleDateFilter(e) {
-        currentFilters.date = $(e.target).val();
-        currentPage = 0;
-        loadHearings();
-    }
+  function updatePagination(pagination) {
+    const totalPages = Math.ceil(pagination.total / pagination.limit);
+    const currentPageNum = Math.floor(pagination.offset / pagination.limit) + 1;
 
-    function changePage(delta) {
-        currentPage += delta;
-        if (currentPage < 0) currentPage = 0;
-        loadHearings();
-    }
+    $('#pageInfo').text(`Page ${currentPageNum} of ${totalPages}`);
+    $('#prevPage').prop('disabled', currentPageNum === 1);
+    $('#nextPage').prop('disabled', currentPageNum >= totalPages);
+  }
 
-    async function loadHearings() {
-        const limit = 50;
-        const offset = currentPage * limit;
-        
-        const params = new URLSearchParams({
-            limit,
-            offset,
-            sortBy: $('#sortBy').val(),
-            sortOrder: $('#sortOrder').val(),
-            ...currentFilters
-        });
+  function formatDateTime(isoString) {
+    const date = new Date(isoString);
+    return date.toLocaleString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
 
-        $('#loadingIndicator').show();
-        $('#hearingsTable').addClass('loading');
+  function truncate(str, length) {
+    if (!str) return '-';
+    return str.length > length ? str.substring(0, length) + '...' : str;
+  }
 
-        try {
-            const response = await fetch(`${API_BASE}/hearings?${params}`);
-            const result = await response.json();
-
-            if (result.success) {
-                renderHearings(result.data);
-                updatePagination(result.pagination);
-            } else {
-                showError('Failed to load hearings');
-            }
-        } catch (error) {
-            showError('Network error: ' + error.message);
-        } finally {
-            $('#loadingIndicator').hide();
-            $('#hearingsTable').removeClass('loading');
-        }
-    }
-
-    function renderHearings(hearings) {
-        const tbody = $('#hearingsBody');
-        tbody.empty();
-
-        if (hearings.length === 0) {
-            tbody.append('<tr><td colspan="6" class="no-results">No hearings found</td></tr>');
-            $('#resultCount').text('0');
-            return;
-        }
-
-        hearings.forEach(hearing => {
-            const row = $('<tr>').append(
-                $('<td>').text(formatDateTime(hearing.hearingDateTime)),
-                $('<td>').text(hearing.venue || '-'),
-                $('<td>').text(hearing.caseNumber),
-                $('<td>').text(hearing.caseDetails),
-                $('<td>').text(hearing.hearingType),
-                $('<td>').text(truncate(hearing.judge, 50))
-            );
-            tbody.append(row);
-        });
-
-        $('#resultCount').text(hearings.length);
-    }
-
-    function updatePagination(pagination) {
-        const totalPages = Math.ceil(pagination.total / pagination.limit);
-        const currentPageNum = Math.floor(pagination.offset / pagination.limit) + 1;
-
-        $('#pageInfo').text(`Page ${currentPageNum} of ${totalPages}`);
-        $('#prevPage').prop('disabled', currentPageNum === 1);
-        $('#nextPage').prop('disabled', currentPageNum >= totalPages);
-    }
-
-    function formatDateTime(isoString) {
-        const date = new Date(isoString);
-        return date.toLocaleString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    }
-
-    function truncate(str, length) {
-        if (!str) return '-';
-        return str.length > length ? str.substring(0, length) + '...' : str;
-    }
-
-    function showError(message) {
-        alert(message); // Simple for now, can be improved
-    }
+  function showError(message) {
+    alert(message); // Simple for now, can be improved
+  }
 })();
 ```
 
@@ -977,6 +990,7 @@ Uses nodemon to watch for changes and restart server automatically. Serves unmin
 **Command:** `npm run build`
 
 Uses esbuild (or similar lightweight bundler) to:
+
 - Minify CSS
 - Bundle and minify JavaScript
 - Copy and optimize HTML
@@ -992,6 +1006,7 @@ Uses esbuild (or similar lightweight bundler) to:
 ```
 
 **scripts/build.js:**
+
 ```javascript
 const esbuild = require('esbuild');
 const fs = require('fs');
@@ -1003,7 +1018,7 @@ async function build() {
     entryPoints: ['public/js/app.js'],
     bundle: true,
     minify: true,
-    outfile: 'dist/js/app.min.js',
+    outfile: 'dist/js/app.min.js'
   });
 
   // Minify CSS
@@ -1011,7 +1026,7 @@ async function build() {
     entryPoints: ['public/css/styles.css'],
     bundle: true,
     minify: true,
-    outfile: 'dist/css/styles.min.css',
+    outfile: 'dist/css/styles.min.css'
   });
 
   // Copy and update HTML
@@ -1019,7 +1034,7 @@ async function build() {
   html = html
     .replace('/js/app.js', '/js/app.min.js')
     .replace('/css/styles.css', '/css/styles.min.css');
-  
+
   fs.writeFileSync('dist/index.html', html);
 
   console.log('Build complete!');
@@ -1035,24 +1050,27 @@ build().catch(console.error);
 ### 9.1 PM2 Ecosystem File
 
 **ecosystem.config.js:**
+
 ```javascript
 module.exports = {
-  apps: [{
-    name: 'cacd-archive',
-    script: './src/index.js',
-    instances: 1,
-    exec_mode: 'fork',
-    env: {
-      NODE_ENV: 'production',
-    },
-    error_file: './logs/err.log',
-    out_file: './logs/out.log',
-    log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-    merge_logs: true,
-    autorestart: true,
-    max_restarts: 10,
-    min_uptime: '10s',
-  }],
+  apps: [
+    {
+      name: 'cacd-archive',
+      script: './src/index.js',
+      instances: 1,
+      exec_mode: 'fork',
+      env: {
+        NODE_ENV: 'production'
+      },
+      error_file: './logs/err.log',
+      out_file: './logs/out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      max_restarts: 10,
+      min_uptime: '10s'
+    }
+  ]
 };
 ```
 
@@ -1096,7 +1114,7 @@ const config = require('../config/config');
 
 async function main() {
   console.log('Starting manual scrape...');
-  
+
   try {
     const result = await runScraper();
     console.log('Scrape complete:', result);
@@ -1177,12 +1195,14 @@ node src/cli/migrate.js
 ### 11.2 Dependency Rationale
 
 **Kept Lean:**
+
 - Total production dependencies: ~12
 - No heavy frameworks or ORMs
 - Direct SQL queries for performance
 - Minimal build tooling
 
 **Key Libraries:**
+
 - `fastify` - Fast, well-maintained, excellent TypeScript support if needed
 - `mysql2` - Most popular MariaDB/MySQL client, promises support
 - `cheerio` - Battle-tested HTML parsing
@@ -1346,6 +1366,6 @@ pm2 flush
 
 ## Document History
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | 11 December 2025 | Initial | Initial implementation plan |
+| Version | Date             | Author  | Changes                     |
+| ------- | ---------------- | ------- | --------------------------- |
+| 1.0     | 11 December 2025 | Initial | Initial implementation plan |
