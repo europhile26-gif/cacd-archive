@@ -233,6 +233,23 @@ function normalizeValue(value) {
 }
 
 /**
+ * Format date for MySQL DATETIME column
+ * Converts JS Date or ISO string to 'YYYY-MM-DD HH:MM:SS' format
+ * @param {Date|string} date - Date to format
+ * @returns {string} MySQL datetime string
+ */
+function formatDateTimeForMySQL(date) {
+  const d = date instanceof Date ? date : new Date(date);
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const hours = String(d.getUTCHours()).padStart(2, '0');
+  const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(d.getUTCSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+/**
  * Insert new hearing record
  * @param {Object} connection - Database connection
  * @param {Object} record - Record to insert
@@ -256,7 +273,7 @@ async function insertRecord(connection, record) {
       record['additional information'] || null,
       record.division,
       record.sourceUrl,
-      record.scrapedAt
+      formatDateTimeForMySQL(record.scrapedAt)
     ]
   );
 }
@@ -287,7 +304,7 @@ async function updateRecord(connection, record, id) {
       record['hearing type'] || null,
       record['additional information'] || null,
       record.sourceUrl,
-      record.scrapedAt,
+      formatDateTimeForMySQL(record.scrapedAt),
       id
     ]
   );
