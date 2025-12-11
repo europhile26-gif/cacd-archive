@@ -24,6 +24,7 @@ const config = {
 
   scraping: {
     intervalHours: parseInt(process.env.SCRAPE_INTERVAL_HOURS, 10) || 2,
+    scrapeOnStartup: process.env.SCRAPE_ON_STARTUP === 'true',
     summaryPageUrl:
       process.env.SUMMARY_PAGE_URL ||
       'https://www.court-tribunal-hearings.service.gov.uk/summary-of-publications?locationId=109',
