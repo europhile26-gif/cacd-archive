@@ -35,9 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Delete strategy: Hard delete for stale records
 - No change history tracking (logs only)
 - Header mapping: By text content with email alerts on changes
-- Timezone: UK local time (Europe/London)
+- Timezone: UK local time (Europe/London) for all dates/times
 - Public API with rate limiting (100 req/15 min)
 - Frontend: jQuery + Vanilla JS (lightweight)
+- Language: English version only (covers both English and Welsh courts)
+- Historical data: Out of scope for v1 (potential future enhancement via Google Cache/Wayback Machine)
+- Copyright/robots.txt: Non-commercial educational project, will respond to takedown notices
 
 ---
 

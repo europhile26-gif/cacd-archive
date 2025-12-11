@@ -225,11 +225,12 @@ END FUNCTION
   - Case-insensitive matching for key phrases
   - Flexible matching for "English" indicator
 
-**Case 5: Bilingual Content**
+**Case 5: English vs Welsh Language**
 
-- **Scenario:** Both English and Welsh versions present
-- **Handling:** Explicitly select English version
-- **Filter:** Must contain "English" or "Saesneg" in text, prefer "English"
+- **Scenario:** Both English and Welsh versions present for same list
+- **Handling:** Match English version only
+- **Filter:** Link text should contain "English" (case-insensitive)
+- **Note:** System covers hearings in both English and Welsh courts, but uses English language lists only
 
 ### 5.2 Fallback Strategy
 
@@ -409,13 +410,40 @@ Log the following information:
 
 ---
 
-## 10. Open Questions
+## 10. Design Decisions
 
-1. **Time Zone:** What timezone should be used for "today" and "tomorrow"? (Recommendation: Europe/London - GMT/BST)
-2. **Publication Time:** What time of day are lists typically published?
-3. **Welsh Version:** Should we ever fallback to Welsh version if English is unavailable?
-4. **Archive Access:** Can we access historical lists by modifying the URL pattern?
-5. **robots.txt:** What does the website's robots.txt specify about scraping frequency?
+**Resolved Questions:**
+
+1. **Time Zone:** All dates and times use UK local time (Europe/London - GMT/BST). This applies to:
+   - Data scraped from court website
+   - Server system time
+   - Display times in web interface
+   - "Today" and "tomorrow" calculations for link discovery
+
+2. **Welsh Version:** English version only for link matching. However:
+   - System covers hearings in both English and Welsh courts
+   - Only match links containing "English" or language indicators suggesting English content
+   - Do not fallback to Welsh language versions
+
+3. **Archive Access:** Historical data scraping is out of scope for initial release
+   - Focus on current and future data only
+   - Potential future enhancement: retrieve historical URLs from:
+     - Google Cache
+     - The Wayback Machine
+     - Direct URL pattern discovery
+   - To be considered in future milestone
+
+4. **robots.txt & Copyright:**
+   - Content is Crown Copyright - proceed with caution
+   - Non-commercial, educational/public interest project
+   - Will respond to takedown notices if received
+   - Respectful scraping (2-hour intervals, not aggressive)
+
+**Remaining Open Questions:**
+
+1. **Publication Time:** What time of day are lists typically published?
+   - Recommendation: Monitor over first few days of operation to establish pattern
+   - May inform optimal scraping schedule timing
 
 ---
 
