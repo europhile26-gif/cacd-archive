@@ -93,9 +93,14 @@ async function scrapeAll(scrapeType = 'manual') {
         logger.error('Failed to process list', {
           date: link.targetDate,
           url: link.url,
-          error: error.message,
-          stack: error.stack
+          error: {
+            message: error.message,
+            code: error.code,
+            errno: error.errno,
+            name: error.name
+          }
         });
+        logger.error('Stack trace:', error.stack);
 
         syncResults.push({
           date: link.targetDate,

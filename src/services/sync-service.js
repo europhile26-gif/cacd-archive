@@ -41,6 +41,11 @@ async function synchronizeRecords(newRecords, listDate) {
 
     await connection.beginTransaction();
 
+    // Define operation arrays that will be accessible in catch block
+    let toAdd = [];
+    let toUpdate = [];
+    let toDelete = [];
+
     try {
       // Get existing records for this date
       const [existingRows] = await connection.query(
@@ -58,9 +63,9 @@ async function synchronizeRecords(newRecords, listDate) {
       const existingRecordMap = createKeyMap(existingRows);
 
       // Determine operations
-      const toAdd = [];
-      const toUpdate = [];
-      const toDelete = [];
+      toAdd = [];
+      toUpdate = [];
+      toDelete = [];
 
       // Find additions and updates
       for (const [key, newRecord] of Object.entries(newRecordMap)) {
@@ -133,10 +138,23 @@ async function synchronizeRecords(newRecords, listDate) {
     } catch (error) {
       await connection.rollback();
       logger.error('Synchronization failed, transaction rolled back', {
-        error: error.message,
-        stack: error.stack,
-        listDate
+        listDate,
+        error: {
+          message: error.message,
+          code: error.code,
+          errno: error.errno,
+          sqlState: error.sqlState,
+          sqlMessage: error.sqlMessage,
+          sql: error.sql
+        },
+        stats: {
+          newRecordCount: deduplicatedRecords.length,
+          toAddCount: toAdd?.length || 0,
+          toUpdateCount: toUpdate?.length || 0,
+          toDeleteCount: toDelete?.length || 0
+        }
       });
+      logger.error('Stack trace:', error.stack);
       throw error;
     }
   } finally {
