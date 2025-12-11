@@ -1,4 +1,3 @@
-const axios = require('axios');
 const { discoverLinks } = require('../scrapers/link-discovery');
 const { parseTable } = require('../scrapers/table-parser');
 const { synchronizeRecords } = require('./sync-service');
@@ -27,11 +26,17 @@ async function scrapeAll(scrapeType = 'manual') {
 
   try {
     // Record scrape start
+    logger.info('Recording scrape start in database...');
     scrapeId = await recordScrapeStart(scrapeType, config.scraping.summaryPageUrl);
-    logger.debug('Scrape history record created', { scrapeId });
+    logger.info('Scrape history record created', { scrapeId });
 
     // Step 1: Discover links for today and tomorrow
+    logger.info('Starting link discovery...');
     const linkResult = await discoverLinks('Criminal');
+    logger.info('Link discovery completed', { 
+      success: linkResult.success, 
+      linksFound: linkResult.linksFound?.length || 0 
+    });
 
     if (!linkResult.success || linkResult.linksFound.length === 0) {
       logger.info('No links found, nothing to scrape');
@@ -88,7 +93,8 @@ async function scrapeAll(scrapeType = 'manual') {
         logger.error('Failed to process list', {
           date: link.targetDate,
           url: link.url,
-          error: error.message
+          error: error.message,
+          stack: error.stack
         });
 
         syncResults.push({
@@ -134,6 +140,7 @@ async function scrapeAll(scrapeType = 'manual') {
   } catch (error) {
     logger.error('Scraping workflow failed', {
       error: error.message,
+      stack: error.stack,
       scrapeType,
       scrapeId
     });
@@ -157,45 +164,60 @@ async function fetchListHtml(url) {
 
   for (let attempt = 0; attempt <= retryDelays.length; attempt++) {
     try {
-      logger.debug(`Fetching list HTML (attempt ${attempt + 1})`, { url });
+      logger.info(`Fetching list HTML (attempt ${attempt + 1})`, { url });
 
-      const response = await axios.get(url, {
-        timeout: config.scraping.requestTimeout || 10000,
-        headers: {
-          'User-Agent': config.scraping.userAgent || 'CACD-Archive-Bot/1.0'
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), config.scraping.requestTimeout || 10000);
+
+      try {
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': config.scraping.userAgent || 'CACD-Archive-Bot/1.0'
+          }
+        });
+
+        clearTimeout(timeout);
+
+        if (response.ok) {
+          const html = await response.text();
+          logger.info('Successfully fetched list HTML', { url });
+          return html;
         }
-      });
 
-      if (response.status === 200) {
-        logger.debug('Successfully fetched list HTML', { url });
-        return response.data;
-      }
-
-      throw new Error(`Unexpected status code: ${response.status}`);
-    } catch (error) {
-      lastError = error;
-
-      if (error.response) {
-        const status = error.response.status;
-        if (status === 404) {
+        if (response.status === 404) {
           throw new Error('List not found (404)');
-        } else if (status >= 500 && attempt < retryDelays.length) {
+        }
+
+        if (response.status >= 500 && attempt < retryDelays.length) {
           const delay = retryDelays[attempt];
-          logger.warn(`Server error (${status}), retrying in ${delay}ms`, {
+          logger.warn(`Server error (${response.status}), retrying in ${delay}ms`, {
             attempt: attempt + 1,
             url
           });
           await sleep(delay);
           continue;
         }
-      } else if (error.code === 'ETIMEDOUT' && attempt < retryDelays.length) {
-        const delay = retryDelays[attempt];
-        logger.warn(`Request timeout, retrying in ${delay}ms`, {
-          attempt: attempt + 1,
-          url
-        });
-        await sleep(delay);
-        continue;
+
+        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+      } catch (fetchError) {
+        clearTimeout(timeout);
+        throw fetchError;
+      }
+    } catch (error) {
+      lastError = error;
+
+      if (error.name === 'AbortError') {
+        if (attempt < retryDelays.length) {
+          const delay = retryDelays[attempt];
+          logger.warn(`Request timeout, retrying in ${delay}ms`, {
+            attempt: attempt + 1,
+            url
+          });
+          await sleep(delay);
+          continue;
+        }
+        throw new Error('Request timeout after all retry attempts');
       }
 
       throw error;

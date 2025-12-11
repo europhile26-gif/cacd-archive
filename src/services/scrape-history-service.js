@@ -13,7 +13,7 @@ const logger = require('../utils/logger');
  * @returns {Promise<number>} Scrape history ID
  */
 async function recordScrapeStart(scrapeType, summaryPageUrl) {
-  const [result] = await query(
+  const result = await query(
     `INSERT INTO scrape_history (
       scrape_type, status, summary_page_url, started_at
     ) VALUES (?, ?, ?, NOW())`,

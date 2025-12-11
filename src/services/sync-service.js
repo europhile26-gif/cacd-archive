@@ -22,6 +22,23 @@ async function synchronizeRecords(newRecords, listDate) {
       newRecordCount: newRecords.length
     });
 
+    // Deduplicate new records (keep last occurrence)
+    const deduplicatedMap = {};
+    for (const record of newRecords) {
+      const key = createRecordKey(record);
+      deduplicatedMap[key] = record;
+    }
+    const deduplicatedRecords = Object.values(deduplicatedMap);
+
+    if (deduplicatedRecords.length < newRecords.length) {
+      logger.warn('Duplicate records found in scraped data', {
+        listDate,
+        original: newRecords.length,
+        deduplicated: deduplicatedRecords.length,
+        duplicates: newRecords.length - deduplicatedRecords.length
+      });
+    }
+
     await connection.beginTransaction();
 
     try {
@@ -37,7 +54,7 @@ async function synchronizeRecords(newRecords, listDate) {
       });
 
       // Create key maps for comparison
-      const newRecordMap = createKeyMap(newRecords);
+      const newRecordMap = createKeyMap(deduplicatedRecords);
       const existingRecordMap = createKeyMap(existingRows);
 
       // Determine operations
@@ -111,12 +128,13 @@ async function synchronizeRecords(newRecords, listDate) {
         added: addedCount,
         updated: updatedCount,
         deleted: deletedCount,
-        total: newRecords.length
+        total: deduplicatedRecords.length
       };
     } catch (error) {
       await connection.rollback();
       logger.error('Synchronization failed, transaction rolled back', {
         error: error.message,
+        stack: error.stack,
         listDate
       });
       throw error;

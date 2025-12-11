@@ -35,6 +35,7 @@ const config = {
   },
 
   email: {
+    enabled: process.env.EMAIL_NOTIFICATIONS_ENABLED === 'true',
     alertEmail: process.env.ALERT_EMAIL,
     smtp: {
       host: process.env.SMTP_HOST,

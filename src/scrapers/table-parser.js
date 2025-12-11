@@ -356,12 +356,26 @@ function updateLastValues(lastValues, record) {
 }
 
 /**
- * Create composite key for record
+ * Create composite key for a record
+ * Handles both new scraped records and database records
  * @param {Object} record - Record object
  * @returns {string} Composite key
  */
 function createRecordKey(record) {
-  return `${record.listDate}|${record['case number']}|${record.time}`;
+  // Handle both camelCase/snake_case and spaces in field names
+  let listDate = record.listDate || record.list_date;
+  const caseNumber = record['case number'] || record.case_number || record.caseNumber;
+  const time = record.time;
+  
+  // If listDate is a Date object, format it as YYYY-MM-DD
+  if (listDate instanceof Date) {
+    const year = listDate.getFullYear();
+    const month = String(listDate.getMonth() + 1).padStart(2, '0');
+    const day = String(listDate.getDate()).padStart(2, '0');
+    listDate = `${year}-${month}-${day}`;
+  }
+  
+  return `${listDate}|${caseNumber}|${time}`;
 }
 
 module.exports = {

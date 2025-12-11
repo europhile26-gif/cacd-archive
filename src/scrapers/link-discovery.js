@@ -1,7 +1,6 @@
-const axios = require('axios');
 const cheerio = require('cheerio');
 const { format, addDays } = require('date-fns');
-const { zonedTimeToUtc } = require('date-fns-tz');
+const { toZonedTime } = require('date-fns-tz');
 const config = require('../config/config');
 const logger = require('../utils/logger');
 
@@ -46,7 +45,11 @@ async function discoverLinks(division = 'Criminal') {
       linksFound: links
     };
   } catch (error) {
-    logger.error('Link discovery failed', { error: error.message, division });
+    logger.error('Link discovery failed', { 
+      error: error.message, 
+      stack: error.stack,
+      division 
+    });
     throw error;
   }
 }
@@ -61,50 +64,59 @@ async function fetchSummaryPage() {
 
   for (let attempt = 0; attempt <= retryDelays.length; attempt++) {
     try {
-      logger.debug(`Fetching summary page (attempt ${attempt + 1})`);
+      logger.info(`Fetching summary page (attempt ${attempt + 1})`);
 
-      const response = await axios.get(SUMMARY_URL, {
-        timeout: config.scraping.requestTimeout || 10000,
-        headers: {
-          'User-Agent': config.scraping.userAgent || 'CACD-Archive-Bot/1.0'
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), config.scraping.requestTimeout || 10000);
+
+      try {
+        const response = await fetch(SUMMARY_URL, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': config.scraping.userAgent || 'CACD-Archive-Bot/1.0'
+          }
+        });
+
+        clearTimeout(timeout);
+
+        if (response.ok) {
+          const html = await response.text();
+          logger.info('Successfully fetched summary page');
+          return html;
         }
-      });
 
-      if (response.status === 200) {
-        logger.debug('Successfully fetched summary page');
-        return response.data;
-      }
-
-      throw new Error(`Unexpected status code: ${response.status}`);
-    } catch (error) {
-      lastError = error;
-
-      if (error.response) {
-        // HTTP error response
-        const status = error.response.status;
-        if (status === 404) {
+        if (response.status === 404) {
           throw new Error('Summary page not found (404)');
-        } else if (status >= 500 && attempt < retryDelays.length) {
+        }
+
+        if (response.status >= 500 && attempt < retryDelays.length) {
           const delay = retryDelays[attempt];
-          logger.warn(`Server error (${status}), retrying in ${delay}ms`, {
+          logger.warn(`Server error (${response.status}), retrying in ${delay}ms`, {
             attempt: attempt + 1
           });
           await sleep(delay);
           continue;
         }
-      } else if (error.code === 'ECONNREFUSED') {
-        throw new Error('Connection refused - service may be down');
-      } else if (error.code === 'ENOTFOUND') {
-        throw new Error('DNS resolution failed - check network connection');
-      } else if (error.code === 'ETIMEDOUT' && attempt < retryDelays.length) {
-        const delay = retryDelays[attempt];
-        logger.warn(`Request timeout, retrying in ${delay}ms`, {
-          attempt: attempt + 1
-        });
-        await sleep(delay);
-        continue;
+
+        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+      } catch (fetchError) {
+        clearTimeout(timeout);
+        throw fetchError;
+      }
+    } catch (error) {
+      lastError = error;
+
+      if (error.name === 'AbortError') {
+        if (attempt < retryDelays.length) {
+          const delay = retryDelays[attempt];
+          logger.warn(`Request timeout, retrying in ${delay}ms`, { attempt: attempt + 1 });
+          await sleep(delay);
+          continue;
+        }
+        throw new Error('Request timeout after all retry attempts');
       }
 
+      // For other errors, throw immediately
       throw error;
     }
   }
@@ -310,7 +322,7 @@ function isValidUrl(url) {
 function getCurrentDateUK() {
   const now = new Date();
   // Convert to UK timezone
-  const ukDate = zonedTimeToUtc(now, TIMEZONE);
+  const ukDate = toZonedTime(now, TIMEZONE);
   return ukDate;
 }
 
