@@ -52,8 +52,25 @@ async function runMigrations() {
       await connection.beginTransaction();
 
       try {
-        // Execute migration SQL
-        await connection.query(sql);
+        // Remove comments first
+        const cleanedSql = sql
+          .split('\n')
+          .filter((line) => !line.trim().startsWith('--'))
+          .join('\n');
+
+        // Split by semicolons at the end of lines (more reliable)
+        const statements = cleanedSql
+          .split(/;\s*\n/)
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0);
+
+        // Execute each statement
+        for (const statement of statements) {
+          if (statement.trim().length > 0) {
+            console.log(`Executing statement: ${statement.substring(0, 50)}...`);
+            await connection.query(statement);
+          }
+        }
 
         // Record migration
         await connection.query(
@@ -66,6 +83,8 @@ async function runMigrations() {
         appliedCount++;
       } catch (error) {
         await connection.rollback();
+        console.error(`Migration ${version} failed:`, error.message);
+        console.error('SQL Error:', error.sqlMessage);
         throw new Error(`Migration ${version} failed: ${error.message}`);
       }
     }
