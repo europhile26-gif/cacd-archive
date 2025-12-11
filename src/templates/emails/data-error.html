@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CACD Archive - Data Error Alert</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .header {
+      background-color: #dc3545;
+      color: #ffffff;
+      padding: 20px;
+      border-radius: 8px 8px 0 0;
+      margin: -30px -30px 30px -30px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .header .subtitle {
+      margin: 5px 0 0 0;
+      opacity: 0.9;
+      font-size: 14px;
+    }
+    .alert-badge {
+      display: inline-block;
+      background-color: #ffc107;
+      color: #000;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 15px;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 12px;
+      margin: 20px 0;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border-radius: 6px;
+      border-left: 4px solid #1e3a5f;
+    }
+    .info-label {
+      font-weight: 600;
+      color: #495057;
+    }
+    .info-value {
+      color: #212529;
+      word-break: break-word;
+    }
+    .error-section {
+      margin: 25px 0;
+    }
+    .error-section h2 {
+      color: #dc3545;
+      font-size: 18px;
+      margin-bottom: 10px;
+      border-bottom: 2px solid #dc3545;
+      padding-bottom: 5px;
+    }
+    .error-message {
+      background-color: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 10px 0;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 14px;
+      color: #856404;
+    }
+    .stack-trace {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 10px 0;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      color: #495057;
+    }
+    .html-sample {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 10px 0;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12px;
+      overflow-x: auto;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .context-data {
+      background-color: #e7f3ff;
+      border: 1px solid #b3d9ff;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 10px 0;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12px;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+      font-size: 14px;
+      color: #6c757d;
+    }
+    .footer strong {
+      color: #495057;
+    }
+    .url-link {
+      color: #0066cc;
+      text-decoration: none;
+      word-break: break-all;
+    }
+    .url-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⚠️ CACD Archive Alert</h1>
+      <p class="subtitle">Data Error Notification</p>
+    </div>
+
+    <div class="alert-badge">{{typeLabel}} Error</div>
+
+    <div class="info-grid">
+      <div class="info-label">Environment:</div>
+      <div class="info-value">{{environment}}</div>
+      
+      <div class="info-label">Timestamp:</div>
+      <div class="info-value">{{timestamp}}</div>
+      
+      {{#if date}}
+      <div class="info-label">Date:</div>
+      <div class="info-value">{{date}}</div>
+      {{/if}}
+      
+      {{#if url}}
+      <div class="info-label">URL:</div>
+      <div class="info-value"><a href="{{url}}" class="url-link">{{url}}</a></div>
+      {{/if}}
+    </div>
+
+    <div class="error-section">
+      <h2>Error Details</h2>
+      <div class="error-message">{{error}}</div>
+    </div>
+
+    {{#if stack}}
+    <div class="error-section">
+      <h2>Stack Trace</h2>
+      <div class="stack-trace">{{stack}}</div>
+    </div>
+    {{/if}}
+
+    {{#if context}}
+    <div class="error-section">
+      <h2>Additional Context</h2>
+      <div class="context-data">{{json context}}</div>
+    </div>
+    {{/if}}
+
+    {{#if htmlSample}}
+    <div class="error-section">
+      <h2>HTML Sample</h2>
+      <div class="html-sample"><code>{{htmlSample}}</code></div>
+    </div>
+    {{/if}}
+
+    <div class="footer">
+      <p>
+        <strong>Action Required:</strong> The .gov.uk court hearings website may have changed 
+        its HTML structure or naming conventions. Please review the error details above and 
+        update the scraping logic if necessary.
+      </p>
+      <p>
+        This is an automated alert from <strong>CACD Archive</strong>. 
+        If you need to adjust notification settings, please update your <code>.env</code> configuration.
+      </p>
+    </div>
+  </div>
+</body>
+</html>

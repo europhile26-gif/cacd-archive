@@ -1,5 +1,6 @@
 const cheerio = require('cheerio');
 const logger = require('../utils/logger');
+const emailService = require('../services/email-service');
 
 /**
  * Table Parser Module
@@ -98,6 +99,37 @@ async function parseTable(html, listDate, sourceUrl, division = 'Criminal') {
       error: error.message,
       listDate
     });
+    
+    // Send email alert for table parsing failure
+    try {
+      // Extract HTML sample if available
+      let htmlSample = null;
+      if (html && html.length > 0) {
+        const sampleLength = Math.min(html.length, 2000);
+        htmlSample = html.substring(0, sampleLength);
+        if (html.length > 2000) {
+          htmlSample += '\n... (truncated)';
+        }
+      }
+      
+      await emailService.sendDataError({
+        type: 'table-parsing',
+        error: error.message,
+        stack: error.stack,
+        date: listDate,
+        url: sourceUrl,
+        htmlSample,
+        context: {
+          division,
+          htmlLength: html ? html.length : 0
+        }
+      });
+    } catch (emailError) {
+      logger.error('Failed to send table parsing error email', {
+        error: emailError.message
+      });
+    }
+    
     throw error;
   }
 }

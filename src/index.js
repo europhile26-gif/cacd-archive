@@ -2,6 +2,7 @@ const config = require('./config/config');
 const { runMigrations } = require('./db/migrator');
 const { createServer } = require('./api/server');
 const logger = require('./utils/logger');
+const emailService = require('./services/email-service');
 const {
   startScheduler,
   stopScheduler,
@@ -19,6 +20,11 @@ async function start() {
     logger.info('Running database migrations...');
     await runMigrations();
     logger.info('Migrations completed successfully');
+
+    // Initialize email service
+    logger.info('Initializing email service...');
+    await emailService.initialize();
+    logger.info('Email service initialized');
 
     // Start API server
     logger.info('Starting API server...');
@@ -45,12 +51,14 @@ async function start() {
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully...');
   await stopScheduler();
+  await emailService.close();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
   logger.info('SIGINT received, shutting down gracefully...');
   await stopScheduler();
+  await emailService.close();
   process.exit(0);
 });
 

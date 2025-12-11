@@ -9,6 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2025-12-11
+
+### Added
+
+- **Email Notification System**
+  - Implemented comprehensive email service with nodemailer and Handlebars templates
+  - Professional HTML email templates for data error alerts
+  - Automatic email notifications when link discovery fails
+  - Automatic email notifications when table parsing fails
+  - Detailed error reports including stack traces, URLs, and HTML samples
+  - Added EMAIL_RECIPIENT_DATA_ERRORS configuration for error alerts
+  - Created test-email CLI tool for verification (`node src/cli/test-email.js`)
+  - Plain text fallback for email clients without HTML support
+
+### Changed
+
+- Enhanced email configuration with dedicated recipient for data errors
+  - `EMAIL_RECIPIENT_DATA_ERRORS` replaces generic `ALERT_EMAIL`
+  - SMTP configuration now properly supports STARTTLS on port 587
+- Email service initializes on application startup
+- Graceful shutdown now closes email service connections
+
+### Improved
+
+- Proactive monitoring - receive alerts when .gov.uk site structure changes
+- Better error visibility with formatted HTML emails including context
+- Template system ready for future user notification features
+- Error isolation - parsing failures don't crash the application
+
+---
+
 ## [1.2.0] - 2025-12-11
 
 ### Added

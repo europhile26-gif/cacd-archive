@@ -36,7 +36,8 @@ const config = {
 
   email: {
     enabled: process.env.EMAIL_NOTIFICATIONS_ENABLED === 'true',
-    alertEmail: process.env.ALERT_EMAIL,
+    alertEmail: process.env.ALERT_EMAIL, // Deprecated - use dataErrorRecipient
+    dataErrorRecipient: process.env.EMAIL_RECIPIENT_DATA_ERRORS,
     smtp: {
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT, 10) || 587,

@@ -3,6 +3,7 @@ const { format, addDays } = require('date-fns');
 const { toZonedTime } = require('date-fns-tz');
 const config = require('../config/config');
 const logger = require('../utils/logger');
+const emailService = require('../services/email-service');
 
 /**
  * Link Discovery Module
@@ -50,6 +51,26 @@ async function discoverLinks(division = 'Criminal') {
       stack: error.stack,
       division 
     });
+    
+    // Send email alert for link discovery failure
+    try {
+      await emailService.sendDataError({
+        type: 'link-discovery',
+        error: error.message,
+        stack: error.stack,
+        date: format(new Date(), 'yyyy-MM-dd'),
+        url: SUMMARY_URL,
+        context: {
+          division,
+          summaryUrl: SUMMARY_URL
+        }
+      });
+    } catch (emailError) {
+      logger.error('Failed to send link discovery error email', {
+        error: emailError.message
+      });
+    }
+    
     throw error;
   }
 }
