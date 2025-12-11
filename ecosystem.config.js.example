@@ -1,0 +1,96 @@
+module.exports = {
+  apps: [
+    {
+      name: 'cacd-archive',
+      script: './src/index.js',
+      
+      // Instance configuration
+      instances: 1, // Use 'max' for cluster mode (CPU cores)
+      exec_mode: 'fork', // Use 'cluster' for cluster mode
+      
+      // Environment variables
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+        LOG_LEVEL: 'info',
+        NODE_APP_INSTANCE: 0 // For scheduler (only instance 0 runs cron jobs)
+      },
+      
+      // Logging
+      error_file: './logs/err.log',
+      out_file: './logs/out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      
+      // Restart configuration
+      autorestart: true,
+      max_restarts: 10,
+      min_uptime: '10s',
+      restart_delay: 4000,
+      
+      // Performance
+      watch: false,
+      max_memory_restart: '500M',
+      
+      // Advanced features
+      kill_timeout: 5000,
+      wait_ready: false,
+      listen_timeout: 3000
+    }
+  ],
+
+  // Example cluster mode configuration (commented out)
+  // Uncomment and modify the app above to use this configuration
+  /*
+  apps: [
+    {
+      name: 'cacd-archive',
+      script: './src/index.js',
+      instances: 'max', // One instance per CPU core
+      exec_mode: 'cluster',
+      
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+        LOG_LEVEL: 'info'
+      },
+      
+      // Instance-specific env vars (for scheduler)
+      env_production: {
+        NODE_APP_INSTANCE: 0 // Only first instance runs scheduler
+      },
+      
+      instance_var: 'NODE_APP_INSTANCE',
+      
+      error_file: './logs/err.log',
+      out_file: './logs/out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      
+      autorestart: true,
+      max_restarts: 10,
+      min_uptime: '10s',
+      restart_delay: 4000,
+      
+      watch: false,
+      max_memory_restart: '500M',
+      
+      kill_timeout: 5000,
+      wait_ready: false,
+      listen_timeout: 3000
+    }
+  ]
+  */
+
+  // Deployment configuration (optional)
+  deploy: {
+    production: {
+      user: 'node',
+      host: 'your-server.example.com',
+      ref: 'origin/main',
+      repo: 'git@github.com:europhile26-gif/cacd-archive.git',
+      path: '/var/www/cacd-archive',
+      'post-deploy': 'npm install && npm run build && pm2 reload ecosystem.config.js --env production'
+    }
+  }
+};

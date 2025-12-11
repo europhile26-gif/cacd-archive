@@ -70,6 +70,10 @@ web_modules/
 .env.*
 !.env.example
 
+# PM2 ecosystem files
+ecosystem.config.js
+!ecosystem.config.js.example
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
