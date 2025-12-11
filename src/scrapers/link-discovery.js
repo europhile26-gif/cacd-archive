@@ -310,7 +310,7 @@ function isValidUrl(url) {
     }
 
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
