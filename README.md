@@ -213,7 +213,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [x] Initialize project structure and directories
 - [x] Create `package.json` with all dependencies
 - [x] Create `.env.example` with all configuration options
-- [ ] Set up ESLint/Prettier configuration
+- [x] Set up ESLint/Prettier configuration
 - [x] Implement configuration loader (`src/config/config.js`)
 - [x] Implement database connection pool (`src/config/database.js`)
 - [x] Create initial schema migration (`001_initial_schema.sql`)
@@ -227,30 +227,30 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-### Milestone 2: Core Scraping Logic 🔄
+### Milestone 2: Core Scraping Logic ✅
 
 **Goal:** Implement link discovery and table parsing
 
-- [ ] Implement link discovery module (`src/scrapers/link-discovery.js`)
-  - [ ] Fetch summary page
-  - [ ] Parse HTML and extract links
-  - [ ] Match links by date components
-  - [ ] Support today + tomorrow detection
-  - [ ] Handle retries and timeouts
-- [ ] Implement table parser module (`src/scrapers/table-parser.js`)
-  - [ ] Extract table from HTML
-  - [ ] Parse headers with flexible matching
-  - [ ] Implement cell inheritance logic
-  - [ ] Parse and validate time fields
-  - [ ] Construct datetime from date + time
-  - [ ] Handle edge cases (empty tables, malformed data)
-- [ ] Implement scraper service (`src/services/scraper-service.js`)
-  - [ ] Orchestrate link discovery → fetch → parse workflow
-  - [ ] Error handling and logging
+- [x] Implement link discovery module (`src/scrapers/link-discovery.js`)
+  - [x] Fetch summary page
+  - [x] Parse HTML and extract links
+  - [x] Match links by date components
+  - [x] Support today + tomorrow detection
+  - [x] Handle retries and timeouts
+- [x] Implement table parser module (`src/scrapers/table-parser.js`)
+  - [x] Extract table from HTML
+  - [x] Parse headers with flexible matching
+  - [x] Implement cell inheritance logic
+  - [x] Parse and validate time fields
+  - [x] Construct datetime from date + time
+  - [x] Handle edge cases (empty tables, malformed data)
+- [x] Implement scraper service (`src/services/scraper-service.js`)
+  - [x] Orchestrate link discovery → fetch → parse workflow
+  - [x] Error handling and logging
 - [ ] Write unit tests for link discovery
 - [ ] Write unit tests for table parser
 - [ ] Test with real HTML from court website
-- [ ] Create test fixtures with sample HTML
+- [x] Create test fixtures with sample HTML
 
 **Estimated Duration:** 4-5 days
 

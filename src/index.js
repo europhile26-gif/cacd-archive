@@ -1,21 +1,7 @@
 const config = require('./config/config');
 const { runMigrations } = require('./db/migrator');
 const { createServer } = require('./api/server');
-const pino = require('pino');
-
-const logger = pino({
-  level: config.logLevel,
-  transport:
-    config.env === 'development'
-      ? {
-        target: 'pino-pretty',
-        options: {
-          translateTime: 'HH:MM:ss Z',
-          ignore: 'pid,hostname'
-        }
-      }
-      : undefined
-});
+const logger = require('./utils/logger');
 
 async function start() {
   try {
