@@ -154,7 +154,8 @@ async function synchronizeRecords(newRecords, listDate) {
           toDeleteCount: toDelete?.length || 0
         }
       });
-      logger.error('Stack trace:', error.stack);
+      console.error('Synchronization stack trace:');
+      console.error(error);
       throw error;
     }
   } finally {

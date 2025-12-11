@@ -100,7 +100,8 @@ async function scrapeAll(scrapeType = 'manual') {
             name: error.name
           }
         });
-        logger.error('Stack trace:', error.stack);
+        console.error('Failed to process list - full error:');
+        console.error(error);
 
         syncResults.push({
           date: link.targetDate,
