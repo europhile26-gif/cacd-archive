@@ -256,25 +256,27 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-### Milestone 3: Database Synchronization 🔄
+### Milestone 3: Database Synchronization ✅
 
 **Goal:** Implement record sync with add/update/delete logic
 
-- [ ] Implement sync service (`src/services/sync-service.js`)
-  - [ ] Compare new records with existing database records
-  - [ ] Detect additions (new records)
-  - [ ] Detect updates (changed records)
-  - [ ] Detect deletions (removed records)
-  - [ ] Use transactions for atomic operations
-  - [ ] Handle errors and rollback
-- [ ] Implement database query functions
-  - [ ] Insert new hearings
-  - [ ] Update existing hearings
-  - [ ] Hard delete removed hearings
-  - [ ] Query hearings with filters
-  - [ ] Query by date range
-  - [ ] Full-text search
-- [ ] Create composite key helper functions
+- [x] Implement sync service (`src/services/sync-service.js`)
+  - [x] Compare new records with existing database records
+  - [x] Detect additions (new records)
+  - [x] Detect updates (changed records)
+  - [x] Detect deletions (removed records)
+  - [x] Use transactions for atomic operations
+  - [x] Handle errors and rollback
+- [x] Implement scrape history service (`src/services/scrape-history-service.js`)
+  - [x] Record scrape start/complete/error
+  - [x] Track links discovered and processed
+  - [x] Track records added/updated/deleted
+  - [x] Calculate duration and error counts
+  - [x] Query last successful scrape
+  - [x] Implement shouldScrape() logic
+- [x] Integrate sync service into scraper workflow
+- [x] Database query functions for insert/update/delete
+- [x] Composite key helper functions
 - [ ] Write unit tests for sync logic
 - [ ] Write integration tests with test database
 - [ ] Test re-scraping scenarios (additions, deletions, updates)
