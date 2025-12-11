@@ -16,15 +16,19 @@ async function start() {
     logger.info(`Port: ${config.port}`);
     logger.info(`App Instance: ${config.appInstance}`);
 
-    // Run migrations on startup
-    logger.info('Running database migrations...');
-    await runMigrations();
-    logger.info('Migrations completed successfully');
+    // Run migrations on startup (only on instance 0)
+    if (config.appInstance === 0) {
+      logger.info('Running database migrations...');
+      await runMigrations();
+      logger.info('Migrations completed successfully');
 
-    // Initialize email service
-    logger.info('Initializing email service...');
-    await emailService.initialize();
-    logger.info('Email service initialized');
+      // Initialize email service
+      logger.info('Initializing email service...');
+      await emailService.initialize();
+      logger.info('Email service initialized');
+    } else {
+      logger.info('Skipping migrations and email service initialization (not instance 0)');
+    }
 
     // Start API server
     logger.info('Starting API server...');
@@ -34,11 +38,15 @@ async function start() {
     logger.info(`API documentation available at http://0.0.0.0:${config.port}/api/docs`);
 
     // Start scraper scheduler (only on instance 0)
-    logger.info('Starting scraper scheduler...');
-    startScheduler();
+    if (config.appInstance === 0) {
+      logger.info('Starting scraper scheduler...');
+      startScheduler();
 
-    // Perform startup scrape if enabled
-    await performStartupScrape();
+      // Perform startup scrape if enabled
+      await performStartupScrape();
+    } else {
+      logger.info('Skipping scraper scheduler (not instance 0)');
+    }
 
     logger.info('Application started successfully');
   } catch (error) {
