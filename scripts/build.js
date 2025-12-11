@@ -12,6 +12,10 @@ const path = require('path');
 const PUBLIC_DIR = path.join(__dirname, '../public');
 const DIST_DIR = path.join(__dirname, '../dist');
 
+// Get version from package.json for cache busting
+const packageJson = require('../package.json');
+const VERSION = packageJson.version;
+
 async function build() {
   try {
     console.log('Building production assets...\n');
@@ -44,16 +48,16 @@ async function build() {
     const htmlPath = path.join(PUBLIC_DIR, 'index.html');
     let html = fs.readFileSync(htmlPath, 'utf8');
 
-    // Update CSS reference (match with or without leading slash)
+    // Update CSS reference (match with or without leading slash, preserve/add version)
     html = html.replace(
-      /href="\/?(css\/styles\.css)"/g,
-      'href="/css/styles.min.css"'
+      /href="\/?css\/styles\.css(\?ver=[^"]*)?"\/?/g,
+      `href="/css/styles.min.css?ver=${VERSION}"`
     );
 
-    // Update JS reference (match with or without leading slash)
+    // Update JS reference (match with or without leading slash, preserve/add version)
     html = html.replace(
-      /src="\/?(js\/app\.js)"/g,
-      'src="/js/app.min.js"'
+      /src="\/?js\/app\.js(\?ver=[^"]*)?"\/?/g,
+      `src="/js/app.min.js?ver=${VERSION}"`
     );
 
     // Minify HTML

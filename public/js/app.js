@@ -6,27 +6,31 @@
   let currentFilters = {};
 
   // Initialize
-  $(document).ready(function() {
+  document.addEventListener('DOMContentLoaded', function() {
     loadHearings();
     attachEventHandlers();
   });
 
   function attachEventHandlers() {
-    $('#searchBtn').on('click', handleSearch);
-    $('#clearBtn').on('click', handleClear);
-    $('#searchInput').on('keypress', function(e) {
-      if (e.which === 13) handleSearch();
+    document.getElementById('searchBtn').addEventListener('click', handleSearch);
+    document.getElementById('clearBtn').addEventListener('click', handleClear);
+    document.getElementById('clearDateBtn').addEventListener('click', handleClearDate);
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') handleSearch();
     });
 
-    $('.quick-date').on('click', handleQuickDate);
-    $('#dateFilter').on('change', handleDateFilter);
-    $('#sortBy, #sortOrder').on('change', loadHearings);
-    $('#prevPage').on('click', () => changePage(-1));
-    $('#nextPage').on('click', () => changePage(1));
+    document.querySelectorAll('.quick-date').forEach((btn) => {
+      btn.addEventListener('click', handleQuickDate);
+    });
+    document.getElementById('dateFilter').addEventListener('change', handleDateFilter);
+    document.getElementById('sortBy').addEventListener('change', loadHearings);
+    document.getElementById('sortOrder').addEventListener('change', loadHearings);
+    document.getElementById('prevPage').addEventListener('click', () => changePage(-1));
+    document.getElementById('nextPage').addEventListener('click', () => changePage(1));
   }
 
   function handleSearch() {
-    const searchValue = $('#searchInput').val().trim();
+    const searchValue = document.getElementById('searchInput').value.trim();
     if (searchValue) {
       currentFilters.search = searchValue;
     } else {
@@ -37,36 +41,49 @@
   }
 
   function handleClear() {
-    $('#searchInput').val('');
-    $('#dateFilter').val('');
-    $('.quick-date').removeClass('active');
+    document.getElementById('searchInput').value = '';
+    handleClearDate();
     currentFilters = {};
     currentPage = 0;
     loadHearings();
   }
 
+  function handleClearDate() {
+    document.getElementById('dateFilter').value = '';
+    document.querySelectorAll('.quick-date').forEach((btn) => {
+      btn.classList.remove('active');
+    });
+    delete currentFilters.date;
+    currentPage = 0;
+    loadHearings();
+  }
+
   function handleQuickDate(e) {
-    const offset = parseInt($(e.target).data('offset'));
+    const offset = parseInt(e.target.dataset.offset);
     const date = new Date();
     date.setDate(date.getDate() + offset);
     currentFilters.date = date.toISOString().split('T')[0];
 
-    $('.quick-date').removeClass('active');
-    $(e.target).addClass('active');
-    $('#dateFilter').val('');
+    document.querySelectorAll('.quick-date').forEach((btn) => {
+      btn.classList.remove('active');
+    });
+    e.target.classList.add('active');
+    document.getElementById('dateFilter').value = '';
 
     currentPage = 0;
     loadHearings();
   }
 
   function handleDateFilter(e) {
-    const dateValue = $(e.target).val();
+    const dateValue = e.target.value;
     if (dateValue) {
       currentFilters.date = dateValue;
     } else {
       delete currentFilters.date;
     }
-    $('.quick-date').removeClass('active');
+    document.querySelectorAll('.quick-date').forEach((btn) => {
+      btn.classList.remove('active');
+    });
     currentPage = 0;
     loadHearings();
   }
@@ -84,14 +101,13 @@
     const params = new URLSearchParams({
       limit,
       offset,
-      sortBy: $('#sortBy').val(),
-      sortOrder: $('#sortOrder').val(),
+      sortBy: document.getElementById('sortBy').value,
+      sortOrder: document.getElementById('sortOrder').value,
       ...currentFilters
     });
 
-    $('#loadingIndicator').show();
-    $('#errorMessage').hide();
-    $('#hearingsTable').addClass('loading');
+    document.getElementById('loadingIndicator').style.display = 'block';
+    document.getElementById('errorMessage').style.display = 'none';
 
     try {
       const response = await fetch(`${API_BASE}/hearings?${params}`);
@@ -106,43 +122,81 @@
     } catch (error) {
       showError('Network error: ' + error.message);
     } finally {
-      $('#loadingIndicator').hide();
-      $('#hearingsTable').removeClass('loading');
+      document.getElementById('loadingIndicator').style.display = 'none';
     }
   }
 
   function renderHearings(hearings) {
-    const tbody = $('#hearingsBody');
-    tbody.empty();
+    const tbody = document.getElementById('hearingsBody');
+    const cardsContainer = document.getElementById('hearingsCards');
+    
+    tbody.innerHTML = '';
+    cardsContainer.innerHTML = '';
 
     if (hearings.length === 0) {
-      tbody.append('<tr><td colspan="6" class="no-results">No hearings found</td></tr>');
-      $('#resultCount').text('0');
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hearings found</td></tr>';
+      cardsContainer.innerHTML = '<div class="alert alert-info">No hearings found</div>';
+      document.getElementById('resultCount').textContent = '0';
       return;
     }
 
     hearings.forEach((hearing) => {
-      const row = $('<tr>').append(
-        $('<td>').text(formatDateTime(hearing.hearingDateTime)),
-        $('<td>').text(hearing.venue || '-'),
-        $('<td>').text(hearing.caseNumber),
-        $('<td>').text(hearing.caseDetails || '-'),
-        $('<td>').text(hearing.hearingType || '-'),
-        $('<td>').text(truncate(hearing.judge, 60))
-      );
-      tbody.append(row);
+      // Desktop table row
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td class="hearing-datetime">${formatDateTime(hearing.hearingDateTime)}</td>
+        <td class="venue">${hearing.venue || '-'}</td>
+        <td class="case-number">${hearing.caseNumber}</td>
+        <td class="case-details">${hearing.caseDetails || '-'}</td>
+        <td class="hearing-type">${hearing.hearingType || '-'}</td>
+        <td class="judge">${hearing.judge || '-'}</td>
+      `;
+      tbody.appendChild(row);
+
+      // Mobile card
+      const card = document.createElement('div');
+      card.className = 'card mb-3';
+      card.innerHTML = `
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="card-title h6 mb-0">${hearing.caseNumber}</h5>
+            <span class="badge bg-primary">${formatTime(hearing.hearingDateTime)}</span>
+          </div>
+          <p class="card-text text-muted small mb-2">${formatDate(hearing.hearingDateTime)}</p>
+          ${hearing.caseDetails ? `<p class="card-text">${hearing.caseDetails}</p>` : ''}
+          <div class="row g-2 small text-muted">
+            ${hearing.venue ? `<div class="col-6"><strong>Venue:</strong> ${hearing.venue}</div>` : ''}
+            ${hearing.hearingType ? `<div class="col-6"><strong>Type:</strong> ${hearing.hearingType}</div>` : ''}
+            ${hearing.judge ? `<div class="col-12"><strong>Judge:</strong> ${hearing.judge}</div>` : ''}
+          </div>
+        </div>
+      `;
+      cardsContainer.appendChild(card);
     });
 
-    $('#resultCount').text(hearings.length);
+    document.getElementById('resultCount').textContent = hearings.length;
   }
 
   function updatePagination(pagination) {
     const totalPages = Math.ceil(pagination.total / pagination.limit);
     const currentPageNum = Math.floor(pagination.offset / pagination.limit) + 1;
 
-    $('#pageInfo').text(`Page ${currentPageNum} of ${totalPages || 1} (${pagination.total} total)`);
-    $('#prevPage').prop('disabled', currentPageNum === 1);
-    $('#nextPage').prop('disabled', currentPageNum >= totalPages || totalPages === 0);
+    document.getElementById('pageInfo').textContent = `Page ${currentPageNum} of ${totalPages || 1} (${pagination.total} total)`;
+    
+    const prevPageItem = document.getElementById('prevPageItem');
+    const nextPageItem = document.getElementById('nextPageItem');
+    
+    if (currentPageNum === 1) {
+      prevPageItem.classList.add('disabled');
+    } else {
+      prevPageItem.classList.remove('disabled');
+    }
+    
+    if (currentPageNum >= totalPages || totalPages === 0) {
+      nextPageItem.classList.add('disabled');
+    } else {
+      nextPageItem.classList.remove('disabled');
+    }
   }
 
   function formatDateTime(isoString) {
@@ -156,12 +210,27 @@
     });
   }
 
-  function truncate(str, length) {
-    if (!str) return '-';
-    return str.length > length ? str.substring(0, length) + '...' : str;
+  function formatDate(isoString) {
+    const date = new Date(isoString);
+    return date.toLocaleDateString('en-GB', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+  }
+
+  function formatTime(isoString) {
+    const date = new Date(isoString);
+    return date.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
   function showError(message) {
-    $('#errorMessage').text(message).show();
+    const errorEl = document.getElementById('errorMessage');
+    errorEl.textContent = message;
+    errorEl.style.display = 'block';
   }
 })();

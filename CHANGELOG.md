@@ -9,6 +9,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2025-12-11
+
+### Added
+
+- **Bootstrap 5 Integration**
+  - Integrated Bootstrap 5.3.2 from CDN for modern responsive design
+  - Implemented dual layout system: desktop table view and mobile card view
+  - Added responsive navbar toolbar with visual distinction (pale gray background)
+  - Created custom navy blue color theme (#1e3a5f) with CSS variables
+  - Added favicon (scales of justice) to header with proper sizing and positioning
+  - Implemented "Clear Date" button for better date filter UX
+  - Added semantic CSS classes to table cells for better maintainability
+
+- **Build System Enhancements**
+  - Implemented cache busting with version query strings (?ver=1.2.0)
+  - Build script now auto-injects version from package.json
+  - CSS and JS references automatically updated with version on build
+
+### Changed
+
+- **Frontend Redesign**
+  - Replaced 258 lines of custom CSS with Bootstrap + 86 lines of themed styles
+  - Removed jQuery dependency, migrated to vanilla JavaScript
+  - Reorganized toolbar with grouped date filters and improved layout
+  - Changed to full-width layout using container-fluid
+  - Wrapped toolbar controls in Bootstrap navbar component
+  - Improved mobile responsiveness with Bootstrap utilities (d-none/d-md-block)
+  - Increased JavaScript bundle to 4.63 KB (from 2.40 KB) for dual rendering
+  - Reduced CSS bundle to 0.29 KB (from 2.87 KB) with Bootstrap
+
+- **Code Quality**
+  - Removed truncate() function limiting judge names to 60 characters
+  - Moved inline styling (case number bold) to CSS for separation of concerns
+  - Enhanced code maintainability with semantic CSS classes
+
+### Improved
+
+- Better visual hierarchy with navbar styling and section delineation
+- Enhanced mobile user experience with card-based layout
+- Improved date filtering with dedicated clear button
+- Modern, professional appearance with custom color scheme
+- Better browser caching strategy with versioned assets
+
+---
+
 ## [1.1.0] - 2025-12-11
 
 ### Changed

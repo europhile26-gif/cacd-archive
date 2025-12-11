@@ -2,7 +2,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)]()
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)]()
 
 > Court of Appeal, Criminal Division (CACD) Daily Cause List Archive - An automated web scraping and archival system for UK Court of Appeal hearings.
@@ -187,7 +187,8 @@ npm test
 - **Database:** MariaDB
 - **HTML Parser:** cheerio
 - **Process Manager:** PM2
-- **Frontend:** jQuery + Vanilla JavaScript
+- **Frontend:** Bootstrap 5 + Vanilla JavaScript
+- **Build Tool:** esbuild
 
 ## Contributing
 
@@ -347,53 +348,65 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   - [x] Header and navigation
   - [x] Search box
   - [x] Date filter controls (yesterday/today/tomorrow)
-  - [x] Date picker
+  - [x] Date picker with clear button
   - [x] Sort controls
-  - [x] Results table
+  - [x] Results table (desktop)
+  - [x] Card layout (mobile)
   - [x] Pagination controls
+  - [x] Bootstrap 5 integration
+  - [x] Responsive navbar toolbar
+  - [x] Favicon display
 - [x] Create CSS styling (`public/css/styles.css`)
   - [x] Responsive design (mobile-friendly)
-  - [x] Table styling
+  - [x] Custom navy blue theme
+  - [x] Table styling with semantic classes
+  - [x] Mobile card styling
   - [x] Loading indicators
   - [x] Button and form styles
+  - [x] Navbar visual distinction
 - [x] Implement JavaScript (`public/js/app.js`)
   - [x] Fetch hearings from API
-  - [x] Render table rows
+  - [x] Render table rows (desktop)
+  - [x] Render cards (mobile)
   - [x] Handle search
   - [x] Handle date filters
   - [x] Handle quick date buttons
+  - [x] Handle clear date functionality
   - [x] Handle pagination
   - [x] Handle sorting
   - [x] Loading states
   - [x] Error handling
+  - [x] Remove jQuery dependency
 - [ ] Test frontend in multiple browsers
-- [ ] Test responsive design on mobile
+- [ ] Test responsive design on mobile devices
 - [ ] Optimize performance (minimize API calls)
 
 **Estimated Duration:** 3-4 days
 
 ---
 
-### Milestone 7: Build System & Assets 📦
+### Milestone 7: Build System & Assets ✅
 
 **Goal:** Set up build process and asset optimization
 
-- [ ] Create build script (`scripts/build.js`)
-  - [ ] Bundle and minify JavaScript with esbuild
-  - [ ] Minify CSS
-  - [ ] Update HTML references to minified files
-  - [ ] Copy assets to dist/
-- [ ] Configure environment-based static file serving
-  - [ ] Serve from `public/` in development
-  - [ ] Serve from `dist/` in production
-- [ ] Add npm scripts
-  - [ ] `npm run dev` - Development with nodemon
-  - [ ] `npm run build` - Production build
-  - [ ] `npm start` - Production server
-- [ ] Test development mode
-- [ ] Test production mode
-- [ ] Optimize bundle sizes
-- [ ] Add source maps for debugging
+- [x] Create build script (`scripts/build.js`)
+  - [x] Bundle and minify JavaScript with esbuild
+  - [x] Minify CSS
+  - [x] Update HTML references to minified files
+  - [x] Copy assets to dist/
+  - [x] Implement cache busting with version query strings
+  - [x] Auto-inject version from package.json
+- [x] Configure environment-based static file serving
+  - [x] Serve from `public/` in development
+  - [x] Serve from `dist/` in production
+- [x] Add npm scripts
+  - [x] `npm run dev` - Development with nodemon
+  - [x] `npm run build` - Production build
+  - [x] `npm start` - Production server
+- [x] Test development mode
+- [x] Test production mode
+- [x] Optimize bundle sizes (4.63 KB JS, 0.29 KB CSS)
+- [x] Add source maps for debugging
 
 **Estimated Duration:** 1-2 days
 
