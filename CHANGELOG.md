@@ -7,6 +7,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [1.0.0] - 2025-12-11
+
+### Added
+
+#### Core Functionality
+
+- ✅ Automated daily cause list scraping with scheduler
+- ✅ Link discovery for today and tomorrow using flexible date matching
+- ✅ HTML table parsing with cell inheritance algorithm
+- ✅ Database synchronization (add/update/delete) with deduplication
+- ✅ Re-scraping every 2 hours (configurable interval)
+- ✅ Scrape history tracking with status and timing information
+- ✅ MySQL datetime format compatibility fixes
+- ✅ Native fetch implementation (replaced axios)
+- ✅ Graceful shutdown handling
+
+#### API
+
+- ✅ REST API with Fastify framework
+- ✅ GET /api/v1/hearings (list with filters)
+- ✅ GET /api/v1/hearings/:id (single hearing)
+- ✅ GET /api/v1/dates (available dates)
+- ✅ GET /api/v1/health (health check)
+- ✅ Swagger/OpenAPI documentation at /api/docs
+- ✅ Rate limiting (100 requests per 15 minutes)
+- ✅ Pagination support
+- ✅ Full-text search capability
+- ✅ Sorting and filtering by date, court, venue
+- ✅ CORS support for frontend integration
+
+#### Frontend
+
+- ✅ Web interface for browsing hearings
+- ✅ Real-time search functionality
+- ✅ Quick date filters (yesterday/today/tomorrow)
+- ✅ Custom date picker
+- ✅ Sort controls (time, court, case name)
+- ✅ Pagination with configurable page size
+- ✅ Responsive design
+- ✅ Production build with asset minification (HTML/CSS/JS)
+- ✅ Favicon with scales of justice icon
+- ✅ Source maps for debugging
+
+#### Operations
+
+- ✅ Database migrations system with version tracking
+- ✅ PM2 configuration with fork and cluster mode examples
+- ✅ Comprehensive PM2 deployment guide (docs/pm2-deployment.md)
+- ✅ Development mode with environment detection
+- ✅ Production build system with esbuild
+- ✅ Environment-based configuration (.env)
+- ✅ Structured logging with pino
+- ✅ Enhanced error logging with SQL details
+- ✅ PM2 cluster mode support with NODE_APP_INSTANCE
+- ✅ Startup scrape configuration option
+
+#### Documentation
+
+- ✅ Complete README with quick start guide
+- ✅ API documentation with examples
+- ✅ PM2 deployment guide with monitoring and backup strategies
+- ✅ Changelog with version history
+- ✅ Algorithm documentation (link discovery and table parsing)
+- ✅ Implementation plan and requirements
+
+### Fixed
+
+- Fixed recordScrapeStart() double destructuring bug
+- Fixed date-fns-tz import (changed to toZonedTime)
+- Fixed createRecordKey() to handle Date objects from database
+- Fixed MySQL DATETIME format compatibility (removed ISO 8601 'Z' suffix)
+- Fixed duplicate hearing records within same scrape
+- Fixed static file serving for production builds
+- Fixed HTML asset references in build output
+- Improved stack trace visibility in error logs
+
+### Changed
+
+- Replaced axios with native fetch (reduced 21 dependencies)
+- Changed error logging to console.error for better stack trace visibility
+- Updated build process to minify HTML, CSS, and JavaScript
+- Enhanced error messages with detailed SQL information
+
 ### Planning Phase - 2025-12-11
 
 #### Added
