@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.3] - 2025-12-15
+
+### Fixed
+
+- **Database Schema**
+  - Extended `hearing_type` column from VARCHAR(255) to TEXT
+  - Prevents data truncation errors when gov.uk site changes structure
+  - Handles cases where additional_information content appears in hearing_type field
+
+### Added
+
+- **CLI Tools**
+  - Created `migrate.js` CLI tool for running database migrations manually
+  - Allows migrations without full application restart
+  - Usage: `npm run migrate` or `node src/cli/migrate.js`
+
+---
+
 ## [1.3.2] - 2025-12-11
 
 ### Added
