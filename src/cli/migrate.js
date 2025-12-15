@@ -2,7 +2,7 @@
 /**
  * Database Migration CLI
  * Runs pending database migrations
- * 
+ *
  * Usage: node src/cli/migrate.js
  */
 

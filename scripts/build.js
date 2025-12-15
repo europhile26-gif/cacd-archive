@@ -62,10 +62,10 @@ async function build() {
 
     // Minify HTML
     html = html
-      .replace(/\s*\n\s*/g, '\n')  // Remove extra whitespace between lines
-      .replace(/\n+/g, '\n')        // Remove multiple newlines
-      .replace(/>\s+</g, '><')      // Remove whitespace between tags
-      .replace(/<!--.*?-->/g, '')   // Remove HTML comments
+      .replace(/\s*\n\s*/g, '\n') // Remove extra whitespace between lines
+      .replace(/\n+/g, '\n') // Remove multiple newlines
+      .replace(/>\s+</g, '><') // Remove whitespace between tags
+      .replace(/<!--.*?-->/g, '') // Remove HTML comments
       .trim();
 
     fs.writeFileSync(path.join(DIST_DIR, 'index.html'), html);
@@ -75,20 +75,17 @@ async function build() {
     console.log('Processing favicon.svg...');
     const faviconSvg = fs.readFileSync(path.join(PUBLIC_DIR, 'favicon.svg'), 'utf8');
     const minifiedSvg = faviconSvg
-      .replace(/\s*\n\s*/g, ' ')     // Remove newlines and extra whitespace
-      .replace(/>\s+</g, '><')        // Remove whitespace between tags
-      .replace(/<!--.*?-->/g, '')     // Remove comments
-      .replace(/\s{2,}/g, ' ')        // Replace multiple spaces with single space
+      .replace(/\s*\n\s*/g, ' ') // Remove newlines and extra whitespace
+      .replace(/>\s+</g, '><') // Remove whitespace between tags
+      .replace(/<!--.*?-->/g, '') // Remove comments
+      .replace(/\s{2,}/g, ' ') // Replace multiple spaces with single space
       .trim();
     fs.writeFileSync(path.join(DIST_DIR, 'favicon.svg'), minifiedSvg);
     console.log('✓ favicon.svg minified and copied\n');
 
     // Copy favicon.ico
     console.log('Copying favicon.ico...');
-    fs.copyFileSync(
-      path.join(PUBLIC_DIR, 'favicon.ico'),
-      path.join(DIST_DIR, 'favicon.ico')
-    );
+    fs.copyFileSync(path.join(PUBLIC_DIR, 'favicon.ico'), path.join(DIST_DIR, 'favicon.ico'));
     console.log('✓ favicon.ico copied\n');
 
     // Report file sizes

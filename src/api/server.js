@@ -19,12 +19,12 @@ async function createServer() {
   await server.register(fastifyHelmet, {
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'", 'cdn.jsdelivr.net'],
-        scriptSrc: ["'self'", "'unsafe-inline'", 'cdn.jsdelivr.net'],
-        imgSrc: ["'self'", 'data:'],
-        fontSrc: ["'self'", 'cdn.jsdelivr.net'],
-        connectSrc: ["'self'"]
+        defaultSrc: ['\'self\''],
+        styleSrc: ['\'self\'', '\'unsafe-inline\'', 'cdn.jsdelivr.net'],
+        scriptSrc: ['\'self\'', '\'unsafe-inline\'', 'cdn.jsdelivr.net'],
+        imgSrc: ['\'self\'', 'data:'],
+        fontSrc: ['\'self\'', 'cdn.jsdelivr.net'],
+        connectSrc: ['\'self\'']
       }
     },
     crossOriginEmbedderPolicy: false, // Allow embedding Bootstrap resources
@@ -38,12 +38,12 @@ async function createServer() {
   // CORS - configure based on environment
   const corsOptions = config.api.cors.enabled
     ? {
-        origin:
+      origin:
           config.env === 'production' && config.api.cors.origins.length > 0
             ? config.api.cors.origins
             : true,
-        credentials: true
-      }
+      credentials: true
+    }
     : false;
 
   if (corsOptions !== false) {

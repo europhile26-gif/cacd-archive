@@ -48,10 +48,9 @@ async function synchronizeRecords(newRecords, listDate) {
 
     try {
       // Get existing records for this date
-      const [existingRows] = await connection.query(
-        'SELECT * FROM hearings WHERE list_date = ?',
-        [listDate]
-      );
+      const [existingRows] = await connection.query('SELECT * FROM hearings WHERE list_date = ?', [
+        listDate
+      ]);
 
       logger.debug('Retrieved existing records', {
         listDate,

@@ -21,7 +21,8 @@ async function testEmail() {
     await emailService.sendDataError({
       type: 'link-discovery',
       error: 'This is a test error to verify email notifications are working correctly.',
-      stack: 'Error: Test error\n    at testEmail (/path/to/test-email.js:25:10)\n    at async start (/path/to/test-email.js:50:5)',
+      stack:
+        'Error: Test error\n    at testEmail (/path/to/test-email.js:25:10)\n    at async start (/path/to/test-email.js:50:5)',
       date: new Date().toISOString().split('T')[0],
       url: 'https://www.court-tribunal-hearings.service.gov.uk/summary-of-publications?locationId=109',
       context: {
@@ -29,7 +30,8 @@ async function testEmail() {
         environment: process.env.NODE_ENV || 'development',
         timestamp: new Date().toISOString()
       },
-      htmlSample: '<!DOCTYPE html>\n<html>\n<head><title>Test</title></head>\n<body>\n<h1>Sample HTML</h1>\n<p>This is a sample HTML snippet to test email formatting.</p>\n</body>\n</html>'
+      htmlSample:
+        '<!DOCTYPE html>\n<html>\n<head><title>Test</title></head>\n<body>\n<h1>Sample HTML</h1>\n<p>This is a sample HTML snippet to test email formatting.</p>\n</body>\n</html>'
     });
 
     logger.info('Test email sent successfully!');

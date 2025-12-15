@@ -2,7 +2,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.3.3-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)]()
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)]()
 
 > Court of Appeal, Criminal Division (CACD) Daily Cause List Archive - An automated web scraping and archival system for UK Court of Appeal hearings.
@@ -559,6 +559,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Current Status:** 🚀 Production Ready - Core Features Complete
 
 **Completed Milestones:**
+
 - ✅ Milestone 1: Foundation & Database
 - ✅ Milestone 2: Core Scraping Logic
 - ✅ Milestone 3: Database Synchronization
@@ -569,8 +570,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - ✅ Milestone 8: Scheduler & Automation
 
 **Remaining Milestones:**
+
 - 🛠️ Milestone 9: CLI Tools (partial - migrate.js exists, need scrape-now.js and query.js)
 - ⏳ Milestone 10: PM2 & Deployment (partial - ecosystem.config.js exists, need documentation)
 - 🧪 Milestone 11: Testing & Quality (Jest configured, no tests written yet)
 - ✨ Milestone 12: Documentation & Polish
-

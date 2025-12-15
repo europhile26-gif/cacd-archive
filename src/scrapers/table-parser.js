@@ -99,7 +99,7 @@ async function parseTable(html, listDate, sourceUrl, division = 'Criminal') {
       error: error.message,
       listDate
     });
-    
+
     // Send email alert for table parsing failure
     try {
       // Extract HTML sample if available
@@ -111,7 +111,7 @@ async function parseTable(html, listDate, sourceUrl, division = 'Criminal') {
           htmlSample += '\n... (truncated)';
         }
       }
-      
+
       await emailService.sendDataError({
         type: 'table-parsing',
         error: error.message,
@@ -129,7 +129,7 @@ async function parseTable(html, listDate, sourceUrl, division = 'Criminal') {
         error: emailError.message
       });
     }
-    
+
     throw error;
   }
 }
@@ -398,7 +398,7 @@ function createRecordKey(record) {
   let listDate = record.listDate || record.list_date;
   const caseNumber = record['case number'] || record.case_number || record.caseNumber;
   const time = record.time;
-  
+
   // If listDate is a Date object, format it as YYYY-MM-DD
   if (listDate instanceof Date) {
     const year = listDate.getFullYear();
@@ -406,7 +406,7 @@ function createRecordKey(record) {
     const day = String(listDate.getDate()).padStart(2, '0');
     listDate = `${year}-${month}-${day}`;
   }
-  
+
   return `${listDate}|${caseNumber}|${time}`;
 }
 

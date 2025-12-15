@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] - 2025-12-15
+
+### Added
+
+- **Search Enhancement**
+  - Search now includes case numbers in addition to fulltext search
+  - Users can search for partial or complete case numbers (e.g., "202404094")
+  - Combines fulltext search (case details, hearing type, judge, venue) with case number LIKE query
+
+### Changed
+
+- **UI Improvements**
+  - Removed default "Today" filter selection on page load
+  - Page now loads with no filters applied by default
+  - Users must explicitly select date filters for clearer UX
+
+### Fixed
+
+- **Code Quality**
+  - Fixed ESLint warning for unused parameter in placeholder function
+  - All lint checks now passing
+
+---
+
 ## [1.3.3] - 2025-12-15
 
 ### Fixed

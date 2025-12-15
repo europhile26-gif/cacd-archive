@@ -27,6 +27,7 @@ nano .env
 ```
 
 Key settings:
+
 - `NODE_ENV=production`
 - `PORT=3000`
 - `LOG_LEVEL=info`
@@ -216,6 +217,7 @@ pm2 restart cacd-archive --update-env
 ### System Monitoring
 
 Consider setting up:
+
 - **Uptime monitoring**: UptimeRobot, Pingdom
 - **Error tracking**: Sentry, Rollbar
 - **Log aggregation**: Loggly, Papertrail
@@ -346,6 +348,7 @@ pm2 restart cacd-archive
 ## Support
 
 For issues or questions:
+
 - Check logs: `pm2 logs cacd-archive`
 - Review documentation in `docs/`
 - Check GitHub issues

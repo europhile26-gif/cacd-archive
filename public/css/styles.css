@@ -5,23 +5,23 @@
   /* Primary - Distinguished Navy Blue */
   --bs-primary: #1e3a5f;
   --bs-primary-rgb: 30, 58, 95;
-  
+
   /* Secondary - Professional Gray */
   --bs-secondary: #64748b;
   --bs-secondary-rgb: 100, 116, 139;
-  
+
   /* Accent - Warm Blue for links and highlights */
   --bs-link-color: #2563eb;
   --bs-link-hover-color: #1e40af;
-  
+
   /* Success - Muted Green */
   --bs-success: #059669;
   --bs-success-rgb: 5, 150, 105;
-  
+
   /* Light backgrounds */
   --bs-light: #f8fafc;
   --bs-light-rgb: 248, 250, 252;
-  
+
   /* Body background */
   --bs-body-bg: #ffffff;
   --bs-body-color: #1e293b;
@@ -60,7 +60,7 @@
   .card {
     transition: box-shadow 0.2s;
   }
-  
+
   .card:hover {
     box-shadow: 0 0.25rem 0.75rem rgba(30, 58, 95, 0.12);
   }
@@ -88,4 +88,3 @@ td.case-number {
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
-

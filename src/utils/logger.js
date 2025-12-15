@@ -26,19 +26,19 @@ const logger = {
       console.error(formatMessage('error', message, meta));
     }
   },
-  
+
   warn: (message, meta) => {
     if (currentLevel >= LOG_LEVELS.warn) {
       console.warn(formatMessage('warn', message, meta));
     }
   },
-  
+
   info: (message, meta) => {
     if (currentLevel >= LOG_LEVELS.info) {
       console.log(formatMessage('info', message, meta));
     }
   },
-  
+
   debug: (message, meta) => {
     if (currentLevel >= LOG_LEVELS.debug) {
       console.log(formatMessage('debug', message, meta));

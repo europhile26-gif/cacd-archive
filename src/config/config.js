@@ -57,9 +57,7 @@ const config = {
     },
     cors: {
       enabled: process.env.CORS_ENABLED !== 'false', // Default true for development
-      origins: process.env.CORS_ALLOWED_ORIGINS
-        ? process.env.CORS_ALLOWED_ORIGINS.split(',')
-        : []
+      origins: process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',') : []
     }
   },
 

@@ -60,18 +60,15 @@ class EmailService {
    */
   async loadTemplates() {
     const templatesDir = path.join(__dirname, '../templates/emails');
-    
+
     // Register handlebars helper for JSON formatting
-    handlebars.registerHelper('json', function (context) {
+    handlebars.registerHelper('json', function(context) {
       return JSON.stringify(context, null, 2);
     });
-    
+
     try {
       // Load data error template
-      const dataErrorHtml = await fs.readFile(
-        path.join(templatesDir, 'data-error.html'),
-        'utf8'
-      );
+      const dataErrorHtml = await fs.readFile(path.join(templatesDir, 'data-error.html'), 'utf8');
       this.templates.dataError = handlebars.compile(dataErrorHtml);
 
       logger.debug('Email templates loaded successfully');
@@ -108,7 +105,7 @@ class EmailService {
 
     try {
       const timestamp = new Date().toISOString();
-      
+
       // Prepare template data
       const templateData = {
         type: errorDetails.type,
@@ -171,29 +168,29 @@ class EmailService {
    */
   generatePlainTextDataError(data) {
     let text = `CACD Archive - ${data.typeLabel} Error\n`;
-    text += `==============================================\n\n`;
+    text += '==============================================\n\n';
     text += `Environment: ${data.environment}\n`;
     text += `Timestamp: ${data.timestamp}\n`;
     text += `Date: ${data.date || 'N/A'}\n`;
     text += `URL: ${data.url || 'N/A'}\n\n`;
     text += `Error Message:\n${data.error}\n\n`;
-    
+
     if (data.stack) {
       text += `Stack Trace:\n${data.stack}\n\n`;
     }
-    
+
     if (data.context) {
       text += `Additional Context:\n${JSON.stringify(data.context, null, 2)}\n\n`;
     }
-    
+
     if (data.htmlSample) {
       text += `HTML Sample:\n${data.htmlSample}\n\n`;
     }
-    
-    text += `---\n`;
-    text += `This is an automated alert from CACD Archive.\n`;
-    text += `The .gov.uk site may have changed its HTML structure or naming conventions.\n`;
-    
+
+    text += '---\n';
+    text += 'This is an automated alert from CACD Archive.\n';
+    text += 'The .gov.uk site may have changed its HTML structure or naming conventions.\n';
+
     return text;
   }
 
@@ -201,9 +198,9 @@ class EmailService {
    * Send user match notification (future use)
    * @param {string} userEmail - User's email address
    * @param {Array} matches - Matching hearings
-   * @param {Object} criteria - Search criteria that matched
+   * @param {Object} _criteria - Search criteria that matched
    */
-  async sendMatchNotification(userEmail, matches, criteria) {
+  async sendMatchNotification(userEmail, matches, _criteria) {
     // Placeholder for future implementation
     logger.debug('Match notification feature not yet implemented', {
       userEmail,

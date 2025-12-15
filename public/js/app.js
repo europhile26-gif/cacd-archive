@@ -129,12 +129,13 @@
   function renderHearings(hearings) {
     const tbody = document.getElementById('hearingsBody');
     const cardsContainer = document.getElementById('hearingsCards');
-    
+
     tbody.innerHTML = '';
     cardsContainer.innerHTML = '';
 
     if (hearings.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hearings found</td></tr>';
+      tbody.innerHTML =
+        '<tr><td colspan="6" class="text-center text-muted py-4">No hearings found</td></tr>';
       cardsContainer.innerHTML = '<div class="alert alert-info">No hearings found</div>';
       document.getElementById('resultCount').textContent = '0';
       return;
@@ -181,17 +182,18 @@
     const totalPages = Math.ceil(pagination.total / pagination.limit);
     const currentPageNum = Math.floor(pagination.offset / pagination.limit) + 1;
 
-    document.getElementById('pageInfo').textContent = `Page ${currentPageNum} of ${totalPages || 1} (${pagination.total} total)`;
-    
+    document.getElementById('pageInfo').textContent =
+      `Page ${currentPageNum} of ${totalPages || 1} (${pagination.total} total)`;
+
     const prevPageItem = document.getElementById('prevPageItem');
     const nextPageItem = document.getElementById('nextPageItem');
-    
+
     if (currentPageNum === 1) {
       prevPageItem.classList.add('disabled');
     } else {
       prevPageItem.classList.remove('disabled');
     }
-    
+
     if (currentPageNum >= totalPages || totalPages === 0) {
       nextPageItem.classList.add('disabled');
     } else {

@@ -14,7 +14,6 @@ The application uses `@fastify/helmet` to set secure HTTP headers:
   - Default: self-hosted only
   - Bootstrap 5 CDN: Allowed for styles, scripts, and fonts
   - Inline styles: Allowed for Bootstrap compatibility
-  
 - **Strict-Transport-Security (HSTS)**: Forces HTTPS connections
   - Max-age: 1 year
   - Includes subdomains
@@ -94,6 +93,7 @@ When running behind nginx/Apache/Caddy:
    - `X-Forwarded-Host`
 
 Example nginx config:
+
 ```nginx
 location / {
     proxy_pass http://localhost:3008;

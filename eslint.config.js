@@ -16,11 +16,11 @@ module.exports = [
       }
     },
     rules: {
-      'indent': ['error', 2],
+      indent: ['error', 2],
       'linebreak-style': ['error', 'unix'],
-      'quotes': ['error', 'single'],
-      'semi': ['error', 'always'],
-      'no-unused-vars': ['error', { 'argsIgnorePattern': '^_' }],
+      quotes: ['error', 'single'],
+      semi: ['error', 'always'],
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       'no-console': 'off',
       'comma-dangle': ['error', 'never'],
       'arrow-parens': ['error', 'always'],
@@ -29,21 +29,14 @@ module.exports = [
       'space-before-function-paren': [
         'error',
         {
-          'anonymous': 'never',
-          'named': 'never',
-          'asyncArrow': 'always'
+          anonymous: 'never',
+          named: 'never',
+          asyncArrow: 'always'
         }
       ]
     }
   },
   {
-    ignores: [
-      'node_modules/',
-      'dist/',
-      'logs/',
-      '*.log',
-      'coverage/',
-      'package-lock.json'
-    ]
+    ignores: ['node_modules/', 'dist/', 'logs/', '*.log', 'coverage/', 'package-lock.json']
   }
 ];

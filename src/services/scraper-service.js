@@ -33,9 +33,9 @@ async function scrapeAll(scrapeType = 'manual') {
     // Step 1: Discover links for today and tomorrow
     logger.info('Starting link discovery...');
     const linkResult = await discoverLinks('Criminal');
-    logger.info('Link discovery completed', { 
-      success: linkResult.success, 
-      linksFound: linkResult.linksFound?.length || 0 
+    logger.info('Link discovery completed', {
+      success: linkResult.success,
+      linksFound: linkResult.linksFound?.length || 0
     });
 
     if (!linkResult.success || linkResult.linksFound.length === 0) {

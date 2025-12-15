@@ -46,12 +46,12 @@ async function discoverLinks(division = 'Criminal') {
       linksFound: links
     };
   } catch (error) {
-    logger.error('Link discovery failed', { 
-      error: error.message, 
+    logger.error('Link discovery failed', {
+      error: error.message,
       stack: error.stack,
-      division 
+      division
     });
-    
+
     // Send email alert for link discovery failure
     try {
       await emailService.sendDataError({
@@ -70,7 +70,7 @@ async function discoverLinks(division = 'Criminal') {
         error: emailError.message
       });
     }
-    
+
     throw error;
   }
 }

@@ -3,11 +3,7 @@ const { runMigrations } = require('./db/migrator');
 const { createServer } = require('./api/server');
 const logger = require('./utils/logger');
 const emailService = require('./services/email-service');
-const {
-  startScheduler,
-  stopScheduler,
-  performStartupScrape
-} = require('./scrapers/scheduler');
+const { startScheduler, stopScheduler, performStartupScrape } = require('./scrapers/scheduler');
 
 async function start() {
   try {

@@ -111,8 +111,8 @@ async function hearingsRoutes(fastify, _options) {
 
       if (search) {
         sql +=
-          ' AND MATCH(case_details, hearing_type, additional_information, judge, venue) AGAINST(? IN NATURAL LANGUAGE MODE)';
-        params.push(search);
+          ' AND (MATCH(case_details, hearing_type, additional_information, judge, venue) AGAINST(? IN NATURAL LANGUAGE MODE) OR case_number LIKE ?)';
+        params.push(search, `%${search}%`);
       }
 
       // Get total count
