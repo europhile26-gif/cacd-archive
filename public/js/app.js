@@ -4,12 +4,34 @@
   const API_BASE = '/api/v1';
   let currentPage = 0;
   let currentFilters = {};
+  let recordsPerPage = 50; // Default, will be loaded from API
 
   // Initialize
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', async function() {
+    await loadConfig();
     loadHearings();
     attachEventHandlers();
   });
+
+  async function loadConfig() {
+    try {
+      const response = await fetch('/api/config');
+      if (response.ok) {
+        const config = await response.json();
+        recordsPerPage = config.recordsPerPage;
+      }
+    } catch (error) {
+      console.error('Failed to load config, using defaults:', error);
+    }
+  }
+
+  // HTML sanitization helper
+  function escapeHtml(text) {
+    if (!text) return '-';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
 
   function attachEventHandlers() {
     document.getElementById('searchBtn').addEventListener('click', handleSearch);
@@ -42,7 +64,10 @@
 
   function handleClear() {
     document.getElementById('searchInput').value = '';
-    handleClearDate();
+    document.getElementById('dateFilter').value = '';
+    document.querySelectorAll('.quick-date').forEach((btn) => {
+      btn.classList.remove('active');
+    });
     currentFilters = {};
     currentPage = 0;
     loadHearings();
@@ -95,7 +120,7 @@
   }
 
   async function loadHearings() {
-    const limit = 50;
+    const limit = recordsPerPage;
     const offset = currentPage * limit;
 
     const params = new URLSearchParams({
@@ -106,7 +131,9 @@
       ...currentFilters
     });
 
-    document.getElementById('loadingIndicator').style.display = 'block';
+    const spinner = document.getElementById('inlineSpinner');
+    spinner.style.display = 'inline-block';
+    spinner.style.opacity = '1';
     document.getElementById('errorMessage').style.display = 'none';
 
     try {
@@ -114,7 +141,7 @@
       const result = await response.json();
 
       if (result.success) {
-        renderHearings(result.data);
+        renderHearings(result.data, result.pagination.total);
         updatePagination(result.pagination);
       } else {
         showError('Failed to load hearings: ' + result.error);
@@ -122,11 +149,16 @@
     } catch (error) {
       showError('Network error: ' + error.message);
     } finally {
-      document.getElementById('loadingIndicator').style.display = 'none';
+      const spinner = document.getElementById('inlineSpinner');
+      spinner.style.transition = 'opacity 0.3s ease-out';
+      spinner.style.opacity = '0';
+      setTimeout(() => {
+        spinner.style.display = 'none';
+      }, 300);
     }
   }
 
-  function renderHearings(hearings) {
+  function renderHearings(hearings, total = 0) {
     const tbody = document.getElementById('hearingsBody');
     const cardsContainer = document.getElementById('hearingsCards');
 
@@ -137,7 +169,7 @@
       tbody.innerHTML =
         '<tr><td colspan="6" class="text-center text-muted py-4">No hearings found</td></tr>';
       cardsContainer.innerHTML = '<div class="alert alert-info">No hearings found</div>';
-      document.getElementById('resultCount').textContent = '0';
+      document.getElementById('resultCount').textContent = 'No hearings match your search criteria';
       return;
     }
 
@@ -146,11 +178,11 @@
       const row = document.createElement('tr');
       row.innerHTML = `
         <td class="hearing-datetime">${formatDateTime(hearing.hearingDateTime)}</td>
-        <td class="venue">${hearing.venue || '-'}</td>
-        <td class="case-number">${hearing.caseNumber}</td>
-        <td class="case-details">${hearing.caseDetails || '-'}</td>
-        <td class="hearing-type">${hearing.hearingType || '-'}</td>
-        <td class="judge">${hearing.judge || '-'}</td>
+        <td class="venue">${escapeHtml(hearing.venue)}</td>
+        <td class="case-number">${escapeHtml(hearing.caseNumber)}</td>
+        <td class="case-details">${escapeHtml(hearing.caseDetails)}</td>
+        <td class="hearing-type">${escapeHtml(hearing.hearingType)}</td>
+        <td class="judge">${escapeHtml(hearing.judge)}</td>
       `;
       tbody.appendChild(row);
 
@@ -160,22 +192,30 @@
       card.innerHTML = `
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-start mb-2">
-            <h5 class="card-title h6 mb-0">${hearing.caseNumber}</h5>
+            <h5 class="card-title h6 mb-0">${escapeHtml(hearing.caseNumber)}</h5>
             <span class="badge bg-primary">${formatTime(hearing.hearingDateTime)}</span>
           </div>
           <p class="card-text text-muted small mb-2">${formatDate(hearing.hearingDateTime)}</p>
-          ${hearing.caseDetails ? `<p class="card-text">${hearing.caseDetails}</p>` : ''}
+          ${hearing.caseDetails ? `<p class="card-text">${escapeHtml(hearing.caseDetails)}</p>` : ''}
           <div class="row g-2 small text-muted">
-            ${hearing.venue ? `<div class="col-6"><strong>Venue:</strong> ${hearing.venue}</div>` : ''}
-            ${hearing.hearingType ? `<div class="col-6"><strong>Type:</strong> ${hearing.hearingType}</div>` : ''}
-            ${hearing.judge ? `<div class="col-12"><strong>Judge:</strong> ${hearing.judge}</div>` : ''}
+            ${hearing.venue ? `<div class="col-6"><strong>Venue:</strong> ${escapeHtml(hearing.venue)}</div>` : ''}
+            ${hearing.hearingType ? `<div class="col-6"><strong>Type:</strong> ${escapeHtml(hearing.hearingType)}</div>` : ''}
+            ${hearing.judge ? `<div class="col-12"><strong>Judge:</strong> ${escapeHtml(hearing.judge)}</div>` : ''}
           </div>
         </div>
       `;
       cardsContainer.appendChild(card);
     });
 
-    document.getElementById('resultCount').textContent = hearings.length;
+    // Update result count display
+    const resultCountEl = document.getElementById('resultCount');
+    if (total === 0) {
+      resultCountEl.textContent = 'No hearings match your search criteria';
+    } else if (hearings.length > 0 && hearings.length === total) {
+      resultCountEl.textContent = `Showing all ${total} hearings`;
+    } else {
+      resultCountEl.textContent = `Showing ${hearings.length} of ${total} hearings`;
+    }
   }
 
   function updatePagination(pagination) {

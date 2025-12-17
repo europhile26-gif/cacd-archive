@@ -9,6 +9,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.0] - 2025-12-17
+
+### Added
+
+- **Pagination Configuration**
+  - Configurable records per page via `RECORDS_PER_PAGE` environment variable
+  - New `/api/config` endpoint exposes client-side configuration
+  - Frontend dynamically loads pagination settings from API
+  - Proper pagination controls with page X of Y display
+
+- **Self-Hosted Dependencies**
+  - Bootstrap 5 now served from node_modules instead of CDN
+  - `/vendor/bootstrap/` route serves Bootstrap directly from npm package
+  - No manual copying required - always uses installed version
+  - Better performance and offline capability
+
+- **UI Enhancements**
+  - GitHub repository link in footer with icon
+  - Improved result count display: "Showing X of Y hearings" or "Showing all X hearings"
+  - Contextual messaging when no results match search criteria
+  - Inline loading spinner (1.2em, no layout shift)
+  - Smooth fade-out animation for loading spinner (300ms)
+
+- **Security Improvements**
+  - XSS protection: HTML escaping for all user-facing data
+  - `escapeHtml()` helper function prevents script injection
+  - Comprehensive security audit documented in `docs/security-audit.md`
+  - Removed CDN references from Content Security Policy
+  - Stricter CSP with only self-hosted resources
+
+- **CSS Variables**
+  - Centralized color scheme with CSS custom properties
+  - All site colors defined in `:root` (--site-primary, --site-secondary, etc.)
+  - Easy theming and consistent styling throughout application
+  - Loading spinner matches header color automatically
+
+### Changed
+
+- **Bootstrap Integration**
+  - Migrated from CDN to npm package (bootstrap@5.3.3)
+  - Updated HTML to reference `/vendor/bootstrap/` paths
+  - Simplified CSP without external CDN domains
+  - Automatic updates when Bootstrap npm package is updated
+
+- **UI Refinements**
+  - Result count display adapts based on context (all results vs paginated)
+  - Loading indicator moved from block element to inline spinner
+  - Smoother page transitions without layout shifts
+
+### Fixed
+
+- **Performance**
+  - Eliminated duplicate API calls when clearing all filters
+  - "Clear All" button now triggers single API request instead of two
+
+- **Security**
+  - All data rendered with HTML escaping to prevent XSS attacks
+  - Sanitized output in both desktop table and mobile card views
+
+### Security
+
+- Complete security audit performed and documented
+- XSS vulnerability identified and fixed
+- SQL injection protection verified (parameterized queries throughout)
+- HTTP security headers confirmed (Helmet with CSP, HSTS, etc.)
+- Rate limiting verified and active
+- Input validation via Fastify schemas confirmed
+
+---
+
 ## [1.4.0] - 2025-12-15
 
 ### Added

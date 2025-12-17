@@ -1,58 +1,68 @@
 /* CACD Archive - Custom Theme */
 
-/* Modern Light Theme with Navy Blue */
+/* Site Color Variables */
 :root {
-  /* Primary - Distinguished Navy Blue */
-  --bs-primary: #1e3a5f;
+  /* Site-specific colors */
+  --site-primary: #1e3a5f;
+  --site-primary-hover: #152c48;
+  --site-primary-active: #0f1e31;
+  --site-secondary: #64748b;
+  --site-link: #2563eb;
+  --site-link-hover: #1e40af;
+  --site-success: #059669;
+  --site-light-bg: #f8fafc;
+  --site-light-border: #e2e8f0;
+  --site-lighter-bg: #f1f5f9;
+  --site-body-bg: #ffffff;
+  --site-body-color: #1e293b;
+
+  /* Bootstrap overrides */
+  --bs-primary: var(--site-primary);
   --bs-primary-rgb: 30, 58, 95;
-
-  /* Secondary - Professional Gray */
-  --bs-secondary: #64748b;
+  --bs-secondary: var(--site-secondary);
   --bs-secondary-rgb: 100, 116, 139;
-
-  /* Accent - Warm Blue for links and highlights */
-  --bs-link-color: #2563eb;
-  --bs-link-hover-color: #1e40af;
-
-  /* Success - Muted Green */
-  --bs-success: #059669;
+  --bs-link-color: var(--site-link);
+  --bs-link-hover-color: var(--site-link-hover);
+  --bs-success: var(--site-success);
   --bs-success-rgb: 5, 150, 105;
-
-  /* Light backgrounds */
-  --bs-light: #f8fafc;
+  --bs-light: var(--site-light-bg);
   --bs-light-rgb: 248, 250, 252;
-
-  /* Body background */
-  --bs-body-bg: #ffffff;
-  --bs-body-color: #1e293b;
+  --bs-body-bg: var(--site-body-bg);
+  --bs-body-color: var(--site-body-color);
 }
 
 /* Primary button refinements */
 .btn-primary {
-  --bs-btn-bg: #1e3a5f;
-  --bs-btn-border-color: #1e3a5f;
-  --bs-btn-hover-bg: #152c48;
-  --bs-btn-hover-border-color: #152c48;
-  --bs-btn-active-bg: #0f1e31;
-  --bs-btn-active-border-color: #0f1e31;
+  --bs-btn-bg: var(--site-primary);
+  --bs-btn-border-color: var(--site-primary);
+  --bs-btn-hover-bg: var(--site-primary-hover);
+  --bs-btn-hover-border-color: var(--site-primary-hover);
+  --bs-btn-active-bg: var(--site-primary-active);
+  --bs-btn-active-border-color: var(--site-primary-active);
 }
 
 /* Secondary button refinements */
 .btn-outline-secondary {
-  --bs-btn-hover-bg: #64748b;
-  --bs-btn-hover-border-color: #64748b;
+  --bs-btn-hover-bg: var(--site-secondary);
+  --bs-btn-hover-border-color: var(--site-secondary);
 }
 
 /* Header styling */
 .bg-primary {
-  background-color: #1e3a5f !important;
+  background-color: var(--site-primary) !important;
 }
 
 /* Quick date button active state */
 .btn-group .quick-date.active {
-  background-color: #1e3a5f;
+  background-color: var(--site-primary);
   color: white;
-  border-color: #1e3a5f;
+  border-color: var(--site-primary);
+}
+
+/* Loading spinner - primary color */
+.spinner-border {
+  border-color: var(--site-primary);
+  border-right-color: transparent;
 }
 
 /* Card hover effect for mobile */
@@ -68,13 +78,13 @@
 
 /* Badge styling */
 .badge.bg-primary {
-  background-color: #1e3a5f !important;
+  background-color: var(--site-primary) !important;
 }
 
 /* Toolbar navbar styling */
 .navbar.bg-light {
-  background-color: #f1f5f9 !important;
-  border: 1px solid #e2e8f0;
+  background-color: var(--site-lighter-bg) !important;
+  border: 1px solid var(--site-light-border);
 }
 
 /* Table cell styling */

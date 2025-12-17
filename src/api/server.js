@@ -20,14 +20,14 @@ async function createServer() {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ['\'self\''],
-        styleSrc: ['\'self\'', '\'unsafe-inline\'', 'cdn.jsdelivr.net'],
-        scriptSrc: ['\'self\'', '\'unsafe-inline\'', 'cdn.jsdelivr.net'],
+        styleSrc: ['\'self\'', '\'unsafe-inline\''],
+        scriptSrc: ['\'self\'', '\'unsafe-inline\''],
         imgSrc: ['\'self\'', 'data:'],
-        fontSrc: ['\'self\'', 'cdn.jsdelivr.net'],
+        fontSrc: ['\'self\''],
         connectSrc: ['\'self\'']
       }
     },
-    crossOriginEmbedderPolicy: false, // Allow embedding Bootstrap resources
+    crossOriginEmbedderPolicy: false,
     hsts: {
       maxAge: 31536000,
       includeSubDomains: true,
@@ -62,14 +62,15 @@ async function createServer() {
       info: {
         title: 'CACD Archive API',
         description: 'Court of Appeal Criminal Division Daily Cause List Archive',
-        version: '1.0.0'
+        version: '1.5.0'
       },
       schemes: ['http', 'https'],
       consumes: ['application/json'],
       produces: ['application/json'],
       tags: [
         { name: 'hearings', description: 'Hearing-related endpoints' },
-        { name: 'system', description: 'System and health endpoints' }
+        { name: 'system', description: 'System and health endpoints' },
+        { name: 'Config', description: 'Configuration endpoints' }
       ]
     }
   });
@@ -94,9 +95,17 @@ async function createServer() {
     prefix: '/'
   });
 
+  // Serve Bootstrap from node_modules
+  await server.register(fastifyStatic, {
+    root: path.join(__dirname, '../../node_modules/bootstrap/dist'),
+    prefix: '/vendor/bootstrap/',
+    decorateReply: false
+  });
+
   // Register routes
   await server.register(require('./routes/health'), { prefix: '/api/v1' });
   await server.register(require('./routes/hearings'), { prefix: '/api/v1' });
+  await server.register(require('./routes/config'));
 
   // Error handler
   server.setErrorHandler((error, request, reply) => {
