@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.1] - 2025-12-18
+
+### Fixed
+
+- **Time Format Parsing**
+  - Time validation now supports hours without minutes (e.g., "10am", "2pm")
+  - Previously required format "10:30am" with mandatory minutes portion
+  - Minutes default to ":00" when not specified
+  - Fixes "Invalid time format" errors on staging when court listings use simplified time format
+  - Updated regex pattern in `validateTime()` and `combineDateTime()` functions
+
+---
+
 ## [1.7.0] - 2025-12-18
 
 ### Added

@@ -301,12 +301,12 @@ function validateRecord(record, rowNumber) {
 
 /**
  * Validate time field format
- * @param {string} timeString - Time string (e.g., "10:30am")
+ * @param {string} timeString - Time string (e.g., "10:30am", "10am")
  * @returns {boolean}
  */
 function validateTime(timeString) {
-  // Expected formats: "10:30am", "2:00pm", "10:30 am"
-  const pattern = /^(\d{1,2}):(\d{2})\s*(am|pm)$/i;
+  // Expected formats: "10:30am", "2:00pm", "10:30 am", "10am", "2pm"
+  const pattern = /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/i;
 
   if (!pattern.test(timeString)) {
     return false;
@@ -343,12 +343,12 @@ function validateCaseNumber(caseNumber, rowNumber) {
 /**
  * Combine date and time into ISO datetime
  * @param {string} listDate - Date (YYYY-MM-DD)
- * @param {string} timeString - Time (e.g., "10:30am")
+ * @param {string} timeString - Time (e.g., "10:30am", "10am")
  * @returns {string} ISO datetime string
  */
 function combineDateTime(listDate, timeString) {
   // Parse time string
-  const pattern = /^(\d{1,2}):(\d{2})\s*(am|pm)$/i;
+  const pattern = /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/i;
   const match = timeString.match(pattern);
 
   if (!match) {
@@ -356,7 +356,7 @@ function combineDateTime(listDate, timeString) {
   }
 
   let hours = parseInt(match[1], 10);
-  const minutes = parseInt(match[2], 10);
+  const minutes = match[2] ? parseInt(match[2], 10) : 0;
   const period = match[3].toLowerCase();
 
   // Convert to 24-hour format
