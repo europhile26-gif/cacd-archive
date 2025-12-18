@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register - CACD Archive</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/styles.css" />
+
+    <style>
+      body {
+        min-height: 100vh;
+        background: linear-gradient(135deg, var(--site-primary), var(--site-secondary));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .register-card {
+        max-width: 500px;
+        width: 100%;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      }
+
+      .register-header {
+        background: var(--site-primary);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+      }
+
+      .register-body {
+        padding: 2rem;
+      }
+
+      .register-footer {
+        padding: 1rem 2rem;
+        background: #f8f9fa;
+        text-align: center;
+        border-top: 1px solid #dee2e6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="register-card">
+      <div class="register-header">
+        <h1 class="h3 mb-0">Create Account</h1>
+        <p class="mb-0 mt-2">CACD Archive</p>
+      </div>
+
+      <div class="register-body">
+        <div class="alert alert-info">
+          <strong>Coming Soon</strong><br />
+          Public registration is not yet enabled. Please contact an administrator for account
+          access.
+        </div>
+
+        <form id="registerForm" style="display: none">
+          <div class="mb-3">
+            <label for="name" class="form-label">Full Name</label>
+            <input type="text" class="form-control" id="name" required />
+          </div>
+
+          <div class="mb-3">
+            <label for="email" class="form-label">Email Address</label>
+            <input type="email" class="form-control" id="email" required />
+          </div>
+
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" class="form-control" id="password" required minlength="12" />
+            <small class="form-text text-muted">
+              Min 12 characters, including uppercase, lowercase, number, and special character.
+            </small>
+          </div>
+
+          <div class="mb-3">
+            <label for="confirmPassword" class="form-label">Confirm Password</label>
+            <input type="password" class="form-control" id="confirmPassword" required />
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">Create Account</button>
+        </form>
+      </div>
+
+      <div class="register-footer">Already have an account? <a href="/login">Sign in</a></div>
+    </div>
+  </body>
+</html>

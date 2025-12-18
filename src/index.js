@@ -47,6 +47,8 @@ async function start() {
     logger.info('Application started successfully');
   } catch (error) {
     logger.error('Failed to start application:', error);
+    console.error('Full error details:');
+    console.error(error);
     process.exit(1);
   }
 }

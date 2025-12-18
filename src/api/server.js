@@ -5,6 +5,7 @@ const fastifySwagger = require('@fastify/swagger');
 const fastifySwaggerUI = require('@fastify/swagger-ui');
 const fastifyCors = require('@fastify/cors');
 const fastifyHelmet = require('@fastify/helmet');
+const fastifyCookie = require('@fastify/cookie');
 const path = require('path');
 const config = require('../config/config');
 
@@ -13,6 +14,12 @@ async function createServer() {
     logger: false, // Disable Fastify's built-in logger
     disableRequestLogging: true,
     trustProxy: true // Enable if behind nginx/proxy
+  });
+
+  // Cookie support (required for JWT in cookies)
+  await server.register(fastifyCookie, {
+    secret: process.env.JWT_SECRET || 'your-cookie-secret-here',
+    parseOptions: {}
   });
 
   // Security headers with Helmet
@@ -62,7 +69,7 @@ async function createServer() {
       info: {
         title: 'CACD Archive API',
         description: 'Court of Appeal Criminal Division Daily Cause List Archive',
-        version: '1.5.0'
+        version: '2.0.0'
       },
       schemes: ['http', 'https'],
       consumes: ['application/json'],
@@ -70,7 +77,10 @@ async function createServer() {
       tags: [
         { name: 'hearings', description: 'Hearing-related endpoints' },
         { name: 'system', description: 'System and health endpoints' },
-        { name: 'Config', description: 'Configuration endpoints' }
+        { name: 'Config', description: 'Configuration endpoints' },
+        { name: 'Authentication', description: 'User authentication and registration' },
+        { name: 'Users', description: 'User profile management' },
+        { name: 'Admin', description: 'Administrative user management' }
       ]
     }
   });
@@ -84,7 +94,27 @@ async function createServer() {
     staticCSP: true
   });
 
-  // Serve static files
+  // Register API routes FIRST (most specific)
+  await server.register(require('./routes/health'), { prefix: '/api/v1' });
+  await server.register(require('./routes/hearings'), { prefix: '/api/v1' });
+  await server.register(require('./routes/config'));
+
+  // v2.0 Authentication routes
+  await server.register(require('./routes/auth'), { prefix: '/api/v1/auth' });
+  await server.register(require('./routes/users'), { prefix: '/api/v1/users' });
+  await server.register(require('./routes/admin'), { prefix: '/api/v1/admin' });
+
+  // Register frontend routes (clean URLs) BEFORE static files
+  await server.register(require('./routes/frontend'));
+
+  // Serve Bootstrap from node_modules
+  await server.register(fastifyStatic, {
+    root: path.join(__dirname, '../../node_modules/bootstrap/dist'),
+    prefix: '/vendor/bootstrap/',
+    decorateReply: false
+  });
+
+  // Serve static files LAST (fallback for everything else)
   const staticDir =
     config.env === 'production'
       ? path.join(__dirname, '../../dist')
@@ -94,18 +124,6 @@ async function createServer() {
     root: staticDir,
     prefix: '/'
   });
-
-  // Serve Bootstrap from node_modules
-  await server.register(fastifyStatic, {
-    root: path.join(__dirname, '../../node_modules/bootstrap/dist'),
-    prefix: '/vendor/bootstrap/',
-    decorateReply: false
-  });
-
-  // Register routes
-  await server.register(require('./routes/health'), { prefix: '/api/v1' });
-  await server.register(require('./routes/hearings'), { prefix: '/api/v1' });
-  await server.register(require('./routes/config'));
 
   // Error handler
   server.setErrorHandler((error, request, reply) => {
@@ -123,19 +141,6 @@ async function createServer() {
       success: false,
       error: message
     });
-  });
-
-  // 404 handler for API routes
-  server.setNotFoundHandler((request, reply) => {
-    if (request.url.startsWith('/api/')) {
-      reply.status(404).send({
-        success: false,
-        error: 'Not Found'
-      });
-    } else {
-      // Let static file handler deal with it
-      reply.callNotFound();
-    }
   });
 
   return server;

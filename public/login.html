@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - CACD Archive</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/styles.css" />
+
+    <style>
+      body {
+        background: linear-gradient(135deg, var(--site-primary) 0%, var(--site-secondary) 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .login-container {
+        width: 100%;
+        max-width: 420px;
+        padding: 15px;
+      }
+
+      .login-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+      }
+
+      .login-header {
+        background: var(--site-primary);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+      }
+
+      .login-header h1 {
+        margin: 0;
+        font-size: 1.75rem;
+        font-weight: 600;
+      }
+
+      .login-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-size: 0.9rem;
+      }
+
+      .login-body {
+        padding: 2rem;
+      }
+
+      .form-label {
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 0.5rem;
+      }
+
+      .form-control {
+        border: 2px solid #e0e0e0;
+        border-radius: 6px;
+        padding: 0.75rem 1rem;
+        transition: border-color 0.2s;
+      }
+
+      .form-control:focus {
+        border-color: var(--site-primary);
+        box-shadow: 0 0 0 0.2rem rgba(30, 58, 95, 0.15);
+      }
+
+      .btn-login {
+        background: var(--site-primary);
+        border: none;
+        color: white;
+        padding: 0.75rem;
+        font-weight: 600;
+        border-radius: 6px;
+        width: 100%;
+        transition: background 0.2s;
+      }
+
+      .btn-login:hover {
+        background: var(--site-secondary);
+        color: white;
+      }
+
+      .btn-login:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+
+      .alert {
+        border-radius: 6px;
+        margin-bottom: 1.5rem;
+      }
+
+      .login-footer {
+        padding: 1.5rem 2rem;
+        background: #f8f9fa;
+        border-top: 1px solid #e0e0e0;
+        text-align: center;
+        font-size: 0.9rem;
+      }
+
+      .login-footer a {
+        color: var(--site-link);
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .login-footer a:hover {
+        text-decoration: underline;
+      }
+
+      .spinner-border-sm {
+        width: 1rem;
+        height: 1rem;
+        border-width: 0.15rem;
+      }
+
+      .back-link {
+        text-align: center;
+        margin-top: 1.5rem;
+      }
+
+      .back-link a {
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        opacity: 0.9;
+        transition: opacity 0.2s;
+      }
+
+      .back-link a:hover {
+        opacity: 1;
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container">
+      <div class="login-card">
+        <div class="login-header">
+          <h1>CACD Archive</h1>
+          <p>Sign in to your account</p>
+        </div>
+
+        <div class="login-body">
+          <!-- Error Alert -->
+          <div id="errorAlert" class="alert alert-danger d-none" role="alert">
+            <strong>Error:</strong> <span id="errorMessage"></span>
+          </div>
+
+          <!-- Success Alert -->
+          <div id="successAlert" class="alert alert-success d-none" role="alert">
+            <span id="successMessage"></span>
+          </div>
+
+          <!-- Login Form -->
+          <form id="loginForm" novalidate>
+            <div class="mb-3">
+              <label for="email" class="form-label">Email address</label>
+              <input
+                type="email"
+                class="form-control"
+                id="email"
+                name="email"
+                placeholder="you@example.com"
+                required
+                autocomplete="email"
+              />
+              <div class="invalid-feedback">Please enter a valid email address.</div>
+            </div>
+
+            <div class="mb-3">
+              <label for="password" class="form-label">Password</label>
+              <input
+                type="password"
+                class="form-control"
+                id="password"
+                name="password"
+                placeholder="Enter your password"
+                required
+                autocomplete="current-password"
+              />
+              <div class="invalid-feedback">Please enter your password.</div>
+            </div>
+
+            <div class="mb-3 form-check">
+              <input type="checkbox" class="form-check-input" id="rememberMe" name="rememberMe" />
+              <label class="form-check-label" for="rememberMe"> Remember me </label>
+            </div>
+
+            <button type="submit" class="btn btn-login" id="loginBtn">
+              <span id="loginBtnText">Sign In</span>
+              <span
+                id="loginSpinner"
+                class="spinner-border spinner-border-sm ms-2 d-none"
+                role="status"
+                aria-hidden="true"
+              ></span>
+            </button>
+          </form>
+        </div>
+
+        <div class="login-footer">
+          <div class="mb-2">
+            <a href="/reset-password">Forgot your password?</a>
+          </div>
+          <div>Don't have an account? <a href="/register">Sign up</a></div>
+        </div>
+      </div>
+
+      <div class="back-link">
+        <a href="/">&larr; Back to Home</a>
+      </div>
+    </div>
+
+    <!-- Login Script -->
+    <script src="/js/login.js"></script>
+  </body>
+</html>

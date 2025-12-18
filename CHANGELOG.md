@@ -9,6 +9,147 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.0] - 2025-12-18
+
+### Added
+
+- **User Authentication System**
+  - JWT-based authentication with access and refresh tokens
+  - httpOnly cookies for secure token storage
+  - Password hashing with bcrypt (12 rounds)
+  - Password validation (12+ chars, uppercase, lowercase, number, special char)
+  - Account status management (pending, active, inactive, suspended, deleted)
+  - User status history tracking for audit trail
+
+- **Role-Based Access Control (RBAC)**
+  - Database-driven roles and capabilities system
+  - Two default roles: Administrator (full access), User (limited access)
+  - 32 capabilities across 9 categories (users, roles, scraper, searches, profile, notifications, hearings, audit, system)
+  - Flexible permission checking middleware
+  - Role assignment tracking with assigned_by field
+
+- **Authentication API**
+  - `/api/v1/auth/login` - User login with remember me option
+  - `/api/v1/auth/logout` - Session termination
+  - `/api/v1/auth/me` - Current user profile with roles and capabilities
+  - `/api/v1/auth/change-password` - Password change endpoint
+  - `/api/v1/auth/refresh` - Token refresh endpoint
+  - Password reset endpoints (forgot-password, reset-password) - backend ready
+
+- **User Management API**
+  - `/api/v1/users/me` - Get/update own profile
+  - `/api/v1/admin/users` - List all users with pagination and filters
+  - `/api/v1/admin/users/:id` - Get/update/delete user
+  - `/api/v1/admin/users/:id/approve` - Approve pending users
+  - `/api/v1/admin/users/:id/activate|deactivate` - Manage account status
+  - `/api/v1/admin/users/:id/roles` - Assign/remove roles
+
+- **CLI Administration Tools**
+  - `./bin/cacd users create` - Interactive user creation with prompts
+  - `./bin/cacd users list` - View all users with roles and status
+  - `./bin/cacd users show` - View user details and status history
+  - `./bin/cacd users approve` - Approve pending accounts
+  - `./bin/cacd users deactivate` - Deactivate user accounts
+  - Pretty CLI output with colors, tables, spinners, and boxes
+  - Non-interactive mode with flags for automation
+
+- **Frontend Authentication Pages**
+  - `/login` - Clean URL login page with validation
+  - `/dashboard` - User dashboard with password change and saved searches cards
+  - `/admin` - Admin user management with paginated table and edit modal
+  - `/register` - Registration page (placeholder)
+  - `/reset-password` - Password reset page (placeholder)
+  - Dynamic navigation menu based on user roles
+  - Automatic `.html` to clean URL redirects
+
+- **Frontend Route Protection**
+  - Server-side route authentication via middleware
+  - `/dashboard` requires any authenticated user
+  - `/admin` requires administrator role
+  - 401/403 redirects to login with return path
+  - Frontend auth checks for seamless UX
+
+### Changed
+
+- **URL Structure**
+  - All frontend routes now use clean URLs without `.html` extension
+  - Legacy `.html` URLs redirect permanently (301) to clean URLs
+  - Frontend routes registered before static files for proper precedence
+  - Root `/` continues to serve index.html
+
+- **Navigation System**
+  - Dynamic navigation based on user authentication state
+  - Guest users see: Login, Register
+  - Regular users see: Dashboard, Logout
+  - Administrators see: Admin, Dashboard, Logout
+  - Navigation structure returned by `/api/v1/auth/me` endpoint
+
+- **Server Configuration**
+  - New `JWT_SECRET` environment variable required
+  - JWT token expiry configuration (access: 15min, refresh: 7 days)
+  - Password requirements configurable via environment
+  - Public registration and admin approval toggles
+  - Cookie support added via @fastify/cookie plugin
+
+### Fixed
+
+- **Content Security Policy**
+  - Removed inline `onclick` handlers that violated CSP
+  - Replaced with proper event listeners using data attributes
+  - All navigation actions now use `data-nav-action` pattern
+  - Admin user row clicks use `data-user-id` attributes
+
+- **Error Handling**
+  - Improved error logging in server startup
+  - Full stack traces now displayed on server errors
+  - Better error messages for authentication failures
+  - Graceful handling of missing saved searches API (404)
+
+### Security
+
+- **Authentication Hardening**
+  - Passwords never returned in API responses
+  - Account status checked on every authenticated request
+  - Refresh tokens separate from access tokens
+  - Password reset tokens expire after use
+  - Status change audit trail with changed_by tracking
+
+- **Authorization**
+  - Middleware prevents users from modifying their own account status
+  - Middleware prevents users from deleting themselves
+  - Capability-based access control for all admin endpoints
+  - Role checks prevent privilege escalation
+
+### Developer Experience
+
+- **Documentation**
+  - New `docs/url-restructure.md` documenting clean URL implementation
+  - Updated project roadmap showing Phase 2 and 3 completion
+  - API endpoints documented in Swagger (v2.0.0)
+  - CLI commands self-documented with --help
+
+- **Code Quality**
+  - All code formatted with Prettier
+  - ESLint passing with no errors
+  - CSP-compliant JavaScript (no inline handlers)
+  - Proper error handling throughout
+
+### Dependencies
+
+- **Added**
+  - bcrypt - Password hashing
+  - jsonwebtoken - JWT token generation/verification
+  - @fastify/jwt - Fastify JWT plugin
+  - @fastify/cookie - Cookie parsing and setting
+  - commander - CLI framework
+  - chalk@4 - Terminal colors (CommonJS)
+  - cli-table3 - Formatted tables
+  - inquirer@8 - Interactive prompts (CommonJS)
+  - ora@5 - Spinners (CommonJS)
+  - boxen@5 - Terminal boxes (CommonJS)
+
+---
+
 ## [1.5.0] - 2025-12-17
 
 ### Added

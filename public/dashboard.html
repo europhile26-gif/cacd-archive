@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - CACD Archive</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/styles.css" />
+
+    <style>
+      .dashboard-nav {
+        background: var(--site-primary);
+        color: white;
+        padding: 1rem 0;
+        margin-bottom: 2rem;
+      }
+
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--site-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      .dashboard-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .dashboard-card h2 {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+        color: var(--site-primary);
+      }
+
+      .form-group {
+        margin-bottom: 1rem;
+      }
+
+      .saved-search-item {
+        padding: 0.75rem;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .saved-search-item:hover {
+        background-color: #f8f9fa;
+      }
+
+      .search-name {
+        font-weight: 500;
+        color: var(--site-primary);
+      }
+
+      .search-criteria {
+        font-size: 0.85rem;
+        color: #6c757d;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav class="dashboard-nav">
+      <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+          <h1 class="h4 mb-0">CACD Archive</h1>
+          <div class="d-flex align-items-center gap-3">
+            <!-- Navigation Links -->
+            <div id="dashboardNav" class="d-flex gap-2">
+              <!-- Populated by JavaScript -->
+            </div>
+            <!-- User Info -->
+            <div class="user-info">
+              <div class="user-avatar" id="userAvatar"></div>
+              <div>
+                <div id="userName" class="fw-bold"></div>
+                <div id="userRole" class="small opacity-75"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+      <!-- Loading State -->
+      <div id="loadingState" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading dashboard...</p>
+      </div>
+
+      <!-- Dashboard Content (hidden initially) -->
+      <div id="dashboardContent" class="d-none">
+        <!-- Welcome Section -->
+        <div class="dashboard-card">
+          <h2>Welcome back, <span id="welcomeName"></span>! 👋</h2>
+          <p class="text-muted mb-0">Manage your account and saved searches below.</p>
+        </div>
+
+        <div class="row">
+          <!-- Change Password Card -->
+          <div class="col-md-6">
+            <div class="dashboard-card">
+              <h2>Change Password</h2>
+
+              <div id="passwordAlert" class="alert d-none" role="alert"></div>
+
+              <form id="changePasswordForm">
+                <div class="form-group">
+                  <label for="currentPassword" class="form-label">Current Password</label>
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="currentPassword"
+                    required
+                    autocomplete="current-password"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="newPassword" class="form-label">New Password</label>
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="newPassword"
+                    required
+                    autocomplete="new-password"
+                    minlength="12"
+                  />
+                  <small class="form-text text-muted">
+                    Min 12 characters, including uppercase, lowercase, number, and special
+                    character.
+                  </small>
+                </div>
+
+                <div class="form-group">
+                  <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="confirmPassword"
+                    required
+                    autocomplete="new-password"
+                  />
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="changePasswordBtn">
+                  <span
+                    id="passwordSpinner"
+                    class="spinner-border spinner-border-sm d-none"
+                    role="status"
+                  ></span>
+                  Change Password
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Saved Searches Card -->
+          <div class="col-md-6">
+            <div class="dashboard-card">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="mb-0">Saved Searches</h2>
+                <button class="btn btn-sm btn-primary" id="addSearchBtn">+ New Search</button>
+              </div>
+
+              <div id="savedSearchesList">
+                <p class="text-muted text-center py-3">
+                  No saved searches yet. Create one to get notified of new hearings matching your
+                  criteria.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin Link (if applicable) -->
+        <div id="adminSection" class="d-none">
+          <div class="dashboard-card text-center">
+            <h2>Administrator</h2>
+            <p class="text-muted">You have administrative privileges.</p>
+            <a href="/admin" class="btn btn-warning">Manage Users</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- New Search Modal -->
+    <div class="modal fade" id="searchModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="searchModalTitle">Create Saved Search</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="searchForm">
+              <div class="mb-3">
+                <label for="searchName" class="form-label">Search Name</label>
+                <input type="text" class="form-control" id="searchName" required />
+              </div>
+
+              <div class="mb-3">
+                <label for="searchCounty" class="form-label">County</label>
+                <select class="form-select" id="searchCounty">
+                  <option value="">All Counties</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label for="searchHearingType" class="form-label">Hearing Type</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="searchHearingType"
+                  placeholder="e.g., Application"
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="searchKeywords" class="form-label">Keywords</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="searchKeywords"
+                  placeholder="e.g., planning permission"
+                />
+                <small class="form-text text-muted"
+                  >Searches in hearing title, applicant, and agent fields.</small
+                >
+              </div>
+
+              <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="searchNotifications" checked />
+                <label class="form-check-label" for="searchNotifications">
+                  Send email notifications for new matches
+                </label>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="saveSearchBtn">Save Search</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Dashboard JS -->
+    <script src="/js/dashboard.js"></script>
+  </body>
+</html>
