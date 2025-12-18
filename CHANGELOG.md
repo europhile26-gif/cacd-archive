@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.2] - 2025-12-18
+
+### Fixed
+
+- **Rate Limiting Scope**
+  - Rate limiting now only applies to `/api/*` routes, not static assets
+  - Static files (CSS, JS, Bootstrap, favicons) no longer trigger rate limits
+  - Authenticated users bypass rate limiting for API requests
+  - Fixes "Too Many Requests" errors when loading dashboard with multiple static assets
+  - Prevents rate limit exhaustion from browser loading JS/CSS files
+
+### Changed
+
+- **Rate Limiter Configuration**
+  - Moved rate limiter registration into API routes scope only
+  - Frontend routes and static file serving excluded from rate limiting
+  - Skip function checks JWT tokens (Authorization header or accessToken cookie)
+  - Valid access tokens bypass rate limiting completely
+
+---
+
 ## [1.7.1] - 2025-12-18
 
 ### Fixed

@@ -8,6 +8,7 @@ const fastifyHelmet = require('@fastify/helmet');
 const fastifyCookie = require('@fastify/cookie');
 const path = require('path');
 const config = require('../config/config');
+const AuthService = require('../services/auth-service');
 
 async function createServer() {
   const server = fastify({
@@ -57,12 +58,6 @@ async function createServer() {
     await server.register(fastifyCors, corsOptions);
   }
 
-  // Rate limiting
-  await server.register(fastifyRateLimit, {
-    max: config.api.rateLimit.max,
-    timeWindow: config.api.rateLimit.timeWindow
-  });
-
   // Swagger documentation
   await server.register(fastifySwagger, {
     swagger: {
@@ -95,17 +90,58 @@ async function createServer() {
   });
 
   // Register API routes FIRST (most specific)
-  await server.register(require('./routes/health'), { prefix: '/api/v1' });
-  await server.register(require('./routes/hearings'), { prefix: '/api/v1' });
-  await server.register(require('./routes/config'));
+  // Apply rate limiting only to API routes
+  await server.register(
+    async (apiServer) => {
+      // Rate limiting for API routes - skip for authenticated users
+      await apiServer.register(fastifyRateLimit, {
+        max: config.api.rateLimit.max,
+        timeWindow: config.api.rateLimit.timeWindow,
+        skip: (request) => {
+          // Skip rate limiting for authenticated users
+          try {
+            let token = null;
 
-  // v2.0 Authentication routes
-  await server.register(require('./routes/auth'), { prefix: '/api/v1/auth' });
-  await server.register(require('./routes/users'), { prefix: '/api/v1/users' });
-  await server.register(require('./routes/admin'), { prefix: '/api/v1/admin' });
-  await server.register(require('./routes/searches'), { prefix: '/api/v1' });
+            // Try Authorization header
+            const authHeader = request.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+              token = authHeader.substring(7);
+            }
 
-  // Register frontend routes (clean URLs) BEFORE static files
+            // Fallback to cookie
+            if (!token && request.cookies?.accessToken) {
+              token = request.cookies.accessToken;
+            }
+
+            if (!token) {
+              return false; // No token, apply rate limiting
+            }
+
+            // Verify token
+            const payload = AuthService.verifyToken(token);
+            
+            // Valid access token - skip rate limiting
+            return payload && payload.type === 'access';
+          } catch (err) {
+            // Token invalid/expired - apply rate limiting
+            return false;
+          }
+        }
+      });
+
+      // Register API routes
+      await apiServer.register(require('./routes/health'), { prefix: '/api/v1' });
+      await apiServer.register(require('./routes/hearings'), { prefix: '/api/v1' });
+      await apiServer.register(require('./routes/config'));
+      await apiServer.register(require('./routes/auth'), { prefix: '/api/v1/auth' });
+      await apiServer.register(require('./routes/users'), { prefix: '/api/v1/users' });
+      await apiServer.register(require('./routes/admin'), { prefix: '/api/v1/admin' });
+      await apiServer.register(require('./routes/searches'), { prefix: '/api/v1' });
+    },
+    { prefix: '' }
+  );
+
+  // Register frontend routes (clean URLs) BEFORE static files - NO rate limiting
   await server.register(require('./routes/frontend'));
 
   // Serve Bootstrap from node_modules
