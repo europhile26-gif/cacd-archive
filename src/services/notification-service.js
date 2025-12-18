@@ -119,10 +119,7 @@ class NotificationService {
 
     // Send email notification
     try {
-      const baseUrl = process.env.BASE_URL || `http://localhost:${config.server.port}`;
-
-    //   console.log('About to send email, emailService initialized:', emailService.initialized);
-    //   console.log('Transporter exists:', !!emailService.transporter);
+      const baseUrl = process.env.BASE_URL || `http://localhost:${config.port}`;
 
       await emailService.sendSavedSearchMatches({
         userEmail: userData.email,

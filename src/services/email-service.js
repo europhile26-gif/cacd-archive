@@ -26,6 +26,16 @@ class EmailService {
       return;
     }
 
+    // Validate SMTP configuration
+    if (!config.email.smtp.host || !config.email.smtp.auth.user || !config.email.smtp.auth.pass) {
+      logger.warn('Email service not initialized - missing SMTP configuration', {
+        hasHost: !!config.email.smtp.host,
+        hasUser: !!config.email.smtp.auth.user,
+        hasPass: !!config.email.smtp.auth.pass
+      });
+      return;
+    }
+
     try {
       // Create SMTP transporter
       this.transporter = nodemailer.createTransport({
@@ -51,7 +61,9 @@ class EmailService {
         error: error.message,
         stack: error.stack
       });
-      throw error;
+      // Don't throw - just log and continue without email service
+      this.transporter = null;
+      this.initialized = false;
     }
   }
 
@@ -107,8 +119,12 @@ class EmailService {
    * @param {Object} [errorDetails.context] - Additional context
    */
   async sendDataError(errorDetails) {
-    if (!this.initialized || !config.email.enabled) {
-      logger.debug('Email not sent - service not initialized or disabled');
+    if (!this.initialized || !config.email.enabled || !this.transporter) {
+      logger.debug('Email not sent - service not initialized or disabled', {
+        initialized: this.initialized,
+        enabled: config.email.enabled,
+        hasTransporter: !!this.transporter
+      });
       return;
     }
 
@@ -217,8 +233,12 @@ class EmailService {
    * @param {string} params.baseUrl - Base URL of the application
    */
   async sendSavedSearchMatches(params) {
-    if (!this.initialized || !config.email.enabled) {
-      logger.debug('Email not sent - service not initialized or disabled');
+    if (!this.initialized || !config.email.enabled || !this.transporter) {
+      logger.debug('Email not sent - service not initialized or disabled', {
+        initialized: this.initialized,
+        enabled: config.email.enabled,
+        hasTransporter: !!this.transporter
+      });
       return;
     }
 

@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.3] - 2025-12-18
+
+### Fixed
+
+- **Email Service Robustness**
+  - Fixed config.server.port reference (should be config.port)
+  - Validates SMTP configuration before initialization
+  - Returns gracefully if SMTP credentials missing instead of throwing error
+  - Added transporter existence check before sending emails
+  - Improved logging for email service initialization failures
+  - Prevents "Cannot read properties of undefined (reading 'port')" error
+
+### Changed
+
+- **Email Service Initialization**
+  - No longer throws error if SMTP config incomplete
+  - Logs warning and continues without email service if credentials missing
+  - Checks for this.transporter existence in send methods
+  - More detailed debug logging for troubleshooting
+
+---
+
 ## [1.7.2] - 2025-12-18
 
 ### Fixed
