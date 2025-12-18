@@ -54,11 +54,6 @@ async function loadUserData() {
     // Load saved searches
     await loadSavedSearches();
 
-    // Show admin section if administrator
-    if (roles.some((role) => role.slug === 'administrator')) {
-      document.getElementById('adminSection').classList.remove('d-none');
-    }
-
     // Hide loading, show content
     document.getElementById('loadingState').classList.add('d-none');
     document.getElementById('dashboardContent').classList.remove('d-none');
@@ -238,82 +233,176 @@ function displaySavedSearches(searches) {
   container.innerHTML = searches
     .map(
       (search) => `
-    <div class="saved-search-item">
-      <div>
-        <div class="search-name">${escapeHtml(search.name)}</div>
-        <div class="search-criteria">
-          ${formatSearchCriteria(search)}
+    <div class="saved-search-item" data-search-id="${search.id}">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1">
+          <div class="search-text fw-semibold">"${escapeHtml(search.search_text)}"</div>
+          <div class="search-meta text-muted small mt-1">
+            <span class="badge ${search.enabled ? 'bg-success' : 'bg-secondary'} me-2">
+              ${search.enabled ? 'Enabled' : 'Disabled'}
+            </span>
+            <span>Created: ${new Date(search.created_at).toLocaleDateString()}</span>
+          </div>
         </div>
-      </div>
-      <div>
-        <button class="btn btn-sm btn-outline-primary" onclick="editSearch(${search.id})">Edit</button>
-        <button class="btn btn-sm btn-outline-danger" onclick="deleteSearch(${search.id})">Delete</button>
+        <div class="btn-group btn-group-sm" role="group">
+          <button class="btn btn-outline-secondary" data-search-action="toggle" data-search-id="${search.id}" data-enabled="${search.enabled}">
+            <i class="bi bi-${search.enabled ? 'pause' : 'play'}-fill"></i>
+          </button>
+          <button class="btn btn-outline-primary" data-search-action="edit" data-search-id="${search.id}">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-outline-danger" data-search-action="delete" data-search-id="${search.id}">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
       </div>
     </div>
   `
     )
     .join('');
+
+  // Add event listeners
+  document.querySelectorAll('[data-search-action]').forEach((btn) => {
+    btn.addEventListener('click', handleSearchAction);
+  });
 }
 
 /**
- * Format search criteria for display
+ * Handle search action buttons
  */
-function formatSearchCriteria(search) {
-  const parts = [];
-  if (search.county) parts.push(`County: ${search.county}`);
-  if (search.hearing_type) parts.push(`Type: ${search.hearing_type}`);
-  if (search.keywords) parts.push(`Keywords: ${search.keywords}`);
-  return parts.join(' • ') || 'All hearings';
+async function handleSearchAction(event) {
+  const action = event.currentTarget.dataset.searchAction;
+  const searchId = parseInt(event.currentTarget.dataset.searchId, 10);
+
+  if (action === 'delete') {
+    await deleteSearch(searchId);
+  } else if (action === 'toggle') {
+    const enabled = event.currentTarget.dataset.enabled === '1';
+    await toggleSearch(searchId, !enabled);
+  } else if (action === 'edit') {
+    await editSearch(searchId);
+  }
 }
 
 /**
  * Handle save search
  */
 async function handleSaveSearch() {
-  const name = document.getElementById('searchName').value.trim();
-  if (!name) {
-    alert('Please enter a search name');
+  const searchText = document.getElementById('searchText').value.trim();
+  const enabled = document.getElementById('searchEnabled').checked;
+  const searchId = document.getElementById('searchId').value;
+
+  if (!searchText) {
+    showAlert('searchAlert', 'danger', 'Please enter search text');
     return;
   }
 
   const searchData = {
-    name,
-    county: document.getElementById('searchCounty').value || null,
-    hearing_type: document.getElementById('searchHearingType').value || null,
-    keywords: document.getElementById('searchKeywords').value || null,
-    notifications_enabled: document.getElementById('searchNotifications').checked
+    search_text: searchText,
+    enabled
   };
 
   try {
-    const response = await fetch('/api/v1/searches', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'include',
-      body: JSON.stringify(searchData)
-    });
+    let response;
+
+    if (searchId) {
+      // Update existing search
+      response = await fetch(`/api/v1/searches/${searchId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(searchData)
+      });
+    } else {
+      // Create new search
+      response = await fetch('/api/v1/searches', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(searchData)
+      });
+    }
 
     if (!response.ok) {
       const data = await response.json();
-      alert(data.error || 'Failed to save search');
+      showAlert('searchAlert', 'danger', data.error || 'Failed to save search');
       return;
     }
 
     // Reload searches
     await loadSavedSearches();
     searchModal.hide();
+    document.getElementById('searchForm').reset();
   } catch (error) {
     console.error('Error saving search:', error);
-    alert('Error saving search. Please try again.');
+    showAlert('searchAlert', 'danger', 'Error saving search. Please try again.');
+  }
+}
+
+/**
+ * Edit a saved search
+ */
+async function editSearch(id) {
+  try {
+    const response = await fetch(`/api/v1/searches/${id}`, {
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      showAlert('searchesAlert', 'danger', 'Failed to load search');
+      return;
+    }
+
+    const data = await response.json();
+    const search = data.search;
+
+    // Populate form
+    document.getElementById('searchId').value = search.id;
+    document.getElementById('searchText').value = search.search_text;
+    document.getElementById('searchEnabled').checked = search.enabled;
+    document.getElementById('searchModalTitle').textContent = 'Edit Saved Search';
+
+    searchModal.show();
+  } catch (error) {
+    console.error('Error loading search:', error);
+    showAlert('searchesAlert', 'danger', 'Error loading search. Please try again.');
+  }
+}
+
+/**
+ * Toggle search enabled/disabled
+ */
+async function toggleSearch(id, enabled) {
+  try {
+    const response = await fetch(`/api/v1/searches/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({ enabled })
+    });
+
+    if (!response.ok) {
+      showAlert('searchesAlert', 'danger', 'Failed to update search');
+      return;
+    }
+
+    // Reload searches
+    await loadSavedSearches();
+  } catch (error) {
+    console.error('Error toggling search:', error);
+    showAlert('searchesAlert', 'danger', 'Error updating search. Please try again.');
   }
 }
 
 /**
  * Delete a saved search
- * @global - Called from inline HTML (future implementation)
  */
-// eslint-disable-next-line no-unused-vars
 async function deleteSearch(id) {
   if (!confirm('Are you sure you want to delete this saved search?')) {
     return;
@@ -326,7 +415,7 @@ async function deleteSearch(id) {
     });
 
     if (!response.ok) {
-      alert('Failed to delete search');
+      showAlert('searchesAlert', 'danger', 'Failed to delete search');
       return;
     }
 
@@ -334,7 +423,7 @@ async function deleteSearch(id) {
     await loadSavedSearches();
   } catch (error) {
     console.error('Error deleting search:', error);
-    alert('Error deleting search. Please try again.');
+    showAlert('searchesAlert', 'danger', 'Error deleting search. Please try again.');
   }
 }
 

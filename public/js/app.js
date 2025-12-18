@@ -1,4 +1,4 @@
-(function() {
+(function () {
   'use strict';
 
   const API_BASE = '/api/v1';
@@ -7,7 +7,7 @@
   let recordsPerPage = 50; // Default, will be loaded from API
 
   // Initialize
-  document.addEventListener('DOMContentLoaded', async function() {
+  document.addEventListener('DOMContentLoaded', async function () {
     await loadConfig();
     loadHearings();
     attachEventHandlers();
@@ -37,7 +37,7 @@
     document.getElementById('searchBtn').addEventListener('click', handleSearch);
     document.getElementById('clearBtn').addEventListener('click', handleClear);
     document.getElementById('clearDateBtn').addEventListener('click', handleClearDate);
-    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+    document.getElementById('searchInput').addEventListener('keypress', function (e) {
       if (e.key === 'Enter') handleSearch();
     });
 

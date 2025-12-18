@@ -6,6 +6,7 @@ const {
   recordScrapeComplete,
   recordScrapeError
 } = require('./scrape-history-service');
+const notificationService = require('./notification-service');
 const config = require('../config/config');
 const logger = require('../utils/logger');
 
@@ -141,6 +142,25 @@ async function scrapeAll(scrapeType = 'manual') {
       totalDeleted,
       duration: `${duration}ms`
     });
+
+    // Process saved search notifications if new records were added
+    if (totalAdded > 0) {
+      try {
+        logger.info('Processing saved search notifications', {
+          newRecords: totalAdded
+        });
+        const notificationStats = await notificationService.processSavedSearchNotifications();
+        logger.info('Notification processing complete', notificationStats);
+        result.notifications = notificationStats;
+      } catch (error) {
+        logger.error('Failed to process notifications', {
+          error: error.message,
+          stack: error.stack
+        });
+        // Don't fail the scrape if notifications fail
+        result.notifications = { error: error.message };
+      }
+    }
 
     return result;
   } catch (error) {

@@ -1,6 +1,6 @@
 const config = require('../../config/config');
 
-module.exports = async function(fastify) {
+module.exports = async function (fastify) {
   // Get public configuration
   fastify.get(
     '/api/config',

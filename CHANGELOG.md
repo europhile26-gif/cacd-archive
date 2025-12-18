@@ -9,6 +9,99 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.0] - 2025-12-18
+
+### Added
+
+- **Saved Searches Feature**
+  - User-defined text search phrases (3-255 characters)
+  - Maximum 10 saved searches per user (configurable)
+  - Enable/disable individual searches without deletion
+  - Email notifications when new matching hearings are found
+  - Consolidated email with all matches grouped by search phrase
+  - Rate limiting: maximum 2 emails per 12-hour window per user
+  - Search against TODAY and TOMORROW hearings only
+  - Full-text search using MATCH...AGAINST with case_number LIKE fallback
+  - Database migration 007 with saved_searches and search_notifications tables
+
+- **Saved Searches API**
+  - `GET /api/v1/searches` - List user's saved searches
+  - `GET /api/v1/searches/:id` - Get single saved search
+  - `POST /api/v1/searches` - Create new saved search
+  - `PATCH /api/v1/searches/:id` - Update search (text or enabled status)
+  - `DELETE /api/v1/searches/:id` - Delete saved search
+  - `PATCH /api/v1/users/me/notifications` - Toggle email notifications preference
+  - All endpoints require authentication
+  - Validation with configurable min/max length and per-user limits
+
+- **Email Notification System**
+  - Handlebars email template (slate blue theme)
+  - HTML and plain text versions
+  - Integrated into scraper workflow (runs after successful scrape)
+  - Groups searches by user to avoid duplicate emails
+  - Respects user notification preferences and rate limits
+  - Single "Go to CACD Archive" link using BASE_URL
+  - Formatted hearing details (case name, date, time, court, judge)
+
+- **Dashboard Saved Searches UI**
+  - Create/edit/delete saved searches in dashboard
+  - Toggle individual searches on/off
+  - Enable/disable email notifications globally
+  - Simple form with search text and enabled checkbox
+  - Real-time validation and error handling
+  - Right-aligned action buttons for better UX
+
+- **Build System Improvements**
+  - Minify ALL JavaScript files (app.js, auth.js, nav.js, dashboard.js, admin.js, login.js)
+  - Process ALL HTML files (index, login, register, reset-password, dashboard, admin)
+  - Update asset references to .min.js and .min.css with version cache-busting
+  - Production build in dist/ directory (24.73 KB total minified JS)
+  - Sourcemaps for debugging
+  - Detailed build output with file sizes
+
+- **Authentication Improvements**
+  - Automatic JWT token refresh on client-side
+  - Refreshes when <5 minutes remaining before expiry
+  - Intercepts all /api/* fetch calls to ensure valid tokens
+  - Background check every 60 seconds
+  - Eliminates aggressive logout issues
+
+- **Navigation Enhancements**
+  - Added "Home" button to navigation
+  - Filter out current page from nav menu for cleaner UX
+  - Removed redundant admin section from dashboard
+
+- **Configuration**
+  - `SAVED_SEARCH_MIN_LENGTH` - Minimum search text length (default: 3)
+  - `SAVED_SEARCH_MAX_LENGTH` - Maximum search text length (default: 255)
+  - `SAVED_SEARCH_MAX_PER_USER` - Maximum searches per user (default: 10)
+  - `NOTIFICATION_MAX_PER_WINDOW` - Email rate limit count (default: 2)
+  - `NOTIFICATION_WINDOW_HOURS` - Email rate limit window (default: 12)
+  - `BASE_URL` - Application base URL for email links
+
+### Changed
+
+- **Static Assets**
+  - Self-host Bootstrap Icons (v1.13.1) instead of CDN for CSP compliance
+  - All assets served from local node_modules or dist/ directory
+  - No external CDN dependencies
+
+- **Email Service**
+  - Updated to use single BASE_URL for all email links
+  - Removed separate dashboard and unsubscribe URLs from templates
+  - Cleaner email footer with single call-to-action
+
+### Fixed
+
+- CSP violation loading Bootstrap Icons from external CDN
+- Authentication middleware not properly attached to saved searches routes
+- MySQL boolean field conversion (enabled field requires explicit 0/1 values)
+- Toggle button data attribute comparison (string vs boolean)
+- Search query column name mismatch (standardized on actual table columns)
+- MIME type mismatch for JavaScript files in production build
+
+---
+
 ## [1.6.0] - 2025-12-18
 
 ### Added

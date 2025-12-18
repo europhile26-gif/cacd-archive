@@ -467,12 +467,14 @@ async function authRoutes(fastify, _options) {
         const navigation = [];
         const isAdmin = roles.some((role) => role.slug === 'administrator');
 
+        navigation.push({ label: 'Home', url: '/', icon: 'house' });
+
         if (isAdmin) {
           navigation.push({ label: 'Admin', url: '/admin', icon: 'shield' });
         }
 
-        navigation.push({ label: 'Dashboard', url: '/dashboard', icon: 'home' });
-        navigation.push({ label: 'Logout', url: '#', action: 'logout', icon: 'sign-out' });
+        navigation.push({ label: 'Dashboard', url: '/dashboard', icon: 'speedometer2' });
+        navigation.push({ label: 'Logout', url: '#', action: 'logout', icon: 'box-arrow-right' });
 
         return reply.send({
           user: request.user,

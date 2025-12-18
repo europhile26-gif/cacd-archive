@@ -2,7 +2,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.6.0-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-1.7.0-blue.svg)]()
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)]()
 
 > Automated web scraping and archival system for UK Court of Appeal (Criminal Division) Daily Cause Lists
@@ -17,7 +17,8 @@ CACD Archive automatically scrapes, parses, and archives daily cause lists from 
 - 📊 **Historical Archive** - Permanent storage with full-text search across all fields
 - 🔐 **User Authentication** - JWT-based login with role-based access control
 - 👥 **User Management** - Admin panel and CLI tools for managing accounts
-- 🔍 **REST API** - Public and authenticated endpoints with Swagger documentation
+- � **Saved Searches** - Email notifications when new hearings match your saved searches
+- �🔍 **REST API** - Public and authenticated endpoints with Swagger documentation
 - 🌐 **Web Interface** - Responsive frontend with clean URLs and dynamic navigation
 - 📧 **Error Notifications** - Email alerts when site structure changes
 - ⚡ **High Performance** - Built with Fastify for fast API responses

@@ -61,15 +61,29 @@ class EmailService {
   async loadTemplates() {
     const templatesDir = path.join(__dirname, '../templates/emails');
 
-    // Register handlebars helper for JSON formatting
-    handlebars.registerHelper('json', function(context) {
+    // Register handlebars helpers
+    handlebars.registerHelper('json', function (context) {
       return JSON.stringify(context, null, 2);
+    });
+
+    handlebars.registerHelper('if', function (conditional, options) {
+      if (conditional) {
+        return options.fn(this);
+      }
+      return options.inverse(this);
     });
 
     try {
       // Load data error template
       const dataErrorHtml = await fs.readFile(path.join(templatesDir, 'data-error.html'), 'utf8');
       this.templates.dataError = handlebars.compile(dataErrorHtml);
+
+      // Load saved search matches template
+      const savedSearchMatchesHtml = await fs.readFile(
+        path.join(templatesDir, 'saved-search-matches.html'),
+        'utf8'
+      );
+      this.templates.savedSearchMatches = handlebars.compile(savedSearchMatchesHtml);
 
       logger.debug('Email templates loaded successfully');
     } catch (error) {
@@ -195,17 +209,102 @@ class EmailService {
   }
 
   /**
-   * Send user match notification (future use)
-   * @param {string} userEmail - User's email address
-   * @param {Array} matches - Matching hearings
-   * @param {Object} _criteria - Search criteria that matched
+   * Send saved search matches notification
+   * @param {Object} params - Notification parameters
+   * @param {string} params.userEmail - User's email address
+   * @param {string} params.userName - User's name
+   * @param {Array} params.searches - Array of {searchText, matches: [...]}
+   * @param {string} params.baseUrl - Base URL of the application
    */
-  async sendMatchNotification(userEmail, matches, _criteria) {
-    // Placeholder for future implementation
-    logger.debug('Match notification feature not yet implemented', {
-      userEmail,
-      matchCount: matches.length
+  async sendSavedSearchMatches(params) {
+    if (!this.initialized || !config.email.enabled) {
+      logger.debug('Email not sent - service not initialized or disabled');
+      return;
+    }
+
+    const { userEmail, userName, searches, baseUrl } = params;
+
+    try {
+      // Calculate total matches
+      const matchCount = searches.reduce((total, search) => total + search.matches.length, 0);
+
+      // Prepare template data
+      const templateData = {
+        userName,
+        searches,
+        matchCount,
+        baseUrl
+      };
+
+      // Generate HTML email
+      const html = this.templates.savedSearchMatches(templateData);
+
+      // Generate plain text version
+      const text = this.generatePlainTextSavedSearchMatches(templateData);
+
+      // Send email
+      const info = await this.transporter.sendMail({
+        from: config.email.from,
+        to: userEmail,
+        subject: `CACD Archive: ${matchCount} New Match${matchCount !== 1 ? 'es' : ''} for Your Saved Searches`,
+        text,
+        html
+      });
+
+      logger.info('Saved search matches email sent successfully', {
+        messageId: info.messageId,
+        recipient: userEmail,
+        matchCount,
+        searchCount: searches.length
+      });
+
+      return info;
+    } catch (error) {
+      logger.error('Failed to send saved search matches email', {
+        error: error.message,
+        stack: error.stack,
+        userEmail
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Generate plain text version of saved search matches email
+   */
+  generatePlainTextSavedSearchMatches(data) {
+    let text = `CACD Archive - Saved Search Matches\n`;
+    text += '==============================================\n\n';
+    text += `Hello ${data.userName},\n\n`;
+    text += `We've found ${data.matchCount} new court hearing(s) that match your saved searches.\n\n`;
+
+    data.searches.forEach((search) => {
+      text += `\nSearch: "${search.searchText}"\n`;
+      text += `Matches: ${search.matches.length}\n`;
+      text += '---\n';
+
+      search.matches.forEach((match) => {
+        text += `\n  ${match.case_name}\n`;
+        text += `  Date: ${match.list_date_formatted}\n`;
+        text += `  Time: ${match.hearing_time}\n`;
+        text += `  Court: ${match.court_room}`;
+        if (match.hearing_type) {
+          text += ` (${match.hearing_type})`;
+        }
+        text += '\n';
+        if (match.judge_names) {
+          text += `  Judge: ${match.judge_names}\n`;
+        }
+        text += '\n';
+      });
     });
+
+    text += `\n\nGo to the CACD Archive: ${data.baseUrl}\n\n`;
+    text += '---\n';
+    text +=
+      "You're receiving this email because you have saved searches with notifications enabled.\n";
+
+    return text;
   }
 
   /**

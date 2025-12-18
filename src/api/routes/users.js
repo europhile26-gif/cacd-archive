@@ -156,6 +156,46 @@ async function userRoutes(fastify, _options) {
       }
     }
   );
+
+  /**
+   * PATCH /api/v1/users/me/notifications
+   * Toggle email notifications for saved searches
+   */
+  fastify.patch(
+    '/me/notifications',
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ['Users'],
+        description: 'Update notification preferences',
+        body: {
+          type: 'object',
+          required: ['email_notifications_enabled'],
+          properties: {
+            email_notifications_enabled: { type: 'boolean' }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      try {
+        const { email_notifications_enabled } = request.body;
+
+        await User.updateNotificationPreferences(request.user.id, email_notifications_enabled);
+
+        return reply.send({
+          success: true,
+          email_notifications_enabled
+        });
+      } catch (error) {
+        fastify.log.error({ error }, 'Update notification preferences error');
+        return reply.code(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to update notification preferences'
+        });
+      }
+    }
+  );
 }
 
 module.exports = userRoutes;

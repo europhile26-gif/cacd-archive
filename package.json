@@ -1,6 +1,6 @@
 {
   "name": "cacd-archive",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Court of Appeal Criminal Division Daily Cause List Archive",
   "main": "src/index.js",
   "scripts": {
@@ -38,6 +38,7 @@
     "@fastify/swagger-ui": "^5.2.3",
     "bcrypt": "^6.0.0",
     "bootstrap": "^5.3.8",
+    "bootstrap-icons": "^1.13.1",
     "boxen": "^5.1.2",
     "chalk": "^4.1.2",
     "cheerio": "^1.0.0-rc.12",

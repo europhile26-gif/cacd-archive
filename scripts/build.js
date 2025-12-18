@@ -16,21 +16,37 @@ const DIST_DIR = path.join(__dirname, '../dist');
 const packageJson = require('../package.json');
 const VERSION = packageJson.version;
 
+// List of JavaScript files to minify
+const JS_FILES = ['app.js', 'auth.js', 'nav.js', 'dashboard.js', 'admin.js', 'login.js'];
+
+// List of HTML files to process
+const HTML_FILES = [
+  'index.html',
+  'login.html',
+  'register.html',
+  'reset-password.html',
+  'dashboard.html',
+  'admin.html'
+];
+
 async function build() {
   try {
     console.log('Building production assets...\n');
 
-    // Bundle and minify JavaScript
+    // Bundle and minify JavaScript files
     console.log('Bundling JavaScript...');
-    await esbuild.build({
-      entryPoints: [path.join(PUBLIC_DIR, 'js/app.js')],
-      bundle: true,
-      minify: true,
-      sourcemap: true,
-      target: ['es2020'],
-      outfile: path.join(DIST_DIR, 'js/app.min.js')
-    });
-    console.log('✓ JavaScript bundled and minified\n');
+    for (const jsFile of JS_FILES) {
+      await esbuild.build({
+        entryPoints: [path.join(PUBLIC_DIR, 'js', jsFile)],
+        bundle: false, // Don't bundle dependencies, keep separate
+        minify: true,
+        sourcemap: true,
+        target: ['es2020'],
+        outfile: path.join(DIST_DIR, 'js', jsFile.replace('.js', '.min.js'))
+      });
+      console.log(`  ✓ ${jsFile} minified`);
+    }
+    console.log('✓ All JavaScript bundled and minified\n');
 
     // Minify CSS
     console.log('Minifying CSS...');
@@ -43,33 +59,39 @@ async function build() {
     });
     console.log('✓ CSS minified\n');
 
-    // Process and minify HTML
+    // Process and minify HTML files
     console.log('Processing and minifying HTML...');
-    const htmlPath = path.join(PUBLIC_DIR, 'index.html');
-    let html = fs.readFileSync(htmlPath, 'utf8');
+    for (const htmlFile of HTML_FILES) {
+      const htmlPath = path.join(PUBLIC_DIR, htmlFile);
+      let html = fs.readFileSync(htmlPath, 'utf8');
 
-    // Update CSS reference (match with or without leading slash, preserve/add version)
-    html = html.replace(
-      /href="\/?css\/styles\.css(\?ver=[^"]*)?"\/?/g,
-      `href="/css/styles.min.css?ver=${VERSION}"`
-    );
+      // Update CSS reference
+      html = html.replace(
+        /href="\/?css\/styles\.css(\?ver=[^"]*)?"/g,
+        `href="/css/styles.min.css?ver=${VERSION}"`
+      );
 
-    // Update JS reference (match with or without leading slash, preserve/add version)
-    html = html.replace(
-      /src="\/?js\/app\.js(\?ver=[^"]*)?"\/?/g,
-      `src="/js/app.min.js?ver=${VERSION}"`
-    );
+      // Update JS references for all JS files
+      for (const jsFile of JS_FILES) {
+        const minFileName = jsFile.replace('.js', '.min.js');
+        const regex = new RegExp(
+          `src="\\/?js\\/${jsFile.replace('.', '\\.')}(\\?ver=[^"]*)?"`,'g'
+        );
+        html = html.replace(regex, `src="/js/${minFileName}?ver=${VERSION}"`);
+      }
 
-    // Minify HTML
-    html = html
-      .replace(/\s*\n\s*/g, '\n') // Remove extra whitespace between lines
-      .replace(/\n+/g, '\n') // Remove multiple newlines
-      .replace(/>\s+</g, '><') // Remove whitespace between tags
-      .replace(/<!--.*?-->/g, '') // Remove HTML comments
-      .trim();
+      // Minify HTML
+      html = html
+        .replace(/\s*\n\s*/g, '\n')
+        .replace(/\n+/g, '\n')
+        .replace(/>\s+</g, '><')
+        .replace(/<!--.*?-->/gs, '')
+        .trim();
 
-    fs.writeFileSync(path.join(DIST_DIR, 'index.html'), html);
-    console.log('✓ HTML minified\n');
+      fs.writeFileSync(path.join(DIST_DIR, htmlFile), html);
+      console.log(`  ✓ ${htmlFile} minified`);
+    }
+    console.log('✓ All HTML minified\n');
 
     // Copy and minify favicon.svg
     console.log('Processing favicon.svg...');
@@ -90,12 +112,28 @@ async function build() {
 
     // Report file sizes
     console.log('Build complete! File sizes:');
-    const jsSize = fs.statSync(path.join(DIST_DIR, 'js/app.min.js')).size;
+    
+    // Report JS sizes
+    console.log('\nJavaScript:');
+    let totalJsSize = 0;
+    for (const jsFile of JS_FILES) {
+      const minFile = jsFile.replace('.js', '.min.js');
+      const jsSize = fs.statSync(path.join(DIST_DIR, 'js', minFile)).size;
+      totalJsSize += jsSize;
+      console.log(`  ${minFile}: ${(jsSize / 1024).toFixed(2)} KB`);
+    }
+    console.log(`  Total JS: ${(totalJsSize / 1024).toFixed(2)} KB`);
+    
+    // Report CSS size
     const cssSize = fs.statSync(path.join(DIST_DIR, 'css/styles.min.css')).size;
+    console.log(`\nCSS:`);
+    console.log(`  styles.min.css: ${(cssSize / 1024).toFixed(2)} KB`);
+    
+    // Report favicon sizes
     const svgSize = fs.statSync(path.join(DIST_DIR, 'favicon.svg')).size;
-    console.log(`  JavaScript: ${(jsSize / 1024).toFixed(2)} KB`);
-    console.log(`  CSS: ${(cssSize / 1024).toFixed(2)} KB`);
-    console.log(`  Favicon SVG: ${(svgSize / 1024).toFixed(2)} KB`);
+    console.log(`\nFavicons:`);
+    console.log(`  favicon.svg: ${(svgSize / 1024).toFixed(2)} KB`);
+    
     console.log('\nAssets ready in dist/');
   } catch (error) {
     console.error('Build failed:', error);

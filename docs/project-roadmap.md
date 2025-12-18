@@ -1,7 +1,7 @@
 # CACD Archive - Project Roadmap
 
 **Document:** Project Roadmap & Milestones  
-**Version:** 2.0  
+**Version:** 2.1  
 **Date:** 18 December 2025  
 **Status:** Active Development
 
@@ -9,7 +9,7 @@
 
 ## Project Status Overview
 
-### ✅ Completed (v1.0 - v1.5.0)
+### ✅ Completed (v1.0 - v1.7.0)
 
 - Core scraping engine (link discovery + table parsing)
 - Database schema and migrations
@@ -19,17 +19,24 @@
 - Security hardening (Helmet, XSS protection, rate limiting)
 - Self-hosted Bootstrap, CSS variables
 - PM2 deployment configuration
+- User authentication system (v1.6.0)
+- Admin CLI tools (v1.6.0)
+- Saved searches with email notifications (v1.7.0)
+- Production build system with minification (v1.7.0)
+- JWT auto-refresh (v1.7.0)
 
 ### 🚧 In Progress
 
-- User authentication system
-- Admin CLI tools
-- Saved searches functionality
+- Staging deployment and testing
+- Additional email templates (welcome, approval, password reset)
 
 ### 📋 Planned
 
-- User notifications for search matches
-- Advanced user management
+- Custom error pages (404, 500)
+- Enhanced health check endpoint
+- Process management (PM2/systemd)
+- Nginx reverse proxy configuration
+- Advanced user management features
 - Audit logging
 
 ---
@@ -43,10 +50,11 @@
 
 ---
 
-## Phase 2: User Authentication & Authorization 🚧 IN PROGRESS
+## Phase 2: User Authentication & Authorization ✅ COMPLETE
 
-**Target:** v2.0.0  
-**Duration:** 2-3 weeks  
+**Target:** v1.6.0  
+**Shipped:** 18 December 2025  
+**Duration:** 2 weeks  
 **Priority:** HIGH
 
 ### Milestone 1: Database Schema & Models
@@ -268,15 +276,80 @@
 
 ---
 
-## Phase 3: CLI Administration Tools 🚧 PLANNING
+## Phase 3: Saved Searches & Notifications ✅ COMPLETE
 
-**Target:** v2.1.0  
+**Target:** v1.7.0  
+**Shipped:** 18 December 2025  
 **Duration:** 1 week  
 **Priority:** HIGH
 
-### Milestone 5: CLI Framework
+### Milestone: Saved Searches Implementation ✅ COMPLETE
 
-**Status:** Not Started
+**Status:** Shipped
+
+#### Completed Tasks:
+
+- ✅ Database schema (migration 007)
+  - `saved_searches` table (user_id, search_text, enabled)
+  - `search_notifications` table (tracking sent emails)
+  - `email_notifications_enabled` field on users table
+
+- ✅ SavedSearch model
+  - CRUD operations (create, read, update, delete)
+  - Validation (3-255 chars, max 10 per user)
+  - Rate limiting checks (2 emails per 12 hours)
+  - Notification tracking
+
+- ✅ REST API endpoints
+  - `GET /api/v1/searches` - List saved searches
+  - `GET /api/v1/searches/:id` - Get single search
+  - `POST /api/v1/searches` - Create search
+  - `PATCH /api/v1/searches/:id` - Update search
+  - `DELETE /api/v1/searches/:id` - Delete search
+  - `PATCH /api/v1/users/me/notifications` - Toggle notifications
+
+- ✅ Email notification system
+  - Handlebars email templates (HTML + plain text)
+  - Integration with scraper workflow
+  - Consolidated emails per user
+  - Full-text search with MATCH...AGAINST
+  - Rate limiting enforcement
+
+- ✅ Dashboard UI
+  - Create/edit/delete saved searches
+  - Toggle searches on/off
+  - Toggle email notifications
+  - Form validation and error handling
+
+- ✅ Build system improvements
+  - Minify all JS files (6 files)
+  - Process all HTML files (6 files)
+  - Version-based cache busting
+  - Production dist/ directory
+
+- ✅ Authentication enhancements
+  - Automatic JWT token refresh
+  - Background token checks
+  - Fetch interceptor for API calls
+
+**Deliverables:**
+
+- Complete saved searches feature with email notifications
+- Production-ready build system
+- Improved authentication UX
+
+---
+
+## Phase 4: CLI Administration Tools ✅ COMPLETE (was Phase 3)
+
+**Target:** v1.6.0  
+**Shipped:** 18 December 2025  
+**Duration:** 1 week  
+**Priority:** HIGH
+
+### Milestone 5: CLI Framework ✅ COMPLETE
+
+**Status:** Shipped
 
 #### Tasks:
 

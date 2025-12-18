@@ -8,6 +8,9 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css" />
 
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="/vendor/bootstrap-icons/bootstrap-icons.css" />
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/css/styles.css" />
 
@@ -60,13 +63,15 @@
         border: 1px solid #dee2e6;
         border-radius: 4px;
         margin-bottom: 0.5rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
       }
 
       .saved-search-item:hover {
         background-color: #f8f9fa;
+      }
+
+      .saved-search-item .btn-group {
+        margin-left: auto;
+        flex-shrink: 0;
       }
 
       .search-name {
@@ -189,6 +194,8 @@
                 <button class="btn btn-sm btn-primary" id="addSearchBtn">+ New Search</button>
               </div>
 
+              <div id="searchesAlert" class="alert d-none" role="alert"></div>
+
               <div id="savedSearchesList">
                 <p class="text-muted text-center py-3">
                   No saved searches yet. Create one to get notified of new hearings matching your
@@ -196,15 +203,6 @@
                 </p>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- Admin Link (if applicable) -->
-        <div id="adminSection" class="d-none">
-          <div class="dashboard-card text-center">
-            <h2>Administrator</h2>
-            <p class="text-muted">You have administrative privileges.</p>
-            <a href="/admin" class="btn btn-warning">Manage Users</a>
           </div>
         </div>
       </div>
@@ -219,47 +217,40 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
+            <div id="searchAlert" class="alert d-none" role="alert"></div>
+
             <form id="searchForm">
-              <div class="mb-3">
-                <label for="searchName" class="form-label">Search Name</label>
-                <input type="text" class="form-control" id="searchName" required />
-              </div>
+              <input type="hidden" id="searchId" value="" />
 
               <div class="mb-3">
-                <label for="searchCounty" class="form-label">County</label>
-                <select class="form-select" id="searchCounty">
-                  <option value="">All Counties</option>
-                </select>
-              </div>
-
-              <div class="mb-3">
-                <label for="searchHearingType" class="form-label">Hearing Type</label>
+                <label for="searchText" class="form-label">Search Text</label>
                 <input
                   type="text"
                   class="form-control"
-                  id="searchHearingType"
-                  placeholder="e.g., Application"
+                  id="searchText"
+                  required
+                  minlength="3"
+                  maxlength="255"
+                  placeholder="e.g., London Birmingham"
                 />
-              </div>
-
-              <div class="mb-3">
-                <label for="searchKeywords" class="form-label">Keywords</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="searchKeywords"
-                  placeholder="e.g., planning permission"
-                />
-                <small class="form-text text-muted"
-                  >Searches in hearing title, applicant, and agent fields.</small
-                >
+                <small class="form-text text-muted">
+                  Searches case names for today and tomorrow. Minimum 3 characters.
+                </small>
               </div>
 
               <div class="mb-3 form-check">
-                <input type="checkbox" class="form-check-input" id="searchNotifications" checked />
-                <label class="form-check-label" for="searchNotifications">
-                  Send email notifications for new matches
+                <input type="checkbox" class="form-check-input" id="searchEnabled" checked />
+                <label class="form-check-label" for="searchEnabled">
+                  Enable this search (notifications when new matches found)
                 </label>
+              </div>
+
+              <div class="alert alert-info">
+                <small>
+                  <strong>How it works:</strong> When new hearings are added to the database, we'll
+                  check if any match your search text for today or tomorrow's dates. If matches are
+                  found, you'll receive a single email with all results.
+                </small>
               </div>
             </form>
           </div>
@@ -273,6 +264,9 @@
 
     <!-- Bootstrap JS -->
     <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Auth utilities (token refresh) -->
+    <script src="/js/auth.js"></script>
 
     <!-- Dashboard JS -->
     <script src="/js/dashboard.js"></script>

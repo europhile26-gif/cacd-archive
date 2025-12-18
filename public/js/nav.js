@@ -32,8 +32,17 @@
  */
 function renderAuthenticatedNav(navigation) {
   const navContainer = document.getElementById('mainNav');
+  const currentPath = window.location.pathname;
 
-  navContainer.innerHTML = navigation
+  // Filter out navigation items that match the current page
+  const filteredNav = navigation.filter((item) => {
+    // Don't filter logout action
+    if (item.action === 'logout') return true;
+    // Filter out if current page matches this nav item's URL
+    return item.url !== currentPath;
+  });
+
+  navContainer.innerHTML = filteredNav
     .map((item) => {
       if (item.action === 'logout') {
         return `<a href="#" class="btn btn-outline-light btn-sm" data-nav-action="logout">

@@ -26,12 +26,12 @@ async function createServer() {
   await server.register(fastifyHelmet, {
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ['\'self\''],
-        styleSrc: ['\'self\'', '\'unsafe-inline\''],
-        scriptSrc: ['\'self\'', '\'unsafe-inline\''],
-        imgSrc: ['\'self\'', 'data:'],
-        fontSrc: ['\'self\''],
-        connectSrc: ['\'self\'']
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:'],
+        fontSrc: ["'self'"],
+        connectSrc: ["'self'"]
       }
     },
     crossOriginEmbedderPolicy: false,
@@ -45,12 +45,12 @@ async function createServer() {
   // CORS - configure based on environment
   const corsOptions = config.api.cors.enabled
     ? {
-      origin:
+        origin:
           config.env === 'production' && config.api.cors.origins.length > 0
             ? config.api.cors.origins
             : true,
-      credentials: true
-    }
+        credentials: true
+      }
     : false;
 
   if (corsOptions !== false) {
@@ -103,6 +103,7 @@ async function createServer() {
   await server.register(require('./routes/auth'), { prefix: '/api/v1/auth' });
   await server.register(require('./routes/users'), { prefix: '/api/v1/users' });
   await server.register(require('./routes/admin'), { prefix: '/api/v1/admin' });
+  await server.register(require('./routes/searches'), { prefix: '/api/v1' });
 
   // Register frontend routes (clean URLs) BEFORE static files
   await server.register(require('./routes/frontend'));
@@ -111,6 +112,13 @@ async function createServer() {
   await server.register(fastifyStatic, {
     root: path.join(__dirname, '../../node_modules/bootstrap/dist'),
     prefix: '/vendor/bootstrap/',
+    decorateReply: false
+  });
+
+  // Serve Bootstrap Icons from node_modules
+  await server.register(fastifyStatic, {
+    root: path.join(__dirname, '../../node_modules/bootstrap-icons/font'),
+    prefix: '/vendor/bootstrap-icons/',
     decorateReply: false
   });
 

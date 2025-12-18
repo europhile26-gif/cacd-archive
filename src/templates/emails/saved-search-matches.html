@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CACD Archive - Saved Search Matches</title>
+    <style>
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background-color: #ffffff;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        background-color: #475569;
+        color: #ffffff;
+        padding: 20px;
+        border-radius: 8px 8px 0 0;
+        margin: -30px -30px 30px -30px;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 600;
+      }
+      .header .subtitle {
+        margin: 5px 0 0 0;
+        opacity: 0.9;
+        font-size: 14px;
+      }
+      .badge {
+        display: inline-block;
+        background-color: #e0e7ff;
+        color: #475569;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 15px;
+      }
+      .search-group {
+        margin-bottom: 30px;
+        border-left: 3px solid #475569;
+        padding-left: 20px;
+      }
+      .search-query {
+        font-size: 16px;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 10px;
+      }
+      .match-count {
+        font-size: 14px;
+        color: #64748b;
+        margin-bottom: 15px;
+      }
+      .case-card {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 15px;
+        margin-bottom: 12px;
+      }
+      .case-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 8px;
+      }
+      .case-details {
+        font-size: 13px;
+        color: #64748b;
+        margin: 4px 0;
+      }
+      .case-details strong {
+        color: #475569;
+      }
+      .footer {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #e2e8f0;
+        font-size: 12px;
+        color: #64748b;
+        text-align: center;
+      }
+      .footer a {
+        color: #475569;
+        text-decoration: none;
+      }
+      .footer a:hover {
+        text-decoration: underline;
+      }
+      .button {
+        display: inline-block;
+        background-color: #475569;
+        color: #ffffff;
+        padding: 10px 20px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        margin: 10px 0;
+      }
+      .button:hover {
+        background-color: #334155;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🔔 Saved Search Matches</h1>
+        <div class="subtitle">Your saved searches have found new court hearings</div>
+      </div>
+
+      <div class="badge">{{matchCount}} Total Match{{#if matchCount}}es{{/if}}</div>
+
+      <p>Hello {{userName}},</p>
+
+      <p>We've found new court hearings that match your saved searches. Here are the results:</p>
+
+      {{#each searches}}
+      <div class="search-group">
+        <div class="search-query">"{{searchText}}"</div>
+        <div class="match-count">{{matches.length}} match{{#if matches.length}}es{{/if}}</div>
+
+        {{#each matches}}
+        <div class="case-card">
+          <div class="case-title">{{this.case_name}}</div>
+          <div class="case-details"><strong>Date:</strong> {{this.list_date_formatted}}</div>
+          <div class="case-details"><strong>Time:</strong> {{this.hearing_time}}</div>
+          <div class="case-details">
+            <strong>Court:</strong> {{this.court_room}} {{#if this.hearing_type}}
+            ({{this.hearing_type}}) {{/if}}
+          </div>
+          {{#if this.judge_names}}
+          <div class="case-details"><strong>Judge:</strong> {{this.judge_names}}</div>
+          {{/if}}
+        </div>
+        {{/each}}
+      </div>
+      {{/each}}
+
+      <div class="footer">
+        <p>
+          You're receiving this email because you have saved searches with notifications enabled.
+        </p>
+        <p style="margin-top: 15px;">
+          <a href="{{baseUrl}}">Go to the CACD Archive</a>
+        </p>
+        <p style="margin-top: 15px">
+          CACD Archive - Court of Appeal Criminal Division Daily Cause List
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

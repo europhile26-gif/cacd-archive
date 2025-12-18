@@ -336,6 +336,18 @@ class User {
 
     return user;
   }
+
+  /**
+   * Update user notification preferences
+   * @param {number} id - User ID
+   * @param {boolean} enabled - Email notifications enabled
+   * @returns {Promise<boolean>} Success status
+   */
+  static async updateNotificationPreferences(id, enabled) {
+    const sql = 'UPDATE users SET email_notifications_enabled = ? WHERE id = ?';
+    await db.query(sql, [enabled ? 1 : 0, id]);
+    return true;
+  }
 }
 
 module.exports = User;
