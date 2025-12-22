@@ -1,3 +1,14 @@
+const { runStartupSecurityChecks } = require('./utils/startup-security');
+
+// Run security checks before loading any configuration
+// This must be done before loading dotenv/config
+try {
+  runStartupSecurityChecks();
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}
+
 const config = require('./config/config');
 const { runMigrations } = require('./db/migrator');
 const { createServer } = require('./api/server');

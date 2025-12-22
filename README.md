@@ -2,7 +2,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![License](https://img.shields.io/badge/version-1.7.3-blue.svg)]()
+[![License](https://img.shields.io/badge/version-1.7.4-blue.svg)]()
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)]()
 
 > Automated web scraping and archival system for UK Court of Appeal (Criminal Division) Daily Cause Lists
@@ -104,10 +104,31 @@ SMTP_HOST=smtp.example.com
 SMTP_USER=alerts@example.com
 SMTP_PASSWORD=your_password
 
+# Security
+# Skip .env permission check (useful on Windows)
+SKIP_STARTUP_FILESYSTEM_CHECK=false
+
 # API
 RECORDS_PER_PAGE=20
 API_RATE_LIMIT_MAX=100
 ```
+
+## Security
+
+### File Permissions
+
+The application checks `.env` file permissions on startup to ensure sensitive credentials are protected:
+
+- **Unix/Linux**: `.env` must have `0600` permissions (owner read/write only)
+- **Windows**: Permission check is automatically skipped
+- **Override**: Set `SKIP_STARTUP_FILESYSTEM_CHECK=true` to bypass the check
+
+```bash
+# Fix .env permissions on Unix/Linux
+chmod 600 .env
+```
+
+If the check fails, the application will terminate with instructions on how to fix the issue.
 
 ## API Usage
 

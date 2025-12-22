@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.4] - 2025-12-22
+
+### Added
+
+- **Startup Security Checks**
+  - Added `.env` file permission validation on startup
+  - Verifies `.env` has secure 0600 permissions (owner read/write only)
+  - Prevents application startup if `.env` file has insecure permissions
+  - Displays helpful error messages with instructions to fix permissions
+  - Automatically skips check on Windows systems (not applicable)
+  - Added `SKIP_STARTUP_FILESYSTEM_CHECK` environment variable to bypass check
+  - Security check runs before loading configuration in both main app and CLI
+  - Helps prevent accidental exposure of sensitive environment variables
+
+---
+
 ## [1.7.3] - 2025-12-18
 
 ### Fixed

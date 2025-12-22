@@ -5,5 +5,17 @@
  * Command-line interface for administrative tasks
  */
 
-require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
+const path = require('path');
+const { runStartupSecurityChecks } = require('../src/utils/startup-security');
+
+// Run security checks before loading dotenv
+try {
+  runStartupSecurityChecks();
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}
+
+// Now load dotenv and start CLI
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 require('../src/cli/index');
