@@ -15,6 +15,10 @@ class EmailService {
     this.transporter = null;
     this.templates = {};
     this.initialized = false;
+    // Track last email sent time for throttling (in milliseconds)
+    this.lastEmailSent = {};
+    // Throttle duration: 30 minutes in milliseconds
+    this.throttleDuration = 30 * 60 * 1000;
   }
 
   /**
@@ -74,11 +78,11 @@ class EmailService {
     const templatesDir = path.join(__dirname, '../templates/emails');
 
     // Register handlebars helpers
-    handlebars.registerHelper('json', function (context) {
+    handlebars.registerHelper('json', function(context) {
       return JSON.stringify(context, null, 2);
     });
 
-    handlebars.registerHelper('if', function (conditional, options) {
+    handlebars.registerHelper('if', function(conditional, options) {
       if (conditional) {
         return options.fn(this);
       }
@@ -108,6 +112,23 @@ class EmailService {
   }
 
   /**
+   * Check if enough time has passed since last email of this type
+   * @param {string} errorType - Error type
+   * @returns {boolean} True if email should be sent
+   */
+  shouldSendEmail(errorType) {
+    const now = Date.now();
+    const lastSent = this.lastEmailSent[errorType];
+
+    if (!lastSent) {
+      return true;
+    }
+
+    const timeSinceLastEmail = now - lastSent;
+    return timeSinceLastEmail >= this.throttleDuration;
+  }
+
+  /**
    * Send data error notification
    * @param {Object} errorDetails - Error details
    * @param {string} errorDetails.type - Error type ('link-discovery' or 'table-parsing')
@@ -130,6 +151,20 @@ class EmailService {
 
     if (!config.email.dataErrorRecipient) {
       logger.warn('Data error email not sent - no recipient configured');
+      return;
+    }
+
+    // Check if email should be throttled
+    if (!this.shouldSendEmail(errorDetails.type)) {
+      const lastSent = this.lastEmailSent[errorDetails.type];
+      const timeSinceLastEmail = Date.now() - lastSent;
+      const minutesSinceLastEmail = Math.floor(timeSinceLastEmail / 60000);
+
+      logger.info('Data error email throttled', {
+        errorType: errorDetails.type,
+        minutesSinceLastEmail,
+        throttleDurationMinutes: this.throttleDuration / 60000
+      });
       return;
     }
 
@@ -170,6 +205,9 @@ class EmailService {
         recipient: config.email.dataErrorRecipient,
         errorType: errorDetails.type
       });
+
+      // Record the time this email was sent for throttling
+      this.lastEmailSent[errorDetails.type] = Date.now();
 
       return info;
     } catch (error) {
@@ -293,7 +331,7 @@ class EmailService {
    * Generate plain text version of saved search matches email
    */
   generatePlainTextSavedSearchMatches(data) {
-    let text = `CACD Archive - Saved Search Matches\n`;
+    let text = 'CACD Archive - Saved Search Matches\n';
     text += '==============================================\n\n';
     text += `Hello ${data.userName},\n\n`;
     text += `We've found ${data.matchCount} new court hearing(s) that match your saved searches.\n\n`;
@@ -322,7 +360,7 @@ class EmailService {
     text += `\n\nGo to the CACD Archive: ${data.baseUrl}\n\n`;
     text += '---\n';
     text +=
-      "You're receiving this email because you have saved searches with notifications enabled.\n";
+      'You\'re receiving this email because you have saved searches with notifications enabled.\n';
 
     return text;
   }

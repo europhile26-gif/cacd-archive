@@ -12,7 +12,6 @@ const { requireAuth } = require('../middleware/auth');
  * @param {Object} options
  */
 async function savedSearchRoutes(fastify, _options) {
-
   /**
    * GET /api/v1/searches
    * List all saved searches for authenticated user
@@ -36,7 +35,7 @@ async function savedSearchRoutes(fastify, _options) {
         request.log.error(error);
         return reply.status(500).send({
           error: 'Failed to fetch saved searches',
-          message: error.message,
+          message: error.message
         });
       }
     }

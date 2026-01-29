@@ -3,7 +3,7 @@
  * Handles user authentication
  */
 
-(function () {
+(function() {
   'use strict';
 
   // DOM elements

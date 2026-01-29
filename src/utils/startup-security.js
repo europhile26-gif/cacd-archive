@@ -14,7 +14,7 @@ const logger = require('./logger');
  */
 function checkEnvFilePermissions(envPath) {
   const skipCheck = process.env.SKIP_STARTUP_FILESYSTEM_CHECK === 'true';
-  
+
   if (skipCheck) {
     logger.warn('SKIP_STARTUP_FILESYSTEM_CHECK is enabled - skipping .env permission check');
     logger.warn('This should only be used in development or on systems without Unix permissions');
@@ -35,19 +35,21 @@ function checkEnvFilePermissions(envPath) {
 
     const stats = fs.statSync(envPath);
     const mode = stats.mode;
-    
+
     // Extract permission bits (last 9 bits)
     const permissions = mode & parseInt('777', 8);
-    
+
     // Convert to octal string for logging
     const permissionsOctal = permissions.toString(8);
-    
+
     // Check if permissions are 0600 (owner read/write only)
     if (permissions !== parseInt('600', 8)) {
       logger.error('╔════════════════════════════════════════════════════════════════╗');
       logger.error('║                   SECURITY ERROR                               ║');
       logger.error('╠════════════════════════════════════════════════════════════════╣');
-      logger.error(`║ .env file has insecure permissions: ${permissionsOctal.padEnd(4)}                        ║`);
+      logger.error(
+        `║ .env file has insecure permissions: ${permissionsOctal.padEnd(4)}                        ║`
+      );
       logger.error('║ Required permissions: 0600 (read/write for owner only)        ║');
       logger.error('║                                                                ║');
       logger.error('║ To fix this issue, run:                                       ║');
@@ -58,10 +60,9 @@ function checkEnvFilePermissions(envPath) {
       logger.error('╚════════════════════════════════════════════════════════════════╝');
       return false;
     }
-    
+
     logger.info(`✓ .env file permissions verified (${permissionsOctal})`);
     return true;
-    
   } catch (error) {
     logger.error('Error checking .env file permissions:', error);
     return false;
@@ -74,13 +75,13 @@ function checkEnvFilePermissions(envPath) {
  */
 function runStartupSecurityChecks() {
   const envPath = path.join(__dirname, '../../.env');
-  
+
   logger.info('Running startup security checks...');
-  
+
   if (!checkEnvFilePermissions(envPath)) {
     throw new Error('Startup security check failed: .env file has insecure permissions');
   }
-  
+
   logger.info('✓ All startup security checks passed');
 }
 

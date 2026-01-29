@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.8.0] - 2026-01-29
+
+### Added
+
+- **Email Notification Throttling**
+  - Data error emails now throttled to one per 30 minutes per error type
+  - Prevents email flooding during prolonged site outages or maintenance
+  - Independent throttling for Link Discovery and Table Parsing errors
+  - In-memory tracking of last email sent time for each error type
+  - Logs throttled email attempts for monitoring
+
+### Changed
+
+- **Email Service Behavior**
+  - EmailService now tracks last sent time for each error type
+  - 30-minute cooldown period between error emails of the same type
+  - Throttling does not affect saved search notification emails
+
+---
+
 ## [1.7.4] - 2025-12-22
 
 ### Added
@@ -134,7 +154,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Authentication Improvements**
   - Automatic JWT token refresh on client-side
   - Refreshes when <5 minutes remaining before expiry
-  - Intercepts all /api/* fetch calls to ensure valid tokens
+  - Intercepts all /api/\* fetch calls to ensure valid tokens
   - Background check every 60 seconds
   - Eliminates aggressive logout issues
 

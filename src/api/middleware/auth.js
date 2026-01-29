@@ -79,7 +79,7 @@ async function requireAuth(request, reply) {
  * @param {string} roleSlug - Required role slug
  */
 function requireRole(roleSlug) {
-  return async function (request, reply) {
+  return async function(request, reply) {
     if (!request.user) {
       return reply.code(401).send({
         error: 'Unauthorized',
@@ -104,7 +104,7 @@ function requireRole(roleSlug) {
  * @param {string[]} roleSlugs - Array of acceptable role slugs
  */
 function requireAnyRole(roleSlugs) {
-  return async function (request, reply) {
+  return async function(request, reply) {
     if (!request.user) {
       return reply.code(401).send({
         error: 'Unauthorized',
@@ -129,7 +129,7 @@ function requireAnyRole(roleSlugs) {
  * @param {string} capabilitySlug - Required capability slug
  */
 function requireCapability(capabilitySlug) {
-  return async function (request, reply) {
+  return async function(request, reply) {
     if (!request.user) {
       return reply.code(401).send({
         error: 'Unauthorized',
@@ -154,7 +154,7 @@ function requireCapability(capabilitySlug) {
  * @param {string[]} capabilitySlugs - Array of acceptable capability slugs
  */
 function requireAnyCapability(capabilitySlugs) {
-  return async function (request, reply) {
+  return async function(request, reply) {
     if (!request.user) {
       return reply.code(401).send({
         error: 'Unauthorized',

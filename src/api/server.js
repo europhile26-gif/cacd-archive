@@ -27,12 +27,12 @@ async function createServer() {
   await server.register(fastifyHelmet, {
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", 'data:'],
-        fontSrc: ["'self'"],
-        connectSrc: ["'self'"]
+        defaultSrc: ['\'self\''],
+        styleSrc: ['\'self\'', '\'unsafe-inline\''],
+        scriptSrc: ['\'self\'', '\'unsafe-inline\''],
+        imgSrc: ['\'self\'', 'data:'],
+        fontSrc: ['\'self\''],
+        connectSrc: ['\'self\'']
       }
     },
     crossOriginEmbedderPolicy: false,
@@ -46,12 +46,12 @@ async function createServer() {
   // CORS - configure based on environment
   const corsOptions = config.api.cors.enabled
     ? {
-        origin:
+      origin:
           config.env === 'production' && config.api.cors.origins.length > 0
             ? config.api.cors.origins
             : true,
-        credentials: true
-      }
+      credentials: true
+    }
     : false;
 
   if (corsOptions !== false) {
@@ -119,10 +119,10 @@ async function createServer() {
 
             // Verify token
             const payload = AuthService.verifyToken(token);
-            
+
             // Valid access token - skip rate limiting
             return payload && payload.type === 'access';
-          } catch (err) {
+          } catch {
             // Token invalid/expired - apply rate limiting
             return false;
           }

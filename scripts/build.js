@@ -75,7 +75,8 @@ async function build() {
       for (const jsFile of JS_FILES) {
         const minFileName = jsFile.replace('.js', '.min.js');
         const regex = new RegExp(
-          `src="\\/?js\\/${jsFile.replace('.', '\\.')}(\\?ver=[^"]*)?"`,'g'
+          `src="\\/?js\\/${jsFile.replace('.', '\\.')}(\\?ver=[^"]*)?"`,
+          'g'
         );
         html = html.replace(regex, `src="/js/${minFileName}?ver=${VERSION}"`);
       }
@@ -112,7 +113,7 @@ async function build() {
 
     // Report file sizes
     console.log('Build complete! File sizes:');
-    
+
     // Report JS sizes
     console.log('\nJavaScript:');
     let totalJsSize = 0;
@@ -123,17 +124,17 @@ async function build() {
       console.log(`  ${minFile}: ${(jsSize / 1024).toFixed(2)} KB`);
     }
     console.log(`  Total JS: ${(totalJsSize / 1024).toFixed(2)} KB`);
-    
+
     // Report CSS size
     const cssSize = fs.statSync(path.join(DIST_DIR, 'css/styles.min.css')).size;
-    console.log(`\nCSS:`);
+    console.log('\nCSS:');
     console.log(`  styles.min.css: ${(cssSize / 1024).toFixed(2)} KB`);
-    
+
     // Report favicon sizes
     const svgSize = fs.statSync(path.join(DIST_DIR, 'favicon.svg')).size;
-    console.log(`\nFavicons:`);
+    console.log('\nFavicons:');
     console.log(`  favicon.svg: ${(svgSize / 1024).toFixed(2)} KB`);
-    
+
     console.log('\nAssets ready in dist/');
   } catch (error) {
     console.error('Build failed:', error);
