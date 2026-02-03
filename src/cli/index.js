@@ -17,7 +17,7 @@ formatHeader('CACD Archive CLI', 'Administrative command-line interface');
 program
   .name('cacd')
   .description('CACD Archive administrative command-line interface')
-  .version('2.0.0');
+  .version('1.9.0');
 
 // User Management Commands
 const usersCommand = program.command('users').description('User management commands');
@@ -92,33 +92,30 @@ scraperCommand
   .command('run')
   .description('Run scraper immediately')
   .action(async () => {
-    const scraperService = require('../services/scraper-service');
-    const syncService = require('../services/sync-service');
+    const { scrapeAll } = require('../services/scraper-service');
     const { formatError, formatInfo, createSpinner } = require('./utils/format');
 
     try {
-      const spinner = createSpinner('Discovering cause list links...').start();
+      const spinner = createSpinner('Running scraper...').start();
 
-      const links = await scraperService.discoverLinks();
-      spinner.text = `Found ${links.length} links, parsing...`;
+      const result = await scrapeAll('manual');
 
-      const allHearings = [];
-      for (const link of links) {
-        const hearings = await scraperService.scrapeLink(link.url, link.date);
-        allHearings.push(...hearings);
+      if (result.success) {
+        spinner.succeed('Scraping completed successfully');
+        console.log();
+        formatInfo('Results:');
+        console.log(`  Links processed: ${result.linksProcessed}`);
+        console.log(`  Records added: ${result.recordsAdded}`);
+        console.log(`  Records updated: ${result.recordsUpdated}`);
+        console.log(`  Records deleted: ${result.recordsDeleted}`);
+        console.log(`  Duration: ${result.duration}ms`);
+      } else {
+        spinner.fail('Scraping completed with errors');
+        console.log();
+        formatError(`Error: ${result.error || 'Unknown error'}`);
       }
 
-      spinner.text = 'Syncing to database...';
-      const changes = await syncService.syncHearings(allHearings);
-
-      spinner.succeed('Scraping completed');
-      console.log();
-      formatInfo('Results:');
-      console.log(`  Added: ${changes.added}`);
-      console.log(`  Updated: ${changes.updated}`);
-      console.log(`  Deleted: ${changes.deleted}`);
-
-      process.exit(0);
+      process.exit(result.success ? 0 : 1);
     } catch (error) {
       formatError(`Scraping failed: ${error.message}`);
       process.exit(1);

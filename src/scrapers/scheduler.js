@@ -28,8 +28,23 @@ function shouldRunScheduler() {
 }
 
 /**
+ * Check if current time is within the scraping window
+ */
+function isWithinScrapingWindow() {
+  if (!config.scraping.timeWindow.enabled) {
+    return true; // No window restriction
+  }
+
+  const now = new Date();
+  const currentHour = now.getHours();
+  const { startHour, endHour } = config.scraping.timeWindow;
+
+  return currentHour >= startHour && currentHour < endHour;
+}
+
+/**
  * Perform a scheduled scrape
- * Checks if interval has elapsed before scraping
+ * Checks if interval has elapsed and if within time window before scraping
  */
 async function performScheduledScrape() {
   if (isShuttingDown) {
@@ -42,21 +57,32 @@ async function performScheduledScrape() {
     return;
   }
 
+  // Check if within scraping window
+  if (!isWithinScrapingWindow()) {
+    logger.debug('Skipping scheduled scrape - outside time window', {
+      currentHour: new Date().getHours(),
+      windowStart: config.scraping.timeWindow.startHour,
+      windowEnd: config.scraping.timeWindow.endHour
+    });
+    return;
+  }
+
   try {
     scrapingInProgress = true;
 
-    // Check if we should scrape based on interval
-    const should = await shouldScrape(config.scraping.intervalHours);
+    // Convert minutes to hours for shouldScrape function
+    const intervalHours = config.scraping.intervalMinutes / 60;
+    const should = await shouldScrape(intervalHours);
 
     if (!should) {
       logger.info('Skipping scheduled scrape - interval not elapsed', {
-        intervalHours: config.scraping.intervalHours
+        intervalMinutes: config.scraping.intervalMinutes
       });
       return;
     }
 
     logger.info('Starting scheduled scrape', {
-      intervalHours: config.scraping.intervalHours
+      intervalMinutes: config.scraping.intervalMinutes
     });
 
     const result = await scrapeAll('scheduled');
@@ -142,7 +168,14 @@ function startScheduler() {
 
   logger.info('Scheduler started', {
     checkInterval: 'Every 1 minute',
-    scrapeInterval: `${config.scraping.intervalHours} hours`,
+    scrapeInterval: `${config.scraping.intervalMinutes} minutes`,
+    timeWindowEnabled: config.scraping.timeWindow.enabled,
+    timeWindowStart: config.scraping.timeWindow.enabled
+      ? `${String(config.scraping.timeWindow.startHour).padStart(2, '0')}:00`
+      : 'N/A',
+    timeWindowEnd: config.scraping.timeWindow.enabled
+      ? `${String(config.scraping.timeWindow.endHour).padStart(2, '0')}:00`
+      : 'N/A',
     appInstance: config.appInstance
   });
 }
@@ -189,7 +222,11 @@ function getSchedulerStatus() {
     running: scheduledTask !== null,
     shouldRun: shouldRunScheduler(),
     appInstance: config.appInstance,
-    intervalHours: config.scraping.intervalHours,
+    intervalMinutes: config.scraping.intervalMinutes,
+    timeWindowEnabled: config.scraping.timeWindow.enabled,
+    timeWindowStart: config.scraping.timeWindow.startHour,
+    timeWindowEnd: config.scraping.timeWindow.endHour,
+    withinWindow: isWithinScrapingWindow(),
     scrapeOnStartup: config.scraping.scrapeOnStartup,
     scrapingInProgress,
     isShuttingDown

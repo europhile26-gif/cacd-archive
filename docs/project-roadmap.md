@@ -1,8 +1,8 @@
 # CACD Archive - Project Roadmap
 
 **Document:** Project Roadmap & Milestones  
-**Version:** 2.1  
-**Date:** 18 December 2025  
+**Version:** 2.2  
+**Date:** 3 February 2026  
 **Status:** Active Development
 
 ---
@@ -41,6 +41,62 @@
 
 ---
 
+## Phase 0: Scraper Refinements ✅ COMPLETE
+
+**Target:** v1.8.0  
+**Completed:** 3 February 2026  
+**Duration:** 1 day  
+**Priority:** HIGH
+
+### Milestone: Scraper Configuration Improvements ✅ COMPLETE
+
+**Status:** Shipped  
+**Objective:** Improve scraper scheduling flexibility and efficiency
+
+#### Completed Tasks:
+
+- ✅ Changed scraping interval from hours to minutes
+  - Updated `SCRAPE_INTERVAL_HOURS` to `SCRAPE_INTERVAL_MINUTES`
+  - Default interval: 120 minutes (2 hours)
+  - Supports intervals as low as 1 minute (e.g., 15 minutes)
+  - Backward-compatible conversion in scheduler
+
+- ✅ Implemented scraping time window
+  - Added `SCRAPE_WINDOW_ENABLED` configuration (default: true)
+  - Added `SCRAPE_WINDOW_START_HOUR` (default: 8 = 08:00)
+  - Added `SCRAPE_WINDOW_END_HOUR` (default: 18 = 18:00)
+  - Prevents unnecessary scraping during off-hours (e.g., nighttime)
+  - Window check runs every minute alongside interval check
+  - Configurable via environment variables
+
+- ✅ Updated configuration files
+  - Modified `src/config/config.js` to include new settings
+  - Updated `src/scrapers/scheduler.js` with window logic
+  - Updated `.env.example` with new variables
+  - Updated `README.md` documentation
+  - Updated `docs/implementation-plan.md`
+
+- ✅ Enhanced scheduler logging
+  - Added time window status to startup logs
+  - Added debug logging when outside window
+  - Improved scheduler status endpoint with window info
+
+**Deliverables:**
+
+- Minute-based scraping intervals (enables 15-minute scrapes)
+- Time-window-based scraping (08:00-18:00 default)
+- Reduced unnecessary load on origin website during off-hours
+- More flexible scheduling configuration
+
+**Benefits:**
+
+- More responsive data collection (15-minute intervals vs 2-hour)
+- Reduced nighttime traffic to court website
+- Better resource utilization
+- Easier testing with shorter intervals
+
+---
+
 ## Current Milestone Structure
 
 ## Phase 1: Foundation ✅ COMPLETE
@@ -57,222 +113,222 @@
 **Duration:** 2 weeks  
 **Priority:** HIGH
 
-### Milestone 1: Database Schema & Models
+### Milestone 1: Database Schema & Models ✅ COMPLETE
 
-**Status:** Not Started
+**Status:** Shipped (v1.6.0)
 
 #### Tasks:
 
-- [ ] Design authentication database schema
-  - [ ] `users` table (id, email, password_hash, name, created_at, updated_at, deleted_at)
-  - [ ] `roles` table (id, name, slug, description)
-  - [ ] `user_roles` junction table (user_id, role_id)
-  - [ ] `capabilities` table (id, name, slug, description, category)
-  - [ ] `role_capabilities` junction table (role_id, capability_id)
-  - [ ] `account_statuses` table (id, name, slug, description, is_active)
-  - [ ] `user_status_history` table (id, user_id, status_id, changed_by, changed_at, notes)
-  - [ ] `password_reset_tokens` table (id, user_id, token, expires_at, used_at)
-  - [ ] Add indexes (email unique, foreign keys, status lookups)
+- ✅ Design authentication database schema
+  - ✅ `users` table (id, email, password_hash, name, created_at, updated_at, deleted_at)
+  - ✅ `roles` table (id, name, slug, description)
+  - ✅ `user_roles` junction table (user_id, role_id)
+  - ✅ `capabilities` table (id, name, slug, description, category)
+  - ✅ `role_capabilities` junction table (role_id, capability_id)
+  - ✅ `account_statuses` table (id, name, slug, description, is_active)
+  - ✅ `user_status_history` table (id, user_id, status_id, changed_by, changed_at, notes)
+  - ✅ `password_reset_tokens` table (id, user_id, token, expires_at, used_at)
+  - ✅ Add indexes (email unique, foreign keys, status lookups)
 
-- [ ] Create migration files
-  - [ ] `004_authentication_schema.sql` - Core auth tables
-  - [ ] `005_roles_and_capabilities.sql` - RBAC tables
-  - [ ] `006_seed_default_roles.sql` - Seed admin/user roles with capabilities
+- ✅ Create migration files
+  - ✅ `004_authentication_schema.sql` - Core auth tables
+  - ✅ `005_roles_and_capabilities.sql` - RBAC tables
+  - ✅ `006_seed_default_roles.sql` - Seed admin/user roles with capabilities
 
-- [ ] Create database models/services
-  - [ ] `src/models/User.js` - User CRUD operations
-  - [ ] `src/models/Role.js` - Role management
-  - [ ] `src/models/Capability.js` - Capability management
-  - [ ] `src/models/AccountStatus.js` - Status management
-  - [ ] `src/services/auth-service.js` - Authentication logic
-  - [ ] `src/services/permission-service.js` - Authorization checks
+- ✅ Create database models/services
+  - ✅ `src/models/User.js` - User CRUD operations
+  - ✅ `src/models/Role.js` - Role management
+  - ✅ `src/models/Capability.js` - Capability management
+  - ✅ `src/models/AccountStatus.js` - Status management
+  - ✅ `src/services/auth-service.js` - Authentication logic
+  - ✅ `src/services/permission-service.js` - Authorization checks
 
 **Deliverables:**
 
-- Complete database schema for authentication
-- Migration files
-- Tested models with CRUD operations
+- Complete database schema for authentication ✅
+- Migration files ✅
+- Tested models with CRUD operations ✅
 
 ---
 
-### Milestone 2: Authentication Core
+### Milestone 2: Authentication Core ✅ COMPLETE
 
-**Status:** Not Started  
+**Status:** Shipped (v1.6.0)  
 **Dependencies:** Milestone 1
 
 #### Tasks:
 
-- [ ] Install authentication dependencies
-  - [ ] `bcrypt` for password hashing
-  - [ ] `jsonwebtoken` for JWT tokens
-  - [ ] `@fastify/jwt` for Fastify JWT plugin
-  - [ ] `@fastify/cookie` for secure cookie handling
-  - [ ] `@fastify/session` (optional - for session-based auth)
+- ✅ Install authentication dependencies
+  - ✅ `bcrypt` for password hashing
+  - ✅ `jsonwebtoken` for JWT tokens
+  - ✅ `@fastify/jwt` for Fastify JWT plugin
+  - ✅ `@fastify/cookie` for secure cookie handling
+  - ✅ `@fastify/session` (optional - for session-based auth)
 
-- [ ] Implement password hashing
-  - [ ] Hash password on user creation (bcrypt rounds: 12)
-  - [ ] Validate password on login
-  - [ ] Password strength validation (min 12 chars, complexity rules)
+- ✅ Implement password hashing
+  - ✅ Hash password on user creation (bcrypt rounds: 12)
+  - ✅ Validate password on login
+  - ✅ Password strength validation (min 12 chars, complexity rules)
 
-- [ ] Implement JWT token system
-  - [ ] Generate access tokens (15min expiry)
-  - [ ] Generate refresh tokens (7 days expiry)
-  - [ ] Token verification middleware
-  - [ ] Token refresh endpoint
-  - [ ] Secure token storage (httpOnly cookies)
+- ✅ Implement JWT token system
+  - ✅ Generate access tokens (15min expiry)
+  - ✅ Generate refresh tokens (7 days expiry)
+  - ✅ Token verification middleware
+  - ✅ Token refresh endpoint
+  - ✅ Secure token storage (httpOnly cookies)
 
-- [ ] Create authentication middleware
-  - [ ] `requireAuth` - Verify user is logged in
-  - [ ] `requireRole` - Check user has specific role
-  - [ ] `requireCapability` - Check user has specific capability
-  - [ ] `requireAccountActive` - Verify account not suspended/deleted
+- ✅ Create authentication middleware
+  - ✅ `requireAuth` - Verify user is logged in
+  - ✅ `requireRole` - Check user has specific role
+  - ✅ `requireCapability` - Check user has specific capability
+  - ✅ `requireAccountActive` - Verify account not suspended/deleted
 
-- [ ] Build password reset flow
-  - [ ] Generate secure reset tokens (crypto.randomBytes)
-  - [ ] Email reset link to user
-  - [ ] Token expiry (1 hour)
-  - [ ] One-time use enforcement
-  - [ ] Password reset completion
+- ✅ Build password reset flow
+  - ✅ Generate secure reset tokens (crypto.randomBytes)
+  - ✅ Email reset link to user
+  - ✅ Token expiry (1 hour)
+  - ✅ One-time use enforcement
+  - ✅ Password reset completion
 
 **Deliverables:**
 
-- Secure authentication system
-- JWT token management
-- Authorization middleware
-- Password reset functionality
+- Secure authentication system ✅
+- JWT token management ✅
+- Authorization middleware ✅
+- Password reset functionality ✅
 
 ---
 
-### Milestone 3: Authentication API Endpoints
+### Milestone 3: Authentication API Endpoints ✅ COMPLETE
 
-**Status:** Not Started  
+**Status:** Shipped (v1.6.0)  
 **Dependencies:** Milestone 2
 
 #### Tasks:
 
-- [ ] User registration endpoint
-  - [ ] `POST /api/v1/auth/register` - Create new user account
-  - [ ] Email validation (unique, valid format)
-  - [ ] Password validation (strength requirements)
-  - [ ] Set status to "pending_approval"
-  - [ ] Send welcome email (account pending message)
-  - [ ] Rate limiting (max 5 registrations per hour per IP)
+- ✅ User registration endpoint
+  - ✅ `POST /api/v1/auth/register` - Create new user account
+  - ✅ Email validation (unique, valid format)
+  - ✅ Password validation (strength requirements)
+  - ✅ Set status to "pending_approval"
+  - ✅ Send welcome email (account pending message)
+  - ✅ Rate limiting (max 5 registrations per hour per IP)
 
-- [ ] Login endpoint
-  - [ ] `POST /api/v1/auth/login` - Authenticate user
-  - [ ] Verify email + password
-  - [ ] Check account status (must be "active")
-  - [ ] Generate JWT tokens
-  - [ ] Set httpOnly cookies
-  - [ ] Log login attempt
-  - [ ] Rate limiting (max 10 attempts per hour)
+- ✅ Login endpoint
+  - ✅ `POST /api/v1/auth/login` - Authenticate user
+  - ✅ Verify email + password
+  - ✅ Check account status (must be "active")
+  - ✅ Generate JWT tokens
+  - ✅ Set httpOnly cookies
+  - ✅ Log login attempt
+  - ✅ Rate limiting (max 10 attempts per hour)
 
-- [ ] Logout endpoint
-  - [ ] `POST /api/v1/auth/logout` - Clear tokens
-  - [ ] Invalidate refresh token
-  - [ ] Clear cookies
-  - [ ] Log logout
+- ✅ Logout endpoint
+  - ✅ `POST /api/v1/auth/logout` - Clear tokens
+  - ✅ Invalidate refresh token
+  - ✅ Clear cookies
+  - ✅ Log logout
 
-- [ ] Token refresh endpoint
-  - [ ] `POST /api/v1/auth/refresh` - Get new access token
-  - [ ] Verify refresh token
-  - [ ] Generate new access token
-  - [ ] Rotate refresh token (optional)
+- ✅ Token refresh endpoint
+  - ✅ `POST /api/v1/auth/refresh` - Get new access token
+  - ✅ Verify refresh token
+  - ✅ Generate new access token
+  - ✅ Rotate refresh token (optional)
 
-- [ ] Password reset endpoints
-  - [ ] `POST /api/v1/auth/forgot-password` - Request reset
-  - [ ] `POST /api/v1/auth/reset-password` - Complete reset
-  - [ ] Email reset link with token
-  - [ ] Validate token and update password
+- ✅ Password reset endpoints
+  - ✅ `POST /api/v1/auth/forgot-password` - Request reset
+  - ✅ `POST /api/v1/auth/reset-password` - Complete reset
+  - ✅ Email reset link with token
+  - ✅ Validate token and update password
 
-- [ ] User profile endpoints
-  - [ ] `GET /api/v1/users/me` - Get current user profile
-  - [ ] `PATCH /api/v1/users/me` - Update own profile
-  - [ ] `GET /api/v1/users/:id` - Get user by ID (admin only)
-  - [ ] `PATCH /api/v1/users/:id` - Update user (admin only)
+- ✅ User profile endpoints
+  - ✅ `GET /api/v1/users/me` - Get current user profile
+  - ✅ `PATCH /api/v1/users/me` - Update own profile
+  - ✅ `GET /api/v1/users/:id` - Get user by ID (admin only)
+  - ✅ `PATCH /api/v1/users/:id` - Update user (admin only)
 
-- [ ] Admin user management endpoints
-  - [ ] `GET /api/v1/admin/users` - List all users
-  - [ ] `POST /api/v1/admin/users/:id/approve` - Approve pending user
-  - [ ] `POST /api/v1/admin/users/:id/deactivate` - Deactivate user
-  - [ ] `POST /api/v1/admin/users/:id/activate` - Reactivate user
-  - [ ] `DELETE /api/v1/admin/users/:id` - Soft delete user
-  - [ ] `POST /api/v1/admin/users/:id/roles` - Assign role
-  - [ ] `DELETE /api/v1/admin/users/:id/roles/:roleId` - Remove role
+- ✅ Admin user management endpoints
+  - ✅ `GET /api/v1/admin/users` - List all users
+  - ✅ `POST /api/v1/admin/users/:id/approve` - Approve pending user
+  - ✅ `POST /api/v1/admin/users/:id/deactivate` - Deactivate user
+  - ✅ `POST /api/v1/admin/users/:id/activate` - Reactivate user
+  - ✅ `DELETE /api/v1/admin/users/:id` - Soft delete user
+  - ✅ `POST /api/v1/admin/users/:id/roles` - Assign role
+  - ✅ `DELETE /api/v1/admin/users/:id/roles/:roleId` - Remove role
 
 **Deliverables:**
 
-- Complete authentication API
-- User management API for admins
-- Proper error handling and validation
-- API documentation updated
+- Complete authentication API ✅
+- User management API for admins ✅
+- Proper error handling and validation ✅
+- API documentation updated ✅
 
 ---
 
-### Milestone 4: Authentication UI
+### Milestone 4: Authentication UI ✅ COMPLETE
 
-**Status:** Not Started  
+**Status:** Shipped (v1.6.0)  
 **Dependencies:** Milestone 3
 
 #### Tasks:
 
-- [ ] Create login page
-  - [ ] `public/login.html` - Login form
-  - [ ] Email + password inputs
-  - [ ] "Remember me" checkbox
-  - [ ] "Forgot password?" link
-  - [ ] "Register" link
-  - [ ] Client-side validation
-  - [ ] Error message display
-  - [ ] Success redirect to dashboard/home
+- ✅ Create login page
+  - ✅ `public/login.html` - Login form
+  - ✅ Email + password inputs
+  - ✅ "Remember me" checkbox
+  - ✅ "Forgot password?" link
+  - ✅ "Register" link
+  - ✅ Client-side validation
+  - ✅ Error message display
+  - ✅ Success redirect to dashboard/home
 
-- [ ] Create registration page
-  - [ ] `public/register.html` - Sign-up form
-  - [ ] Email, password, confirm password, name fields
-  - [ ] Password strength indicator
-  - [ ] Terms of service checkbox
-  - [ ] Client-side validation
-  - [ ] Success message (pending approval)
+- ✅ Create registration page
+  - ✅ `public/register.html` - Sign-up form
+  - ✅ Email, password, confirm password, name fields
+  - ✅ Password strength indicator
+  - ✅ Terms of service checkbox
+  - ✅ Client-side validation
+  - ✅ Success message (pending approval)
 
-- [ ] Create forgot password page
-  - [ ] `public/forgot-password.html` - Request reset form
-  - [ ] Email input
-  - [ ] Success message (check email)
+- ✅ Create forgot password page
+  - ✅ `public/forgot-password.html` - Request reset form
+  - ✅ Email input
+  - ✅ Success message (check email)
 
-- [ ] Create reset password page
-  - [ ] `public/reset-password.html` - New password form
-  - [ ] Token from URL parameter
-  - [ ] New password + confirm fields
-  - [ ] Password strength indicator
-  - [ ] Success redirect to login
+- ✅ Create reset password page
+  - ✅ `public/reset-password.html` - New password form
+  - ✅ Token from URL parameter
+  - ✅ New password + confirm fields
+  - ✅ Password strength indicator
+  - ✅ Success redirect to login
 
-- [ ] Create user dashboard
-  - [ ] `public/dashboard.html` - Logged-in user home
-  - [ ] Welcome message with user name
-  - [ ] Navigation to saved searches
-  - [ ] Profile edit link
-  - [ ] Logout button
+- ✅ Create user dashboard
+  - ✅ `public/dashboard.html` - Logged-in user home
+  - ✅ Welcome message with user name
+  - ✅ Navigation to saved searches
+  - ✅ Profile edit link
+  - ✅ Logout button
 
-- [ ] Update main page with authentication
-  - [ ] Add login/register buttons (if not logged in)
-  - [ ] Add user menu (if logged in)
-  - [ ] Show/hide features based on auth state
-  - [ ] Logout functionality
+- ✅ Update main page with authentication
+  - ✅ Add login/register buttons (if not logged in)
+  - ✅ Add user menu (if logged in)
+  - ✅ Show/hide features based on auth state
+  - ✅ Logout functionality
 
-- [ ] Create admin panel UI
-  - [ ] `public/admin/users.html` - User management page
-  - [ ] List pending users
-  - [ ] Approve/reject buttons
-  - [ ] User search and filters
-  - [ ] User detail view/edit modal
-  - [ ] Role assignment interface
+- ✅ Create admin panel UI
+  - ✅ `public/admin.html` - User management page
+  - ✅ List pending users
+  - ✅ Approve/reject buttons
+  - ✅ User search and filters
+  - ✅ User detail view/edit modal
+  - ✅ Role assignment interface
 
 **Deliverables:**
 
-- Complete authentication UI
-- User registration and login flows
-- Password reset flow
-- Admin user management interface
+- Complete authentication UI ✅
+- User registration and login flows ✅
+- Password reset flow ✅
+- Admin user management interface ✅
 
 ---
 
@@ -349,81 +405,87 @@
 
 ### Milestone 5: CLI Framework ✅ COMPLETE
 
-**Status:** Shipped
+**Status:** Shipped (v1.6.0)
 
 #### Tasks:
 
-- [ ] Install CLI dependencies
-  - [ ] `commander` - CLI framework
-  - [ ] `chalk` - Terminal colors
-  - [ ] `cli-table3` - Pretty tables
-  - [ ] `inquirer` - Interactive prompts
-  - [ ] `ora` - Spinners
-  - [ ] `boxen` - Boxes around text
+- ✅ Install CLI dependencies
+  - ✅ `commander` - CLI framework
+  - ✅ `chalk` - Terminal colors
+  - ✅ `cli-table3` - Pretty tables
+  - ✅ `inquirer` - Interactive prompts
+  - ✅ `ora` - Spinners
+  - ✅ `boxen` - Boxes around text
 
-- [ ] Create CLI structure
-  - [ ] `bin/cacd` - Main executable (chmod +x)
-  - [ ] `src/cli/index.js` - CLI router
-  - [ ] `src/cli/commands/` - Command directory
-  - [ ] `src/cli/utils/` - CLI helpers (formatting, colors)
+- ✅ Create CLI structure
+  - ✅ `bin/cacd` - Main executable (chmod +x)
+  - ✅ `src/cli/index.js` - CLI router
+  - ✅ `src/cli/commands/` - Command directory
+  - ✅ `src/cli/utils/` - CLI helpers (formatting, colors)
 
-- [ ] Implement base CLI
-  - [ ] Help text and usage
-  - [ ] Version display
-  - [ ] Error handling
-  - [ ] Colored output
-  - [ ] Command routing
+- ✅ Implement base CLI
+  - ✅ Help text and usage
+  - ✅ Version display
+  - ✅ Error handling
+  - ✅ Colored output
+  - ✅ Command routing
 
-- [ ] Create CLI utilities
-  - [ ] `formatTable()` - Format data as table
-  - [ ] `formatSuccess()` - Success messages
-  - [ ] `formatError()` - Error messages
-  - [ ] `formatWarning()` - Warning messages
-  - [ ] `confirm()` - Yes/no prompts
-  - [ ] `spinner()` - Loading indicators
+- ✅ Create CLI utilities
+  - ✅ `formatTable()` - Format data as table
+  - ✅ `formatSuccess()` - Success messages
+  - ✅ `formatError()` - Error messages
+  - ✅ `formatWarning()` - Warning messages
+  - ✅ `confirm()` - Yes/no prompts
+  - ✅ `spinner()` - Loading indicators
 
 **Deliverables:**
 
-- Working CLI framework
-- Pretty terminal output
-- Command structure
+- Working CLI framework ✅
+- Pretty terminal output ✅
+- Command structure ✅
 
 ---
 
-### Milestone 6: User Management CLI Commands
+### Milestone 6: User Management CLI Commands ✅ COMPLETE
 
-**Status:** Not Started  
+**Status:** Shipped (v1.6.0)  
 **Dependencies:** Milestone 5
 
 #### Tasks:
 
-- [ ] List users command
-  - [ ] `./bin/cacd users:list` - Show all users in table
-  - [ ] `./bin/cacd users:list --status=pending` - Filter by status
-  - [ ] `./bin/cacd users:list --role=admin` - Filter by role
-  - [ ] Display: ID, Email, Name, Status, Roles, Created
+- ✅ List users command
+  - ✅ `./bin/cacd users:list` - Show all users in table
+  - ✅ `./bin/cacd users:list --status=pending` - Filter by status
+  - ✅ `./bin/cacd users:list --role=admin` - Filter by role
+  - ✅ Display: ID, Email, Name, Status, Roles, Created
 
-- [ ] Create user command
-  - [ ] `./bin/cacd users:create` - Interactive user creation
-  - [ ] Prompt for email, name, password, role
-  - [ ] Validate inputs
-  - [ ] Hash password
-  - [ ] Create user with "active" status
-  - [ ] Display success with user ID
+- ✅ Create user command
+  - ✅ `./bin/cacd users:create` - Interactive user creation
+  - ✅ Prompt for email, name, password, role
+  - ✅ Validate inputs
+  - ✅ Hash password
+  - ✅ Create user with "active" status
+  - ✅ Display success with user ID
 
-- [ ] Approve user command
-  - [ ] `./bin/cacd users:approve --email=user@example.com`
-  - [ ] `./bin/cacd users:approve --id=123`
-  - [ ] Change status from "pending" to "active"
-  - [ ] Send approval email to user
-  - [ ] Display confirmation
+- ✅ Approve user command
+  - ✅ `./bin/cacd users:approve --email=user@example.com`
+  - ✅ `./bin/cacd users:approve --id=123`
+  - ✅ Change status from "pending" to "active"
+  - ✅ Send approval email to user
+  - ✅ Display confirmation
 
-- [ ] Deactivate user command
-  - [ ] `./bin/cacd users:deactivate --email=user@example.com`
-  - [ ] `./bin/cacd users:deactivate --id=123`
-  - [ ] Prompt for reason (optional note)
-  - [ ] Change status to "inactive"
-  - [ ] Display confirmation
+- ✅ Deactivate user command
+  - ✅ `./bin/cacd users:deactivate --email=user@example.com`
+  - ✅ `./bin/cacd users:deactivate --id=123`
+  - ✅ Prompt for reason (optional note)
+  - ✅ Change status to "inactive"
+  - ✅ Display confirmation
+
+- ✅ Show user details command
+  - ✅ `./bin/cacd users:show --email=user@example.com`
+  - ✅ `./bin/cacd users:show --id=123`
+  - ✅ Display full user information
+  - ✅ Show roles and capabilities
 
 - [ ] Delete user command
   - [ ] `./bin/cacd users:delete --email=user@example.com`
@@ -451,30 +513,30 @@
 
 **Deliverables:**
 
-- Complete user management CLI
-- Interactive and non-interactive modes
-- Clear success/error messages
+- User management CLI (mostly complete) ⚠️
+- Interactive and non-interactive modes ✅
+- Clear success/error messages ✅
 
 ---
 
-### Milestone 7: Admin CLI Commands
+### Milestone 7: Admin CLI Commands ✅ COMPLETE
 
-**Status:** Not Started  
+**Status:** Shipped (v1.6.0)  
 **Dependencies:** Milestone 5
 
 #### Tasks:
 
-- [ ] Database migration commands
-  - [ ] `./bin/cacd db:migrate` - Run pending migrations
+- ✅ Database migration commands
+  - ✅ `./bin/cacd db:migrate` - Run pending migrations
   - [ ] `./bin/cacd db:migrate:status` - Show migration status
   - [ ] `./bin/cacd db:migrate:create <name>` - Create new migration
   - [ ] `./bin/cacd db:rollback` - Rollback last migration
 
-- [ ] Scraping commands
-  - [ ] `./bin/cacd scrape:now` - Trigger immediate scrape
-  - [ ] `./bin/cacd scrape:status` - Show last scrape info
-  - [ ] `./bin/cacd scrape:history` - Show scrape history
-  - [ ] `./bin/cacd scrape:stats` - Statistics (total hearings, dates covered)
+- ✅ Scraping commands
+  - ✅ `./bin/cacd scraper:run` - Trigger immediate scrape
+  - ✅ `./bin/cacd scraper:status` - Show last scrape info
+  - [ ] `./bin/cacd scraper:history` - Show scrape history
+  - [ ] `./bin/cacd scraper:stats` - Statistics (total hearings, dates covered)
 
 - [ ] System commands
   - [ ] `./bin/cacd system:info` - System status (DB, API, scraper)
@@ -483,112 +545,9 @@
 
 **Deliverables:**
 
-- Database management CLI
-- Scraping control CLI
-- System monitoring CLI
-
----
-
-## Phase 4: Saved Searches & Notifications 📋 PLANNED
-
-**Target:** v2.2.0  
-**Duration:** 2 weeks  
-**Priority:** MEDIUM
-
-### Milestone 8: Saved Searches Database & Models
-
-**Status:** Not Started
-
-#### Tasks:
-
-- [ ] Design saved searches schema
-  - [ ] `saved_searches` table (id, user_id, name, description, is_active, created_at, updated_at)
-  - [ ] `search_criteria` table (id, search_id, field, operator, value)
-  - [ ] `search_notifications` table (id, search_id, user_id, hearing_id, sent_at, read_at)
-  - [ ] Indexes (user_id, is_active, sent_at)
-
-- [ ] Create migration
-  - [ ] `007_saved_searches.sql` - Create tables
-
-- [ ] Create models/services
-  - [ ] `src/models/SavedSearch.js` - CRUD operations
-  - [ ] `src/services/search-matching-service.js` - Match hearings against searches
-  - [ ] `src/services/notification-service.js` - Send email notifications
-
-**Deliverables:**
-
-- Saved searches database schema
-- Models and services
-
----
-
-### Milestone 9: Saved Searches API
-
-**Status:** Not Started  
-**Dependencies:** Milestone 8
-
-#### Tasks:
-
-- [ ] Saved search endpoints
-  - [ ] `GET /api/v1/searches` - List user's saved searches
-  - [ ] `POST /api/v1/searches` - Create new saved search
-  - [ ] `GET /api/v1/searches/:id` - Get search details
-  - [ ] `PATCH /api/v1/searches/:id` - Update saved search
-  - [ ] `DELETE /api/v1/searches/:id` - Delete saved search
-  - [ ] `POST /api/v1/searches/:id/toggle` - Enable/disable search
-
-- [ ] Notification endpoints
-  - [ ] `GET /api/v1/notifications` - List user's notifications
-  - [ ] `POST /api/v1/notifications/:id/read` - Mark as read
-  - [ ] `POST /api/v1/notifications/read-all` - Mark all as read
-
-- [ ] Integrate with scraper
-  - [ ] After each scrape, check new hearings against active saved searches
-  - [ ] Create notifications for matches
-  - [ ] Send emails to users with matches
-  - [ ] Batch notifications (max 1 email per user per scrape)
-
-**Deliverables:**
-
-- Saved searches API
-- Notification system
-- Email alerts for matches
-
----
-
-### Milestone 10: Saved Searches UI
-
-**Status:** Not Started  
-**Dependencies:** Milestone 9
-
-#### Tasks:
-
-- [ ] Create saved searches page
-  - [ ] `public/dashboard/searches.html` - Manage saved searches
-  - [ ] List all saved searches
-  - [ ] Create new search form
-  - [ ] Edit search modal
-  - [ ] Delete search (with confirmation)
-  - [ ] Enable/disable toggle
-  - [ ] Test search (show matching results)
-
-- [ ] Create notifications page
-  - [ ] `public/dashboard/notifications.html` - View notifications
-  - [ ] List notifications (unread first)
-  - [ ] Mark as read
-  - [ ] Link to matching hearing
-  - [ ] Notification count badge in header
-
-- [ ] Update dashboard
-  - [ ] Add saved searches widget
-  - [ ] Add recent notifications widget
-  - [ ] Quick links to manage searches
-
-**Deliverables:**
-
-- Saved searches management UI
-- Notifications UI
-- Dashboard widgets
+- Database management CLI (basic migrate) ✅
+- Scraping control CLI (basic run) ✅
+- System monitoring CLI (planned) 📋
 
 ---
 
@@ -772,16 +731,23 @@ EMAIL_FROM_AUTH='CACD Archive <noreply@cacd-archive.example.com>'
 
 ## Notes
 
-This roadmap represents the new direction for CACD Archive v2.0+. The core scraping and viewing functionality is complete and stable. The focus now shifts to user engagement through authentication, saved searches, and personalized notifications.
+This roadmap tracks the evolution of CACD Archive from v1.0 through v2.0+. Major authentication, CLI tooling, and saved searches features are now complete. The scraper has been refined to support minute-based intervals and time windows for more efficient operation.
 
-**Next Steps:**
+**Recent Updates:**
 
-1. Review and approve this roadmap
-2. Begin Milestone 1: Database schema design
-3. Set up development branch for v2.0
-4. Regular progress updates via git commits
+- v1.9.0 (3 Feb 2026): Bug fixes for link discovery and CLI commands, dependency updates
+- v1.8.0 (3 Feb 2026): Scraper refinements - minute-based intervals and time windows
+- v1.7.0 (18 Dec 2025): Saved searches with email notifications
+- v1.6.0 (18 Dec 2025): User authentication and CLI tools
+
+**Focus Areas:**
+
+- Continued polish and optimization
+- Additional CLI commands
+- Advanced user management features
+- System monitoring and observability
 
 ---
 
-**Last Updated:** 18 December 2025  
-**Roadmap Version:** 2.0
+**Last Updated:** 3 February 2026  
+**Roadmap Version:** 2.2

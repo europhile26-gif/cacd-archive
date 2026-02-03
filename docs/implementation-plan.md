@@ -184,7 +184,10 @@ DB_PASSWORD=secure_password_here
 DB_CONNECTION_LIMIT=10
 
 # Scraping
-SCRAPE_INTERVAL_HOURS=2      # Re-scrape interval (default: 2)
+SCRAPE_INTERVAL_MINUTES=15   # Re-scrape interval in minutes (default: 120)
+SCRAPE_WINDOW_ENABLED=true   # Enable time-based scraping window
+SCRAPE_WINDOW_START_HOUR=8   # Start hour (default: 8 = 08:00)
+SCRAPE_WINDOW_END_HOUR=18    # End hour (default: 18 = 18:00)
 SUMMARY_PAGE_URL=https://www.court-tribunal-hearings.service.gov.uk/summary-of-publications?locationId=109
 USER_AGENT=CACD-Archive-Bot/1.0 (Educational Project)
 REQUEST_TIMEOUT=10000        # ms
@@ -233,7 +236,12 @@ const config = {
   },
 
   scraping: {
-    intervalHours: parseInt(process.env.SCRAPE_INTERVAL_HOURS, 10) || 2,
+    intervalMinutes: parseInt(process.env.SCRAPE_INTERVAL_MINUTES, 10) || 120,
+    timeWindow: {
+      enabled: process.env.SCRAPE_WINDOW_ENABLED !== 'false',
+      startHour: parseInt(process.env.SCRAPE_WINDOW_START_HOUR, 10) || 8,
+      endHour: parseInt(process.env.SCRAPE_WINDOW_END_HOUR, 10) || 18
+    },
     summaryPageUrl: process.env.SUMMARY_PAGE_URL,
     userAgent: process.env.USER_AGENT,
     requestTimeout: parseInt(process.env.REQUEST_TIMEOUT, 10) || 10000,

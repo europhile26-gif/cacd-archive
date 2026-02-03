@@ -24,8 +24,13 @@ const config = {
   },
 
   scraping: {
-    intervalHours: parseInt(process.env.SCRAPE_INTERVAL_HOURS, 10) || 2,
+    intervalMinutes: parseInt(process.env.SCRAPE_INTERVAL_MINUTES, 10) || 120,
     scrapeOnStartup: process.env.SCRAPE_ON_STARTUP === 'true',
+    timeWindow: {
+      enabled: process.env.SCRAPE_WINDOW_ENABLED !== 'false', // Default true
+      startHour: parseInt(process.env.SCRAPE_WINDOW_START_HOUR, 10) || 8, // 08:00
+      endHour: parseInt(process.env.SCRAPE_WINDOW_END_HOUR, 10) || 18 // 18:00
+    },
     summaryPageUrl:
       process.env.SUMMARY_PAGE_URL ||
       'https://www.court-tribunal-hearings.service.gov.uk/summary-of-publications?locationId=109',

@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.9.0] - 2026-02-03
+
+### Fixed
+
+- **Link Discovery Date Matching**
+  - Fixed link discovery to handle both padded and unpadded day numbers
+  - Now correctly matches "03 February" as well as "3 February"
+  - Prevents false negatives when Gov.uk site uses leading zeros in dates
+  - Added word boundary checks to prevent "1" matching "31" or "21"
+
+- **CLI Scraper Command**
+  - Fixed `./bin/cacd scraper run` command error
+  - Corrected function call to use `scrapeAll()` instead of non-existent `discoverLinks()`
+  - Command now properly executes full scraping workflow
+  - Improved result output formatting
+
+### Changed
+
+- **Dependencies**
+  - Updated `@fastify/static` from 8.3.0 to 9.0.0
+  - Updated `globals` from 16.5.0 to 17.3.0
+  - All packages audited with 0 vulnerabilities
+
+---
+
 ## [1.8.0] - 2026-01-29
 
 ### Added

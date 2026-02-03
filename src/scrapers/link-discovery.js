@@ -201,7 +201,8 @@ function findCACDLinks(html, division) {
  * @returns {Object|null} Matched link or null
  */
 function findLinkForDate(links, targetDate, division) {
-  const day = format(targetDate, 'd'); // e.g., "11"
+  const day = format(targetDate, 'd'); // e.g., "3"
+  const dayPadded = format(targetDate, 'dd'); // e.g., "03"
   const monthFull = format(targetDate, 'MMMM'); // e.g., "December"
   const monthShort = format(targetDate, 'MMM'); // e.g., "Dec"
   const year = format(targetDate, 'yyyy'); // e.g., "2025"
@@ -209,6 +210,7 @@ function findLinkForDate(links, targetDate, division) {
 
   logger.debug(`Searching for link matching date: ${dateString}`, {
     day,
+    dayPadded,
     monthFull,
     monthShort,
     year,
@@ -219,10 +221,11 @@ function findLinkForDate(links, targetDate, division) {
     const text = link.text;
 
     // Check all required components (case-insensitive)
+    // Day can be with or without leading zero (e.g., "3" or "03")
     if (
       containsCaseInsensitive(text, 'Court of Appeal') &&
       containsCaseInsensitive(text, division) &&
-      containsWord(text, day) &&
+      (containsWord(text, day) || containsWord(text, dayPadded)) &&
       (containsWord(text, monthFull) || containsWord(text, monthShort)) &&
       containsWord(text, year)
     ) {

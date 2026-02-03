@@ -94,7 +94,10 @@ ALLOW_PUBLIC_REGISTRATION=false
 REQUIRE_ADMIN_APPROVAL=true
 
 # Scraping
-SCRAPE_INTERVAL_HOURS=2
+SCRAPE_INTERVAL_MINUTES=15         # Scrape interval in minutes (default: 120)
+SCRAPE_WINDOW_ENABLED=true         # Enable time-based scraping window (default: true)
+SCRAPE_WINDOW_START_HOUR=8         # Scraping window start (24-hour format, default: 8 = 08:00)
+SCRAPE_WINDOW_END_HOUR=18          # Scraping window end (24-hour format, default: 18 = 18:00)
 SCRAPE_ON_STARTUP=true
 
 # Email Notifications
