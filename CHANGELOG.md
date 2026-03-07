@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.10.1] - 2026-03-07
+
+### Fixed
+
+- **Dashboard crash after login** — Fastify response schema on `GET /users/me` was stripping all nested properties (user, roles, navigation) due to `type: 'object'` with no declared properties; switched to `additionalProperties: true`
+- **Spurious 401 responses for guests** — `nav.js` was calling `/users/me` on every page load including for unauthenticated visitors; now uses a non-httpOnly `loggedIn` hint cookie set on login to skip the call for guests
+
+---
+
 ## [1.10.0] - 2026-03-07
 
 ### Added

@@ -64,7 +64,7 @@ async function createServer() {
       info: {
         title: 'CACD Archive API',
         description: 'Court of Appeal Criminal Division Daily Cause List Archive',
-        version: '1.10.0'
+        version: '1.10.1'
       },
       schemes: ['http', 'https'],
       consumes: ['application/json'],
