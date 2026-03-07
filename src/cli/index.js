@@ -17,7 +17,7 @@ formatHeader('CACD Archive CLI', 'Administrative command-line interface');
 program
   .name('cacd')
   .description('CACD Archive administrative command-line interface')
-  .version('1.9.0');
+  .version('1.10.0');
 
 // User Management Commands
 const usersCommand = program.command('users').description('User management commands');
@@ -120,6 +120,30 @@ scraperCommand
       formatError(`Scraping failed: ${error.message}`);
       process.exit(1);
     }
+  });
+
+// Secret Commands
+const secretCommand = program.command('secret').description('Secret and token management');
+
+secretCommand
+  .command('generate')
+  .description('Generate a cryptographically secure random secret')
+  .option(
+    '-l, --length <bytes>',
+    'Length in bytes (output is hex-encoded, so twice this length)',
+    '32'
+  )
+  .action((options) => {
+    const crypto = require('crypto');
+    const { formatInfo } = require('./utils/format');
+    const bytes = parseInt(options.length, 10) || 32;
+    const secret = crypto.randomBytes(bytes).toString('hex');
+    console.log();
+    formatInfo('Generated secret:');
+    console.log();
+    console.log(`  ${secret}`);
+    console.log();
+    formatInfo('Add to your .env file as JWT_SECRET or COOKIE_SECRET');
   });
 
 // System Commands

@@ -7,6 +7,7 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
 const config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT, 10) || 3000,
+  baseUrl: process.env.BASE_URL || null,
   appInstance: parseInt(process.env.NODE_APP_INSTANCE, 10) || 0,
 
   logging: {
@@ -66,18 +67,32 @@ const config = {
     }
   },
 
+  auth: {
+    jwtSecret: process.env.JWT_SECRET,
+    cookieSecret: process.env.COOKIE_SECRET || process.env.JWT_SECRET,
+    allowPublicRegistration: process.env.ALLOW_PUBLIC_REGISTRATION !== 'false',
+    requireAdminApproval: process.env.REQUIRE_ADMIN_APPROVAL !== 'false',
+    passwordMinLength: parseInt(process.env.PASSWORD_MIN_LENGTH, 10) || 12
+  },
+
+  savedSearches: {
+    minLength: parseInt(process.env.SAVED_SEARCH_MIN_LENGTH, 10) || 3,
+    maxLength: parseInt(process.env.SAVED_SEARCH_MAX_LENGTH, 10) || 255,
+    maxPerUser: parseInt(process.env.SAVED_SEARCH_MAX_PER_USER, 10) || 10
+  },
+
   frontend: {
     recordsPerPage: parseInt(process.env.RECORDS_PER_PAGE, 10) || 50
   }
 };
 
 // Validate required config
-const required = ['database.user', 'database.password'];
+const required = ['database.user', 'database.password', 'auth.jwtSecret'];
 
 for (const key of required) {
   const value = key.split('.').reduce((obj, k) => obj?.[k], config);
   if (!value) {
-    throw new Error(`Missing required configuration: ${key}`);
+    throw new Error(`Missing required configuration: ${key}. See .env.example for details.`);
   }
 }
 

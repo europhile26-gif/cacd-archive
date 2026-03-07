@@ -129,16 +129,16 @@ function displayUsers(users) {
 function getStatusBadgeClass(status) {
   if (!status) return 'bg-secondary';
   switch (status.slug) {
-  case 'active':
-    return 'bg-success';
-  case 'pending':
-    return 'bg-warning';
-  case 'inactive':
-    return 'bg-secondary';
-  case 'suspended':
-    return 'bg-danger';
-  default:
-    return 'bg-secondary';
+    case 'active':
+      return 'bg-success';
+    case 'pending':
+      return 'bg-warning';
+    case 'inactive':
+      return 'bg-secondary';
+    case 'suspended':
+      return 'bg-danger';
+    default:
+      return 'bg-secondary';
   }
 }
 

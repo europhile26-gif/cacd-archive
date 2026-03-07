@@ -6,7 +6,7 @@ async function hearingsRoutes(fastify, _options) {
     '/hearings',
     {
       schema: {
-        tags: ['hearings'],
+        tags: ['Hearings'],
         description: 'Get list of hearings with filtering and pagination',
         querystring: {
           type: 'object',
@@ -18,7 +18,7 @@ async function hearingsRoutes(fastify, _options) {
             dateTo: { type: 'string', format: 'date' },
             caseNumber: { type: 'string' },
             search: { type: 'string' },
-            division: { type: 'string', enum: ['Criminal', 'Civil'] },
+            division: { type: 'string' },
             sortBy: {
               type: 'string',
               enum: ['hearing_datetime', 'case_number', 'created_at'],
@@ -120,8 +120,16 @@ async function hearingsRoutes(fastify, _options) {
       const countResult = await query(countSql, params);
       const total = countResult[0].total;
 
-      // Add sorting and pagination
-      sql += ` ORDER BY ${sortBy} ${sortOrder.toUpperCase()}`;
+      // Add sorting and pagination (whitelist to prevent SQL injection)
+      const allowedSortColumns = {
+        hearing_datetime: 'hearing_datetime',
+        case_number: 'case_number',
+        created_at: 'created_at'
+      };
+      const allowedSortOrders = { asc: 'ASC', desc: 'DESC' };
+      const safeSort = allowedSortColumns[sortBy] || 'hearing_datetime';
+      const safeOrder = allowedSortOrders[sortOrder] || 'DESC';
+      sql += ` ORDER BY ${safeSort} ${safeOrder}`;
       sql += ' LIMIT ? OFFSET ?';
       params.push(limit, offset);
 
@@ -161,7 +169,7 @@ async function hearingsRoutes(fastify, _options) {
     '/hearings/:id',
     {
       schema: {
-        tags: ['hearings'],
+        tags: ['Hearings'],
         description: 'Get single hearing by ID',
         params: {
           type: 'object',
@@ -210,7 +218,7 @@ async function hearingsRoutes(fastify, _options) {
     '/dates',
     {
       schema: {
-        tags: ['hearings'],
+        tags: ['Hearings'],
         description: 'Get list of available dates with hearing counts'
       }
     },

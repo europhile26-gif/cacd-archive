@@ -99,22 +99,26 @@ async function synchronizeRecords(newRecords, listDate) {
       let updatedCount = 0;
       let deletedCount = 0;
 
-      // Insert new records
-      for (const record of toAdd) {
-        await insertRecord(connection, record);
-        addedCount++;
+      // Bulk insert new records
+      if (toAdd.length > 0) {
+        await bulkInsertRecords(connection, toAdd);
+        addedCount = toAdd.length;
       }
 
-      // Update changed records
+      // Update changed records (still individual — each has different values)
       for (const { new: newRecord, existing: existingRecord } of toUpdate) {
         await updateRecord(connection, newRecord, existingRecord.id);
         updatedCount++;
       }
 
-      // Delete removed records (hard delete)
-      for (const record of toDelete) {
-        await deleteRecord(connection, record.id);
-        deletedCount++;
+      // Bulk delete removed records
+      if (toDelete.length > 0) {
+        const idsToDelete = toDelete.map((r) => r.id);
+        await connection.query(
+          `DELETE FROM hearings WHERE id IN (${idsToDelete.map(() => '?').join(',')})`,
+          idsToDelete
+        );
+        deletedCount = toDelete.length;
       }
 
       await connection.commit();
@@ -249,32 +253,41 @@ function formatDateTimeForMySQL(date) {
 }
 
 /**
- * Insert new hearing record
+ * Bulk insert hearing records using multi-value INSERT
  * @param {Object} connection - Database connection
- * @param {Object} record - Record to insert
+ * @param {Array<Object>} records - Records to insert
+ * @param {number} batchSize - Max records per INSERT statement
  */
-async function insertRecord(connection, record) {
-  await connection.query(
-    `INSERT INTO hearings (
-      list_date, case_number, time, hearing_datetime,
-      venue, judge, case_details, hearing_type, additional_information,
-      division, source_url, scraped_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      record.listDate,
-      record['case number'],
-      record.time,
-      record.hearingDateTime,
-      record.venue || null,
-      record.judge || null,
-      record['case details'] || null,
-      record['hearing type'] || null,
-      record['additional information'] || null,
-      record.division,
-      record.sourceUrl,
-      formatDateTimeForMySQL(record.scrapedAt)
-    ]
-  );
+async function bulkInsertRecords(connection, records, batchSize = 500) {
+  const columns = `(list_date, case_number, time, hearing_datetime,
+    venue, judge, case_details, hearing_type, additional_information,
+    division, source_url, scraped_at)`;
+  const placeholder = '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+
+  for (let i = 0; i < records.length; i += batchSize) {
+    const batch = records.slice(i, i + batchSize);
+    const placeholders = batch.map(() => placeholder).join(', ');
+    const params = [];
+
+    for (const record of batch) {
+      params.push(
+        record.listDate,
+        record['case number'],
+        record.time,
+        record.hearingDateTime,
+        record.venue || null,
+        record.judge || null,
+        record['case details'] || null,
+        record['hearing type'] || null,
+        record['additional information'] || null,
+        record.division,
+        record.sourceUrl,
+        formatDateTimeForMySQL(record.scrapedAt)
+      );
+    }
+
+    await connection.query(`INSERT INTO hearings ${columns} VALUES ${placeholders}`, params);
+  }
 }
 
 /**
@@ -307,15 +320,6 @@ async function updateRecord(connection, record, id) {
       id
     ]
   );
-}
-
-/**
- * Delete hearing record (hard delete)
- * @param {Object} connection - Database connection
- * @param {number} id - Record ID to delete
- */
-async function deleteRecord(connection, id) {
-  await connection.query('DELETE FROM hearings WHERE id = ?', [id]);
 }
 
 module.exports = {

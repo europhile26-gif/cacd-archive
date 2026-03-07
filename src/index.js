@@ -41,8 +41,9 @@ async function start() {
     logger.info('Starting API server...');
     const server = await createServer();
     await server.listen({ port: config.port, host: '0.0.0.0' });
-    logger.info(`API server listening on http://0.0.0.0:${config.port}`);
-    logger.info(`API documentation available at http://0.0.0.0:${config.port}/api/docs`);
+    const displayUrl = config.baseUrl || `http://0.0.0.0:${config.port}`;
+    logger.info(`API server listening on ${displayUrl}`);
+    logger.info(`API documentation available at ${displayUrl}/api/docs`);
 
     // Start scraper scheduler (only on instance 0)
     if (config.appInstance === 0) {

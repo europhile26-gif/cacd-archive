@@ -19,7 +19,7 @@ async function createServer() {
 
   // Cookie support (required for JWT in cookies)
   await server.register(fastifyCookie, {
-    secret: process.env.JWT_SECRET || 'your-cookie-secret-here',
+    secret: config.auth.cookieSecret,
     parseOptions: {}
   });
 
@@ -27,12 +27,12 @@ async function createServer() {
   await server.register(fastifyHelmet, {
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ['\'self\''],
-        styleSrc: ['\'self\'', '\'unsafe-inline\''],
-        scriptSrc: ['\'self\'', '\'unsafe-inline\''],
-        imgSrc: ['\'self\'', 'data:'],
-        fontSrc: ['\'self\''],
-        connectSrc: ['\'self\'']
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:'],
+        fontSrc: ["'self'"],
+        connectSrc: ["'self'"]
       }
     },
     crossOriginEmbedderPolicy: false,
@@ -46,12 +46,12 @@ async function createServer() {
   // CORS - configure based on environment
   const corsOptions = config.api.cors.enabled
     ? {
-      origin:
+        origin:
           config.env === 'production' && config.api.cors.origins.length > 0
             ? config.api.cors.origins
             : true,
-      credentials: true
-    }
+        credentials: true
+      }
     : false;
 
   if (corsOptions !== false) {
@@ -64,18 +64,18 @@ async function createServer() {
       info: {
         title: 'CACD Archive API',
         description: 'Court of Appeal Criminal Division Daily Cause List Archive',
-        version: '2.0.0'
+        version: '1.10.0'
       },
       schemes: ['http', 'https'],
       consumes: ['application/json'],
       produces: ['application/json'],
       tags: [
-        { name: 'hearings', description: 'Hearing-related endpoints' },
-        { name: 'system', description: 'System and health endpoints' },
-        { name: 'Config', description: 'Configuration endpoints' },
+        { name: 'Hearings', description: 'Hearing data and dates' },
+        { name: 'Saved Searches', description: 'User saved search management' },
         { name: 'Authentication', description: 'User authentication and registration' },
         { name: 'Users', description: 'User profile management' },
-        { name: 'Admin', description: 'Administrative user management' }
+        { name: 'Admin', description: 'Administrative user management' },
+        { name: 'System', description: 'Health check and configuration' }
       ]
     }
   });
@@ -132,7 +132,7 @@ async function createServer() {
       // Register API routes
       await apiServer.register(require('./routes/health'), { prefix: '/api/v1' });
       await apiServer.register(require('./routes/hearings'), { prefix: '/api/v1' });
-      await apiServer.register(require('./routes/config'));
+      await apiServer.register(require('./routes/config'), { prefix: '/api/v1' });
       await apiServer.register(require('./routes/auth'), { prefix: '/api/v1/auth' });
       await apiServer.register(require('./routes/users'), { prefix: '/api/v1/users' });
       await apiServer.register(require('./routes/admin'), { prefix: '/api/v1/admin' });

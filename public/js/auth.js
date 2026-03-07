@@ -125,7 +125,7 @@ function initAutoRefresh() {
 
   // Intercept fetch requests to ensure valid token
   const originalFetch = window.fetch;
-  window.fetch = async function(...args) {
+  window.fetch = async function (...args) {
     const url = args[0];
 
     // Only auto-refresh for API calls

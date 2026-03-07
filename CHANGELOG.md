@@ -9,6 +9,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.10.0] - 2026-03-07
+
+### Added
+
+- **`PUBLIC_URL` / `BASE_URL` configuration** — `BASE_URL` env var now used in startup log messages and notification emails; useful when behind a reverse proxy
+- **`./bin/cacd secret generate`** CLI command for generating JWT/cookie secrets
+- **Composite database index** on `(division, list_date)` for faster date queries
+- **Test suite** — Jest 30 with real MariaDB test database; unit tests for config, table-parser, link-discovery, hearings route; integration tests for sync-service
+- **Documentation overhaul** — Lean README with links to `docs/`; new docs for configuration, API, CLI, architecture, developing, and scraper development
+
+### Changed
+
+- **Swagger/OpenAPI cleanup**
+  - API version now tracks package.json (`1.10.0`)
+  - Normalised all Swagger tags to title case (`Hearings`, `Saved Searches`, `Authentication`, `Users`, `Admin`, `System`)
+  - Added missing `Saved Searches` tag declaration
+  - Removed `division` enum restriction from hearings query (was limited to `Criminal`/`Civil`, now accepts any string for M2 multi-division support)
+- **Removed duplicate `GET /auth/me` endpoint** — consolidated into `GET /users/me` which now also returns `roles`, `capabilities`, and `navigation`; frontend updated to use `/users/me`
+- **`/api/config` moved to `/api/v1/config`** — consistent with all other API routes; frontend updated
+- **Route files no longer read `process.env` directly** — registration settings, cookie secure flag, password reset URL, and saved search length limits now all read from centralised config
+- **Health endpoint** now returns `version` field from `package.json`
+- **`docs/api.md`** now lists all ~30 endpoints (previously only 12)
+
+### Fixed
+
+- **Cookie secret** now uses dedicated `COOKIE_SECRET` env var (falls back to `JWT_SECRET`); previously used a hardcoded fallback
+- **JWT_SECRET required** — application now fails to start if `JWT_SECRET` is not set
+- **SQL injection surface** — ORDER BY columns in hearings route now use a whitelist map
+- **Bulk database operations** — sync-service uses bulk INSERT (batched at 500) and bulk DELETE instead of sequential single-row operations
+- **Hardcoded scraper URL** — `link-discovery.js` now reads `SUMMARY_PAGE_URL` from config; `BASE_URL` derived dynamically
+- **OGL compliance** — Crown Copyright / OGL v3.0 attribution added to frontend footers
+- **Stale `APP_URL` env var** in forgot-password route replaced with `config.baseUrl`
+
+### Security
+
+- `.env` file permission check on startup (requires `0600` on Unix)
+- Deprecated `ALERT_EMAIL` removed from `.env.example`
+- All route handlers now read configuration through centralised config module instead of `process.env` directly
+
+### Dependencies
+
+- Updated nodemailer 7.x to 8.x
+- Updated fastify, mysql2, dotenv, and other semver-compatible packages
+- Fixed 5 npm audit vulnerabilities (ajv, bn.js, fastify, minimatch, brace-expansion)
+
+---
+
 ## [1.9.0] - 2026-02-03
 
 ### Fixed

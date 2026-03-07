@@ -78,11 +78,11 @@ class EmailService {
     const templatesDir = path.join(__dirname, '../templates/emails');
 
     // Register handlebars helpers
-    handlebars.registerHelper('json', function(context) {
+    handlebars.registerHelper('json', function (context) {
       return JSON.stringify(context, null, 2);
     });
 
-    handlebars.registerHelper('if', function(conditional, options) {
+    handlebars.registerHelper('if', function (conditional, options) {
       if (conditional) {
         return options.fn(this);
       }
@@ -360,7 +360,7 @@ class EmailService {
     text += `\n\nGo to the CACD Archive: ${data.baseUrl}\n\n`;
     text += '---\n';
     text +=
-      'You\'re receiving this email because you have saved searches with notifications enabled.\n';
+      "You're receiving this email because you have saved searches with notifications enabled.\n";
 
     return text;
   }

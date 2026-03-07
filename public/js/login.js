@@ -3,7 +3,7 @@
  * Handles user authentication
  */
 
-(function() {
+(function () {
   'use strict';
 
   // DOM elements
@@ -165,7 +165,7 @@
   // Check if already logged in
   (async function checkAuth() {
     try {
-      const response = await fetch('/api/v1/auth/me', {
+      const response = await fetch('/api/v1/users/me', {
         credentials: 'include'
       });
 

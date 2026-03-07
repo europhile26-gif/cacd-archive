@@ -1,11 +1,12 @@
 const { query } = require('../../config/database');
+const { version } = require('../../../package.json');
 
 async function healthRoutes(fastify, _options) {
   fastify.get(
     '/health',
     {
       schema: {
-        tags: ['system'],
+        tags: ['System'],
         description: 'Health check endpoint',
         response: {
           200: {
@@ -13,6 +14,7 @@ async function healthRoutes(fastify, _options) {
             properties: {
               success: { type: 'boolean' },
               status: { type: 'string' },
+              version: { type: 'string' },
               database: { type: 'string' },
               uptime: { type: 'number' },
               timestamp: { type: 'string' }
@@ -34,6 +36,7 @@ async function healthRoutes(fastify, _options) {
       return {
         success: true,
         status: databaseStatus === 'connected' ? 'healthy' : 'degraded',
+        version,
         database: databaseStatus,
         uptime: process.uptime(),
         timestamp: new Date().toISOString()

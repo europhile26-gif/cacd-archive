@@ -34,12 +34,28 @@ async function userRoutes(fastify, _options) {
         const roles = await User.getRoles(request.user.id);
         const capabilities = await User.getCapabilities(request.user.id);
 
+        // Build navigation based on roles
+        const navigation = [];
+        const isAdmin = roles.some((role) => role.slug === 'administrator');
+
+        navigation.push({ label: 'Home', url: '/', icon: 'house' });
+
+        if (isAdmin) {
+          navigation.push({ label: 'Admin', url: '/admin', icon: 'shield' });
+        }
+
+        navigation.push({ label: 'Dashboard', url: '/dashboard', icon: 'speedometer2' });
+        navigation.push({ label: 'Logout', url: '#', action: 'logout', icon: 'box-arrow-right' });
+
         return reply.send({
           user: {
             ...request.user,
             roles,
             capabilities
-          }
+          },
+          roles,
+          capabilities,
+          navigation
         });
       } catch (error) {
         fastify.log.error({ error }, 'Get user profile error');

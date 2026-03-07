@@ -69,6 +69,7 @@ web_modules/
 .env
 .env.*
 !.env.example
+!.env.test.example
 
 # PM2 ecosystem files
 ecosystem.config.js

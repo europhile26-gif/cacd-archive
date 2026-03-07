@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 async function loadUserData() {
   try {
-    const response = await fetch('/api/v1/auth/me', {
+    const response = await fetch('/api/v1/users/me', {
       credentials: 'include'
     });
 

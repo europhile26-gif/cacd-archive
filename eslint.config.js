@@ -16,24 +16,9 @@ module.exports = [
       }
     },
     rules: {
-      indent: ['error', 2],
-      'linebreak-style': ['error', 'unix'],
-      quotes: ['error', 'single'],
-      semi: ['error', 'always'],
+      // Formatting rules delegated to Prettier — only enforce logic/correctness here
       'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      'no-console': 'off',
-      'comma-dangle': ['error', 'never'],
-      'arrow-parens': ['error', 'always'],
-      'object-curly-spacing': ['error', 'always'],
-      'array-bracket-spacing': ['error', 'never'],
-      'space-before-function-paren': [
-        'error',
-        {
-          anonymous: 'never',
-          named: 'never',
-          asyncArrow: 'always'
-        }
-      ]
+      'no-console': 'off'
     }
   },
   {

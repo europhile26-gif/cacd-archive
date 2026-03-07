@@ -119,7 +119,7 @@ class NotificationService {
 
     // Send email notification
     try {
-      const baseUrl = process.env.BASE_URL || `http://localhost:${config.port}`;
+      const baseUrl = config.baseUrl || `http://localhost:${config.port}`;
 
       await emailService.sendSavedSearchMatches({
         userEmail: userData.email,

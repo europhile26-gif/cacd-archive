@@ -4,6 +4,7 @@
  */
 
 const SavedSearch = require('../../models/SavedSearch');
+const config = require('../../config/config');
 const { requireAuth } = require('../middleware/auth');
 
 /**
@@ -21,7 +22,7 @@ async function savedSearchRoutes(fastify, _options) {
     {
       preHandler: requireAuth,
       schema: {
-        tags: ['searches'],
+        tags: ['Saved Searches'],
         summary: 'List user saved searches',
         description: 'Get all saved searches for the authenticated user'
       }
@@ -50,7 +51,7 @@ async function savedSearchRoutes(fastify, _options) {
     {
       preHandler: requireAuth,
       schema: {
-        tags: ['searches'],
+        tags: ['Saved Searches'],
         summary: 'Get saved search by ID',
         description: 'Get a specific saved search by ID',
         params: {
@@ -92,7 +93,7 @@ async function savedSearchRoutes(fastify, _options) {
     {
       preHandler: requireAuth,
       schema: {
-        tags: ['searches'],
+        tags: ['Saved Searches'],
         summary: 'Create saved search',
         description: 'Create a new saved search for the authenticated user',
         body: {
@@ -101,8 +102,8 @@ async function savedSearchRoutes(fastify, _options) {
           properties: {
             search_text: {
               type: 'string',
-              minLength: parseInt(process.env.SAVED_SEARCH_MIN_LENGTH || '3', 10),
-              maxLength: parseInt(process.env.SAVED_SEARCH_MAX_LENGTH || '255', 10)
+              minLength: config.savedSearches.minLength,
+              maxLength: config.savedSearches.maxLength
             },
             enabled: { type: 'boolean', default: true }
           }
@@ -144,7 +145,7 @@ async function savedSearchRoutes(fastify, _options) {
     {
       preHandler: requireAuth,
       schema: {
-        tags: ['searches'],
+        tags: ['Saved Searches'],
         summary: 'Update saved search',
         description: 'Update search text or enabled status',
         params: {
@@ -159,8 +160,8 @@ async function savedSearchRoutes(fastify, _options) {
           properties: {
             search_text: {
               type: 'string',
-              minLength: parseInt(process.env.SAVED_SEARCH_MIN_LENGTH || '3', 10),
-              maxLength: parseInt(process.env.SAVED_SEARCH_MAX_LENGTH || '255', 10)
+              minLength: config.savedSearches.minLength,
+              maxLength: config.savedSearches.maxLength
             },
             enabled: { type: 'boolean' }
           }
@@ -202,7 +203,7 @@ async function savedSearchRoutes(fastify, _options) {
     {
       preHandler: requireAuth,
       schema: {
-        tags: ['searches'],
+        tags: ['Saved Searches'],
         summary: 'Delete saved search',
         description: 'Delete a saved search',
         params: {

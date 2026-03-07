@@ -11,9 +11,8 @@ const emailService = require('../services/email-service');
  * from the summary publications page for today and tomorrow.
  */
 
-const SUMMARY_URL =
-  'https://www.court-tribunal-hearings.service.gov.uk/summary-of-publications?locationId=109';
-const BASE_URL = 'https://www.court-tribunal-hearings.service.gov.uk';
+const SUMMARY_URL = config.scraping.summaryPageUrl;
+const BASE_URL = new URL(SUMMARY_URL).origin;
 const TIMEZONE = 'Europe/London';
 
 /**

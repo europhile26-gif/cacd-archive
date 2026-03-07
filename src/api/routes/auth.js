@@ -4,8 +4,7 @@
  */
 
 const AuthService = require('../../services/auth-service');
-const User = require('../../models/User');
-// const emailService = require('../../services/email-service'); // TODO: Enable when email implemented
+const config = require('../../config/config');
 const { requireAuth } = require('../middleware/auth');
 
 async function authRoutes(fastify, _options) {
@@ -53,8 +52,7 @@ async function authRoutes(fastify, _options) {
         const { email, password, name } = request.body;
 
         // Check if public registration is allowed
-        const allowPublicRegistration = process.env.ALLOW_PUBLIC_REGISTRATION !== 'false';
-        if (!allowPublicRegistration) {
+        if (!config.auth.allowPublicRegistration) {
           return reply.code(403).send({
             error: 'Forbidden',
             message: 'Public registration is currently disabled'
@@ -65,8 +63,7 @@ async function authRoutes(fastify, _options) {
         const user = await AuthService.register({ email, password, name });
 
         // Send welcome email (account pending approval)
-        const requiresApproval = process.env.REQUIRE_ADMIN_APPROVAL !== 'false';
-        if (requiresApproval) {
+        if (config.auth.requireAdminApproval) {
           try {
             // TODO: Implement welcome email template
             fastify.log.info({ email: user.email }, 'User registered, pending approval');
@@ -77,7 +74,7 @@ async function authRoutes(fastify, _options) {
 
         return reply.code(201).send({
           success: true,
-          message: requiresApproval
+          message: config.auth.requireAdminApproval
             ? 'Account created. Please wait for administrator approval.'
             : 'Account created successfully.',
           user
@@ -134,7 +131,7 @@ async function authRoutes(fastify, _options) {
         // Set httpOnly cookies
         const cookieOptions = {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+          secure: config.env === 'production', // HTTPS only in production
           sameSite: 'strict',
           path: '/'
         };
@@ -253,7 +250,7 @@ async function authRoutes(fastify, _options) {
         // Update cookies
         const cookieOptions = {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
+          secure: config.env === 'production',
           sameSite: 'strict',
           path: '/'
         };
@@ -321,7 +318,7 @@ async function authRoutes(fastify, _options) {
           const { token } = result;
 
           // Send password reset email
-          const resetUrl = `${process.env.APP_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+          const resetUrl = `${config.baseUrl || `http://localhost:${config.port}`}/reset-password?token=${token}`;
 
           try {
             // TODO: Implement password reset email template
@@ -440,53 +437,6 @@ async function authRoutes(fastify, _options) {
         return reply.code(400).send({
           error: 'Bad Request',
           message: error.message
-        });
-      }
-    }
-  );
-
-  /**
-   * GET /api/v1/auth/me
-   * Get current user profile
-   */
-  fastify.get(
-    '/me',
-    {
-      preHandler: requireAuth,
-      schema: {
-        tags: ['Authentication'],
-        description: 'Get current user profile'
-      }
-    },
-    async (request, reply) => {
-      try {
-        const roles = await User.getRoles(request.user.id);
-        const capabilities = await User.getCapabilities(request.user.id);
-
-        // Build navigation based on roles
-        const navigation = [];
-        const isAdmin = roles.some((role) => role.slug === 'administrator');
-
-        navigation.push({ label: 'Home', url: '/', icon: 'house' });
-
-        if (isAdmin) {
-          navigation.push({ label: 'Admin', url: '/admin', icon: 'shield' });
-        }
-
-        navigation.push({ label: 'Dashboard', url: '/dashboard', icon: 'speedometer2' });
-        navigation.push({ label: 'Logout', url: '#', action: 'logout', icon: 'box-arrow-right' });
-
-        return reply.send({
-          user: request.user,
-          roles,
-          capabilities,
-          navigation
-        });
-      } catch (error) {
-        fastify.log.error({ error }, 'Get current user error');
-        return reply.code(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to get user profile'
         });
       }
     }

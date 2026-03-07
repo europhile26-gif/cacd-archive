@@ -1,13 +1,13 @@
 const config = require('../../config/config');
 
-module.exports = async function(fastify) {
+module.exports = async function (fastify) {
   // Get public configuration
   fastify.get(
-    '/api/config',
+    '/config',
     {
       schema: {
         description: 'Get public application configuration',
-        tags: ['Config'],
+        tags: ['System'],
         response: {
           200: {
             type: 'object',
