@@ -21,12 +21,7 @@ async function userRoutes(fastify, _options) {
         response: {
           200: {
             type: 'object',
-            properties: {
-              user: { type: 'object' },
-              roles: { type: 'array' },
-              capabilities: { type: 'array' },
-              navigation: { type: 'array' }
-            }
+            additionalProperties: true
           }
         }
       }
