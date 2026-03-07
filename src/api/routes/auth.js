@@ -146,6 +146,15 @@ async function authRoutes(fastify, _options) {
           maxAge: rememberMe ? 30 * 24 * 60 * 60 : 7 * 24 * 60 * 60 // 30 days or 7 days
         });
 
+        // Non-httpOnly hint so client JS can skip /users/me for guests
+        reply.setCookie('loggedIn', '1', {
+          httpOnly: false,
+          secure: config.env === 'production',
+          sameSite: 'strict',
+          path: '/',
+          maxAge: rememberMe ? 30 * 24 * 60 * 60 : 7 * 24 * 60 * 60
+        });
+
         fastify.log.info({ userId: user.id, email: user.email }, 'User logged in');
 
         return reply.send({
@@ -189,6 +198,7 @@ async function authRoutes(fastify, _options) {
       // Clear cookies
       reply.clearCookie('accessToken', { path: '/' });
       reply.clearCookie('refreshToken', { path: '/' });
+      reply.clearCookie('loggedIn', { path: '/' });
 
       fastify.log.info('User logged out');
 

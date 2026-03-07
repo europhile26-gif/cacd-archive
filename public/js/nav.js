@@ -7,22 +7,28 @@
   const navContainer = document.getElementById('mainNav');
   if (!navContainer) return; // Not on a page with main nav
 
+  // Pages that manage their own auth (dashboard, admin) don't need nav auth check
+  const selfAuthPages = ['/dashboard', '/admin'];
+  if (selfAuthPages.includes(window.location.pathname)) return;
+
+  // Only check /users/me if the loggedIn hint cookie exists
+  if (!document.cookie.split('; ').some((c) => c.startsWith('loggedIn='))) {
+    renderGuestNav();
+    return;
+  }
+
   try {
-    // Check if user is authenticated
     const response = await fetch('/api/v1/users/me', {
       credentials: 'include'
     });
 
     if (response.ok) {
-      // User is authenticated - use server-provided navigation
       const data = await response.json();
       renderAuthenticatedNav(data.navigation || []);
     } else {
-      // User is not authenticated - show guest navigation
       renderGuestNav();
     }
   } catch {
-    // Error or not authenticated - show guest navigation
     renderGuestNav();
   }
 })();
@@ -105,6 +111,7 @@ async function handleLogout(event) {
       credentials: 'include'
     });
 
+    document.cookie = 'loggedIn=; path=/; max-age=0';
     sessionStorage.clear();
     window.location.href = '/login';
   } catch (error) {
