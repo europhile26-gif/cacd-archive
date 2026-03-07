@@ -35,6 +35,7 @@ The archival function (free access to public data) is straightforwardly covered.
 - [x] Complete M1 codebase audit (security & performance)
 - [x] Remaining M1 items: hardcoded SUMMARY_URL, composite index, ESLint 10, OGL footer
 - [ ] CSP: remove `unsafe-inline` (LOW — deferred)
+- [ ] Investigate non-standard case number formats in Criminal Division cause lists (e.g. `CVO0D6O7NY` — likely transferred cases from County Court/Family Court). Current behaviour is correct (warn + accept), but the client should review whether these need special handling or display. See M2 — will become more relevant when scraping multiple divisions. (LOW — defer to M2+)
 
 ---
 
