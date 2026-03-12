@@ -2,7 +2,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.11.0-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-1.11.1-blue.svg)]()
 
 An automated scraping and archival system for UK court hearing data from multiple sources, with email notifications for saved searches.
 

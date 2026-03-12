@@ -102,6 +102,56 @@ async function synchronizeRecords(newRecords, listDate, dataSourceId) {
       let updatedCount = 0;
       let deletedCount = 0;
 
+      // Before inserting, handle cross-source conflicts (e.g. FHL records
+      // that will clash with incoming DCL records on the unique_hearing key).
+      // Carry forward crown_court from the conflicting record if the new one lacks it.
+      if (toAdd.length > 0) {
+        const conflictKeys = toAdd.map((r) => [r.listDate, r['case number'], r.time]);
+        const conflictPlaceholders = conflictKeys.map(() => '(?, ?, ?)').join(', ');
+        const conflictParams = conflictKeys.flat();
+
+        const [conflictingRows] = await connection.query(
+          `SELECT id, list_date, case_number, time, crown_court, data_source_id
+           FROM hearings
+           WHERE (list_date, case_number, time) IN (${conflictPlaceholders})
+             AND data_source_id != ?`,
+          [...conflictParams, dataSourceId]
+        );
+
+        if (conflictingRows.length > 0) {
+          // Build lookup of crown_court values from conflicting records
+          const crownCourtLookup = {};
+          const idsToRemove = [];
+          for (const row of conflictingRows) {
+            const key = createRecordKey(row);
+            if (row.crown_court) {
+              crownCourtLookup[key] = row.crown_court;
+            }
+            idsToRemove.push(row.id);
+          }
+
+          // Carry forward crown_court to new records that lack it
+          for (const record of toAdd) {
+            const key = createRecordKey(record);
+            if (!record['crown court'] && crownCourtLookup[key]) {
+              record['crown court'] = crownCourtLookup[key];
+            }
+          }
+
+          // Delete the conflicting records so the insert succeeds
+          await connection.query(
+            `DELETE FROM hearings WHERE id IN (${idsToRemove.map(() => '?').join(',')})`,
+            idsToRemove
+          );
+
+          logger.info('Removed cross-source conflicting records', {
+            listDate,
+            removedCount: idsToRemove.length,
+            crownCourtCarriedForward: Object.keys(crownCourtLookup).length
+          });
+        }
+      }
+
       // Bulk insert new records
       if (toAdd.length > 0) {
         await bulkInsertRecords(connection, toAdd, dataSourceId);

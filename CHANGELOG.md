@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.11.1] - 2026-03-12
+
+### Fixed
+
+- **DCL sync fails when FHL records already exist** — DCL scraper now detects cross-source conflicts on the `unique_hearing` constraint, removes the conflicting FHL records, and carries forward the `crown_court` value from the FHL record into the new DCL record
+
+---
+
 ## [1.11.0] - 2026-03-12
 
 ### Added

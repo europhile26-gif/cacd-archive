@@ -735,6 +735,7 @@ This roadmap tracks the evolution of CACD Archive from v1.0 through v2.0+. Major
 
 **Recent Updates:**
 
+- v1.11.1 (12 Mar 2026): Fix DCL sync failure when FHL records already exist for the same hearing
 - v1.9.0 (3 Feb 2026): Bug fixes for link discovery and CLI commands, dependency updates
 - v1.8.0 (3 Feb 2026): Scraper refinements - minute-based intervals and time windows
 - v1.7.0 (18 Dec 2025): Saved searches with email notifications
