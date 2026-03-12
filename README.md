@@ -42,6 +42,7 @@ Visit `http://localhost:3000` to access the web interface.
 
 ## Documentation
 
+- [Upgrading](docs/upgrading.md) - How to update a running instance to a new version
 - [Configuration Reference](docs/configuration.md) - Environment variables, deployment, PM2 setup
 - [API Guide](docs/api.md) - REST API usage and Swagger docs
 - [CLI Reference](docs/cli.md) - Command-line tools for administration
