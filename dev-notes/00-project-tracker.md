@@ -1,8 +1,8 @@
 # Project Tracker
 
-**Version:** 1.10.1
-**Last Updated:** 2026-03-07
-**Current Phase:** M1 complete (v1.10.0) — next: M2 (Multi-Division Support)
+**Version:** 1.11.0
+**Last Updated:** 2026-03-12
+**Current Phase:** M2 complete (v1.11.0) — next: M3 (Multi-Division Support)
 
 ---
 
@@ -15,7 +15,7 @@ CACD Archive is a scraping and notification system for UK court hearing data. It
 
 All other functionality (multiple scrapers, additional sources/divisions, API, frontend) exists to support these two core functions. The client wants to expand source coverage throughout 2026.
 
-Currently the system pulls Criminal Division data from a single source (`court-tribunal-hearings.service.gov.uk`) on a cron schedule, stores it in MariaDB, and exposes it via a Fastify API with a Bootstrap frontend.
+The system pulls Criminal Division data from two sources — the Daily Cause List (`court-tribunal-hearings.service.gov.uk`) and the Future Hearing List (`gov.uk`) — on configurable cron schedules, stores it in MariaDB, and exposes it via a Fastify API with a Bootstrap frontend.
 
 ### Licensing & Compliance
 
@@ -68,9 +68,98 @@ Audit the codebase for security and performance issues. Update dependencies.
 - [ ] CSP: remove `unsafe-inline` from script-src and style-src (LOW — requires moving inline styles/scripts to files)
 - [ ] CORS: configure allowed origins from `BASE_URL` in production; currently wide-open in dev and empty-list in production
 
-### M2: Multi-Division Support (Existing Source)
+### M2: Future Hearing List Integration
 
-Expand the archiving pipeline to capture more divisions, feeding more data into both core functions (archive + notifications). The current source at `court-tribunal-hearings.service.gov.uk/summary-of-publications?locationId=109` already lists daily cause lists for 9 divisions — we only scrape Criminal.
+Add a second data source to the archiving pipeline. GOV.UK publishes "Court of Appeal cases fixed for hearing (Criminal Division)" at `gov.uk/government/publications/court-of-appeal-cases-fixed-for-hearing-criminal-division/`. This is a forward-looking schedule listing hearings further into the future than the Daily Cause List (DCL), but subject to change. We call this the **Future Hearing List (FHL)**.
+
+**Source terminology:**
+
+- **Daily Cause List (DCL)** — the existing source at `court-tribunal-hearings.service.gov.uk`. Near-future hearings (today/tomorrow). Authoritative.
+- **Future Hearing List (FHL)** — the new GOV.UK source. Longer-range schedule, volatile, lower precedence.
+
+**FHL table columns:** Surname, Forenames, CAO Reference, Hearing Date, Court, Time, Reporting Restriction, Crown Court
+
+**Data mapping (FHL → hearings table):**
+
+| FHL Column            | Maps to                                 | Notes                             |
+| --------------------- | --------------------------------------- | --------------------------------- |
+| Surname + Forenames   | `case_details`                          | Concatenated into case details    |
+| CAO Reference         | `case_number`                           | Same format as DCL case numbers   |
+| Hearing Date + Time   | `list_date`, `time`, `hearing_datetime` | Parsed as per DCL                 |
+| Court                 | `venue`                                 | Hearing venue                     |
+| Crown Court           | `crown_court` (NEW)                     | Origin court — new VARCHAR column |
+| Reporting Restriction | `reporting_restriction` (NEW)           | Free-text — new TEXT column       |
+
+**Design decisions:**
+
+- **One row per hearing** — the unique constraint `(list_date, case_number, time)` is unchanged. DCL records take precedence: FHL inserts skip any row that already exists from DCL (`INSERT IGNORE`).
+- **Full-replace sync for FHL** — each successful FHL scrape deletes all existing FHL-sourced rows, then inserts fresh data. Avoids complex upsert logic given the volatile nature of the data.
+- **Data source table** — a new `data_sources` table replaces hardcoded source identifiers. `hearings.data_source_id` (FK) replaces any source enum. Extensible for future sources.
+- **Scoped sync operations** — all sync-service queries (comparison, insert, update, delete) are scoped by `data_source_id` to prevent cross-source interference. Critical: without this, DCL's delete phase would wipe FHL records for the same `list_date`.
+- **Notifications from DCL only** — email alerts are only triggered by DCL scrapes. FHL's full-replace strategy would cause duplicate notifications on every scrape cycle otherwise.
+- **Separate scrape interval** — FHL defaults to every 12 hours (configurable via `SCRAPE_INTERVAL_FHL_MINUTES` in `.env`). DCL retains its existing interval.
+
+#### M2a: Schema & Data Model
+
+- [x] Migration: create `data_sources` table (`id`, `slug` UNIQUE, `display_name`, `base_url`, `scrape_interval_minutes`, `scrape_window_start_hour`, `scrape_window_end_hour`, `enabled` BOOLEAN, `created_at`, `updated_at`) — migration `009_data_sources.sql`
+- [x] Migration: seed `data_sources` with DCL and FHL rows
+- [x] Migration: add `data_source_id` (FK) column to `hearings` table, backfill existing rows to DCL source ID
+- [x] Migration: add `data_source_id` (FK) column to `scrape_history` table
+- [x] Migration: add `crown_court` (VARCHAR 255) and `reporting_restriction` (TEXT) columns to `hearings` table
+- [x] Add indexes on `data_source_id` and `(data_source_id, list_date DESC)` and `(data_source_id, status, started_at DESC)`
+
+#### M2b: Config & Source-Aware Scheduling
+
+- [x] Create `data-source-service.js` — cached lookups from `data_sources` table (replaces env-var-based config for per-source settings)
+- [x] Refactor `scheduler.js` to iterate enabled data sources, each with its own interval and window from DB
+- [x] `shouldScrape()` checks per-source last-scrape time (query `scrape_history` filtered by `data_source_id`)
+- [x] `scrape-history-service.js` records `data_source_id` on each scrape
+
+#### M2c: Refactor Sync Service
+
+- [x] Scope all sync-service comparison queries by `data_source_id` — existing records fetched with `WHERE data_source_id = ?`
+- [x] Scope delete phase by `data_source_id` — DCL deletes only remove DCL-sourced rows for a given `list_date`
+- [x] Add new full-replace sync method for FHL: `DELETE WHERE data_source_id = ?` then bulk `INSERT IGNORE` (skips rows where DCL record already holds the unique key)
+- [x] Bulk insert includes `data_source_id`, `crown_court`, `reporting_restriction` in all INSERT statements
+- [x] Notifications gated to DCL only in `scraper-service.js`
+
+#### M2c.1: Admin — Data Source Management UI
+
+Add a "Data Sources" section to the existing `/admin` page, below User Management. Allows administrators to view source status, toggle enabled/disabled, and see the most recent scrape result per source.
+
+- [x] API: `GET /api/v1/admin/data-sources` — list all sources with last scrape info (joined from `scrape_history`), requires `scraper:configure` capability
+- [x] API: `PATCH /api/v1/admin/data-sources/:id` — update `enabled`, `scrape_interval_minutes`, `scrape_window_start_hour`, `scrape_window_end_hour`; requires `scraper:configure` capability; clears `data-source-service` cache
+- [x] Frontend: add Data Sources section to `admin.html` — card per source showing: display name, enabled/disabled badge + toggle, last scrape time, last scrape status badge, interval, scrape window
+- [x] Frontend: add data source JS to `admin.js` — fetch sources on page load, render cards, handle enable/disable toggle via PATCH
+
+#### M2d: FHL Scraper
+
+- [x] Implement `fhl-link-discovery.js` — scrape the FHL publication page, find the linked document URL
+- [x] Implement `fhl-table-parser.js` — parse the FHL HTML table, map columns to hearing schema (Surname+Forenames → `case_details`, CAO Reference → `case_number`, Crown Court → `crown_court`, Reporting Restriction → `reporting_restriction`)
+- [x] Refactor `scraper-service.js` — split into `scrapeDCL()` and `scrapeFHL()`, dispatched by source slug via `scrapeAll()`
+- [x] FHL uses `fullReplaceSynchronize()` — delete all FHL records, `INSERT IGNORE` new ones (skips DCL conflicts)
+- [x] Validate case number format from FHL matches expected regex (log warnings for unexpected formats, as per DCL behaviour)
+- [x] Retry/error handling consistent with DCL scraper (exponential backoff, email alerts on failure)
+- [x] Unit tests for FHL table parser (date parsing, row mapping, edge cases)
+- [x] Scheduler and admin route updated to allow FHL scraping
+
+#### M2e: Notification Scoping & API Updates
+
+- [x] Gate notification-service to only trigger on DCL scrapes (check `data_source_id` before sending alerts)
+- [x] Update hearings API routes to accept optional `data_source` filter param (comma-separated IDs, `none` sentinel)
+- [x] Update API responses to include source metadata (`dataSourceName`, `crownCourt`)
+- [x] Update frontend to display source indicator on hearing records (provenance badges: DCL/FHL)
+- [x] Update frontend with source filter pills (toggle per source, `show_by_default` driven)
+- [x] Swagger/OpenAPI docs auto-updated via Fastify response schema additions
+
+#### M2 — Potential Enhancements (deferred)
+
+- [ ] FHL diff-before-replace: compare incoming FHL data against existing FHL records before the full replace, to identify genuinely new future hearings. This would allow FHL-specific notifications without the duplicate alert problem. Deferred because it adds complexity and depends on the FHL data being consistent enough to diff reliably.
+- [x] Admin UI for managing data sources (enable/disable, adjust intervals, show by default) — implemented in M2c.1
+
+### M3: Multi-Division Support (Existing Source)
+
+Expand the archiving pipeline to capture more divisions from the existing DCL source at `court-tribunal-hearings.service.gov.uk`. The summary page already lists daily cause lists for 9 divisions beyond Criminal.
 
 **Available divisions on the existing source:**
 
@@ -86,9 +175,7 @@ Expand the archiving pipeline to capture more divisions, feeding more data into 
 
 **Key tasks:**
 
-- [ ] Schema: add `source_url` (VARCHAR) and `source_scraped_at` (DATETIME) columns to hearings table — record where and when each record was found, for provenance/attribution display
 - [ ] Research: confirm table structure is consistent across divisions (same `govuk-table` class, same column patterns)
-- [ ] Schema: add `division` or `source_division` to hearings table if not already present
 - [ ] Config: make target divisions configurable (env var or DB-driven)
 - [ ] Update `link-discovery.js` to discover links for multiple divisions per scrape
 - [ ] Update `scraper-service.js` to iterate over configured divisions
@@ -96,29 +183,12 @@ Expand the archiving pipeline to capture more divisions, feeding more data into 
 - [ ] Update frontend filters and API query params for division filtering
 - [ ] Update saved search notifications to respect division
 
-### M3: GOV.UK Source Integration
-
-Add a second data source to the archiving pipeline. GOV.UK publishes a "Cases Fixed for Hearing" page for Criminal Division at `gov.uk/government/publications/court-of-appeal-cases-fixed-for-hearing-criminal-division/`. This is a forward-looking schedule (not a daily cause list) with a different structure, providing richer data (named individuals, Crown Court of origin, reporting restrictions) that enhances both the archive and notification value.
-
-**GOV.UK table columns:** Surname, Forenames, CAO Reference, Hearing Date, Court, Time, Reporting Restriction, Crown Court
-
-**This differs from the existing source:** different domain, different HTML structure, different data shape (named individuals vs case-level records), and different update cadence.
-
-**Key tasks:**
-
-- [ ] Research: compare GOV.UK data fields to existing schema — determine what maps, what's new
-- [ ] Research: check the parent page (`gov.uk/crime-justice-and-law/courts-sentencing-tribunals`) for additional scrapeable sources (Court of Protection lists, civil restraint orders, etc.)
-- [ ] Design: source abstraction — each source needs its own discovery + parsing workflow
-- [ ] Schema: extend or create tables for GOV.UK-sourced data (may need separate table or unified schema with source tracking)
-- [ ] Implement GOV.UK scraper (new link discovery pattern, new table parser)
-- [ ] Deduplicate or cross-reference records that appear in both sources
-- [ ] Update API and frontend to surface source metadata
-
 ### M4+ (Future — not yet scoped)
 
 - Additional GOV.UK sources from the courts/sentencing/tribunals topic page
 - Historical data backfill
 - API v2 considerations as data model expands
+- FHL-specific notifications via diff-before-replace (see M2 deferred enhancements)
 
 ---
 
@@ -135,5 +205,5 @@ Add a second data source to the archiving pipeline. GOV.UK publishes a "Cases Fi
 
 - **CJS only:** The project uses CommonJS throughout. Several dependencies (boxen, chalk, inquirer, ora) are pinned to CJS-compatible versions. An ESM migration would unblock those but is a significant undertaking.
 - **PM2 clustering:** Only instance 0 runs migrations, email init, and the scraper scheduler. Any new scheduled work must respect `config.appInstance === 0`.
-- **Scraper architecture:** The current pipeline is `scheduler → scraper-service → link-discovery → table-parser → sync-service`. M2/M3 will likely need to make this pipeline division-aware and source-aware.
-- **Two distinct source types:** Source 1 (court-tribunal-hearings) publishes daily cause lists that change day-to-day. Source 2 (GOV.UK) publishes a forward-looking schedule that updates less frequently. These have different scraping cadences and dedup strategies.
+- **Scraper architecture:** The current pipeline is `scheduler → scraper-service → link-discovery → table-parser → sync-service`. M2 makes this source-aware via `data_sources` table and per-source scheduling. Each source has its own link-discovery and table-parser implementation, but shares sync-service (scoped by `data_source_id`).
+- **Two distinct source types:** The Daily Cause List (DCL, `court-tribunal-hearings.service.gov.uk`) publishes near-future hearings that change daily. The Future Hearing List (FHL, `gov.uk`) publishes a longer-range schedule that updates less frequently and is volatile. DCL takes precedence. FHL uses full-replace sync; DCL uses incremental sync. Only DCL triggers email notifications.

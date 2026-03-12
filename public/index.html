@@ -88,9 +88,22 @@
               </div>
             </div>
 
-            <!-- Sort controls row -->
+            <!-- Source filter and sort controls row -->
             <div class="row g-2 align-items-center">
               <div class="col-12 col-md-auto">
+                <label class="form-label mb-0 fw-semibold text-muted small">Sources:</label>
+              </div>
+              <div class="col-auto">
+                <div
+                  id="sourceFilters"
+                  class="btn-group"
+                  role="group"
+                  aria-label="Data source filters"
+                >
+                  <!-- Populated by JavaScript -->
+                </div>
+              </div>
+              <div class="col-12 col-md-auto ms-md-3">
                 <label class="form-label mb-0 fw-semibold text-muted small">Sort:</label>
               </div>
               <div class="col-auto">
@@ -144,6 +157,7 @@
                 <th>Case Number</th>
                 <th>Case Details</th>
                 <th>Hearing Type</th>
+                <th>Crown Court</th>
                 <th>Judge</th>
               </tr>
             </thead>

@@ -59,6 +59,13 @@
   border-color: var(--site-primary);
 }
 
+/* Source filter pill active state */
+.btn-group .source-pill.active {
+  background-color: var(--site-primary);
+  color: white;
+  border-color: var(--site-primary);
+}
+
 /* Loading spinner - primary color */
 .spinner-border {
   border-color: var(--site-primary);
@@ -85,6 +92,15 @@
 .navbar.bg-light {
   background-color: var(--site-lighter-bg) !important;
   border: 1px solid var(--site-light-border);
+}
+
+/* Source badge */
+.source-badge {
+  font-size: 0.65em;
+  vertical-align: middle;
+  margin-left: 0.3em;
+  font-weight: normal;
+  letter-spacing: 0.03em;
 }
 
 /* Table cell styling */

@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.11.0] - 2026-03-12
+
+### Added
+
+- **Future Hearing List (FHL) data source** — scrapes GOV.UK "Court of Appeal cases fixed for hearing (Criminal Division)" as a second data source alongside the existing Daily Cause List (DCL)
+- **Multi-source architecture** — new `data_sources` table manages source configuration (interval, time window, enabled, show by default) extensibly; replaces hardcoded source identifiers
+- **FHL scraper pipeline** — `fhl-link-discovery.js` discovers the FHL document URL; `fhl-table-parser.js` parses the FHL HTML table (Surname+Forenames, CAO Reference, Hearing Date, Court, Time, Crown Court, Reporting Restriction)
+- **Full-replace sync for FHL** — each FHL scrape deletes all existing FHL records and re-inserts with `INSERT IGNORE`, so DCL records always take precedence at the unique constraint level
+- **Source-aware scheduling** — scheduler iterates all enabled data sources, each with its own interval and time window from the database
+- **Admin data source management** — Data Sources section on `/admin` with enable/disable toggle, "Visible by default" toggle, scrape status, interval/window display, and "Scrape Now" button per source
+- **Frontend source filter pills** — pill-button toggles per data source replace the dropdown; initial state driven by `show_by_default` column; supports filtering by multiple sources simultaneously
+- **Source provenance badges** — each hearing row/card displays a short badge (DCL/FHL) showing which data source it originated from
+- **Crown Court column** — new column in the hearings table and frontend, populated from FHL data
+- **Database migrations** — `009_data_sources.sql` (data sources table, FK columns, backfill, indexes), `010_data_source_show_by_default.sql` (show_by_default column)
+- **Unit tests** for FHL table parser (date parsing, time validation, row mapping, edge cases)
+
+### Changed
+
+- **Hearings API** — `dataSource` query param now accepts comma-separated IDs (e.g. `1,2`) or `none`; response includes `crownCourt` and `dataSourceName` fields
+- **Sync service** — all comparison, insert, and delete queries scoped by `data_source_id` to prevent cross-source interference
+- **Scraper service** — refactored into `scrapeDCL()` and `scrapeFHL()` dispatched by source slug; email notifications gated to DCL only
+- **Scrape history** — records `data_source_id`; `shouldScrape()` checks per-source interval
+- **Public `/api/v1/data-sources` endpoint** — returns enabled sources with `show_by_default` for frontend filter initialisation
+- **"Clear All" button** — resets source filter pills to their `show_by_default` states rather than activating all
+
+---
+
 ## [1.10.1] - 2026-03-07
 
 ### Fixed

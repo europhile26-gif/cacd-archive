@@ -9,6 +9,7 @@
   // Initialize
   document.addEventListener('DOMContentLoaded', async function () {
     await loadConfig();
+    await loadDataSources();
     loadHearings();
     attachEventHandlers();
   });
@@ -22,6 +23,33 @@
       }
     } catch (error) {
       console.error('Failed to load config, using defaults:', error);
+    }
+  }
+
+  async function loadDataSources() {
+    try {
+      const response = await fetch('/api/v1/data-sources');
+      if (response.ok) {
+        const data = await response.json();
+        const container = document.getElementById('sourceFilters');
+        const sources = data.sources || [];
+        sources.forEach((source) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn btn-outline-primary source-pill';
+          btn.dataset.sourceId = source.id;
+          btn.dataset.showByDefault = source.show_by_default ? '1' : '0';
+          btn.textContent = source.display_name;
+          if (source.show_by_default) {
+            btn.classList.add('active');
+          }
+          btn.addEventListener('click', handleSourceToggle);
+          container.appendChild(btn);
+        });
+        updateSourceFilter();
+      }
+    } catch (error) {
+      console.error('Failed to load data sources:', error);
     }
   }
 
@@ -68,9 +96,41 @@
     document.querySelectorAll('.quick-date').forEach((btn) => {
       btn.classList.remove('active');
     });
+    // Reset source pills to their show_by_default states
+    document.querySelectorAll('.source-pill').forEach((btn) => {
+      if (btn.dataset.showByDefault === '1') {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
     currentFilters = {};
     currentPage = 0;
+    updateSourceFilter();
     loadHearings();
+  }
+
+  function handleSourceToggle(e) {
+    e.target.classList.toggle('active');
+    updateSourceFilter();
+    currentPage = 0;
+    loadHearings();
+  }
+
+  function updateSourceFilter() {
+    const allPills = document.querySelectorAll('.source-pill');
+    const activePills = document.querySelectorAll('.source-pill.active');
+
+    if (activePills.length === allPills.length) {
+      // All active — no filter needed (show everything)
+      delete currentFilters.dataSource;
+    } else if (activePills.length === 0) {
+      // None active — send sentinel so API returns nothing
+      currentFilters.dataSource = 'none';
+    } else {
+      const activeIds = Array.from(activePills).map((btn) => btn.dataset.sourceId);
+      currentFilters.dataSource = activeIds.join(',');
+    }
   }
 
   function handleClearDate() {
@@ -167,7 +227,7 @@
 
     if (hearings.length === 0) {
       tbody.innerHTML =
-        '<tr><td colspan="6" class="text-center text-muted py-4">No hearings found</td></tr>';
+        '<tr><td colspan="7" class="text-center text-muted py-4">No hearings found</td></tr>';
       cardsContainer.innerHTML = '<div class="alert alert-info">No hearings found</div>';
       document.getElementById('resultCount').textContent = 'No hearings match your search criteria';
       return;
@@ -179,9 +239,10 @@
       row.innerHTML = `
         <td class="hearing-datetime">${formatDateTime(hearing.hearingDateTime)}</td>
         <td class="venue">${escapeHtml(hearing.venue)}</td>
-        <td class="case-number">${escapeHtml(hearing.caseNumber)}</td>
+        <td class="case-number">${escapeHtml(hearing.caseNumber)} ${sourceBadge(hearing)}</td>
         <td class="case-details">${escapeHtml(hearing.caseDetails)}</td>
         <td class="hearing-type">${escapeHtml(hearing.hearingType)}</td>
+        <td class="crown-court">${escapeHtml(hearing.crownCourt)}</td>
         <td class="judge">${escapeHtml(hearing.judge)}</td>
       `;
       tbody.appendChild(row);
@@ -192,7 +253,7 @@
       card.innerHTML = `
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-start mb-2">
-            <h5 class="card-title h6 mb-0">${escapeHtml(hearing.caseNumber)}</h5>
+            <h5 class="card-title h6 mb-0">${escapeHtml(hearing.caseNumber)} ${sourceBadge(hearing)}</h5>
             <span class="badge bg-primary">${formatTime(hearing.hearingDateTime)}</span>
           </div>
           <p class="card-text text-muted small mb-2">${formatDate(hearing.hearingDateTime)}</p>
@@ -200,6 +261,7 @@
           <div class="row g-2 small text-muted">
             ${hearing.venue ? `<div class="col-6"><strong>Venue:</strong> ${escapeHtml(hearing.venue)}</div>` : ''}
             ${hearing.hearingType ? `<div class="col-6"><strong>Type:</strong> ${escapeHtml(hearing.hearingType)}</div>` : ''}
+            ${hearing.crownCourt ? `<div class="col-6"><strong>Crown Court:</strong> ${escapeHtml(hearing.crownCourt)}</div>` : ''}
             ${hearing.judge ? `<div class="col-12"><strong>Judge:</strong> ${escapeHtml(hearing.judge)}</div>` : ''}
           </div>
         </div>
@@ -239,6 +301,22 @@
     } else {
       nextPageItem.classList.remove('disabled');
     }
+  }
+
+  function sourceAbbreviation(name) {
+    if (!name) return '';
+    // Take initials from each word, e.g. "Daily Cause List" → "DCL"
+    return name
+      .split(/\s+/)
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase();
+  }
+
+  function sourceBadge(hearing) {
+    const abbr = sourceAbbreviation(hearing.dataSourceName);
+    if (!abbr) return '';
+    return `<span class="badge bg-secondary source-badge" title="${escapeHtml(hearing.dataSourceName)}">${abbr}</span>`;
   }
 
   function formatDateTime(isoString) {

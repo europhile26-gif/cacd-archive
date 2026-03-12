@@ -5,6 +5,8 @@
 
 const User = require('../../models/User');
 const Role = require('../../models/Role');
+const { query } = require('../../config/database');
+const { clearCache } = require('../../services/data-source-service');
 const { requireAuth, requireCapability } = require('../middleware/auth');
 
 async function adminRoutes(fastify, _options) {
@@ -428,6 +430,224 @@ async function adminRoutes(fastify, _options) {
       }
     }
   );
+
+  // ─── Data Source Management ─────────────────────────────────────────
+
+  /**
+   * GET /api/v1/admin/data-sources
+   * List all data sources with last scrape info
+   */
+  fastify.get(
+    '/data-sources',
+    {
+      preHandler: [requireAuth, requireCapability('scraper:configure')],
+      schema: {
+        tags: ['Admin'],
+        description: 'List all data sources with last scrape status'
+      }
+    },
+    async (request, reply) => {
+      try {
+        const sources = await query(
+          `SELECT
+            ds.*,
+            sh.status AS last_scrape_status,
+            sh.started_at AS last_scrape_at,
+            sh.duration_ms AS last_scrape_duration_ms,
+            sh.records_added AS last_scrape_added,
+            sh.records_updated AS last_scrape_updated,
+            sh.records_deleted AS last_scrape_deleted,
+            sh.error_message AS last_scrape_error
+          FROM data_sources ds
+          LEFT JOIN scrape_history sh ON sh.id = (
+            SELECT id FROM scrape_history
+            WHERE data_source_id = ds.id
+            ORDER BY started_at DESC
+            LIMIT 1
+          )
+          ORDER BY ds.id`
+        );
+
+        return reply.send({ sources });
+      } catch (error) {
+        fastify.log.error({ error }, 'List data sources error');
+        return reply.code(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to list data sources'
+        });
+      }
+    }
+  );
+
+  /**
+   * PATCH /api/v1/admin/data-sources/:id
+   * Update data source settings
+   */
+  fastify.patch(
+    '/data-sources/:id',
+    {
+      preHandler: [requireAuth, requireCapability('scraper:configure')],
+      schema: {
+        tags: ['Admin'],
+        description: 'Update data source settings',
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: {
+            id: { type: 'integer' }
+          }
+        },
+        body: {
+          type: 'object',
+          properties: {
+            enabled: { type: 'boolean' },
+            show_by_default: { type: 'boolean' },
+            scrape_interval_minutes: { type: 'integer', minimum: 1 },
+            scrape_window_start_hour: { type: 'integer', minimum: 0, maximum: 24 },
+            scrape_window_end_hour: { type: 'integer', minimum: 0, maximum: 24 }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      try {
+        const { id } = request.params;
+        const updates = request.body;
+
+        // Build SET clause from provided fields
+        const allowedFields = [
+          'enabled',
+          'show_by_default',
+          'scrape_interval_minutes',
+          'scrape_window_start_hour',
+          'scrape_window_end_hour'
+        ];
+        const setClauses = [];
+        const params = [];
+
+        for (const field of allowedFields) {
+          if (updates[field] !== undefined) {
+            const value =
+              field === 'enabled' || field === 'show_by_default'
+                ? updates[field]
+                  ? 1
+                  : 0
+                : updates[field];
+            setClauses.push(`${field} = ?`);
+            params.push(value);
+          }
+        }
+
+        if (setClauses.length === 0) {
+          return reply.code(400).send({
+            error: 'Bad Request',
+            message: 'No valid fields to update'
+          });
+        }
+
+        params.push(id);
+        await query(`UPDATE data_sources SET ${setClauses.join(', ')} WHERE id = ?`, params);
+
+        // Clear cached source data so scheduler picks up changes
+        clearCache();
+
+        // Return updated source
+        const rows = await query('SELECT * FROM data_sources WHERE id = ?', [id]);
+        if (rows.length === 0) {
+          return reply.code(404).send({
+            error: 'Not Found',
+            message: 'Data source not found'
+          });
+        }
+
+        fastify.log.info(
+          { dataSourceId: id, updates, updatedBy: request.user.id },
+          'Data source updated'
+        );
+
+        return reply.send({
+          success: true,
+          source: rows[0]
+        });
+      } catch (error) {
+        fastify.log.error({ error }, 'Update data source error');
+        return reply.code(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to update data source'
+        });
+      }
+    }
+  );
+
+  /**
+   * POST /api/v1/admin/data-sources/:id/scrape
+   * Trigger a manual scrape for a specific data source
+   */
+  fastify.post(
+    '/data-sources/:id/scrape',
+    {
+      preHandler: [requireAuth, requireCapability('scraper:trigger')],
+      schema: {
+        tags: ['Admin'],
+        description: 'Trigger a manual scrape for a data source',
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: {
+            id: { type: 'integer' }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      try {
+        const { id } = request.params;
+
+        const rows = await query('SELECT * FROM data_sources WHERE id = ?', [id]);
+        if (rows.length === 0) {
+          return reply.code(404).send({
+            error: 'Not Found',
+            message: 'Data source not found'
+          });
+        }
+
+        const source = rows[0];
+
+        // Only sources with implemented scrapers can be triggered
+        const implementedSources = ['daily_cause_list', 'future_hearing_list'];
+        if (!implementedSources.includes(source.slug)) {
+          return reply.code(400).send({
+            error: 'Bad Request',
+            message: `Scraper not yet implemented for "${source.display_name}". This source will become available once its scraper is built.`
+          });
+        }
+
+        fastify.log.info(
+          { dataSourceId: id, source: source.slug, triggeredBy: request.user.id },
+          'Manual scrape triggered'
+        );
+
+        // Run scrape in the background so the request returns immediately
+        const { scrapeAll } = require('../../services/scraper-service');
+        scrapeAll('manual', source).catch((error) => {
+          fastify.log.error({ dataSourceId: id, error: error.message }, 'Manual scrape failed');
+        });
+
+        return reply.send({
+          success: true,
+          message: `Scrape triggered for "${source.display_name}". Refresh to see results.`
+        });
+      } catch (error) {
+        fastify.log.error({ error }, 'Trigger scrape error');
+        return reply.code(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to trigger scrape'
+        });
+      }
+    }
+  );
+
+  // ─── User Management ─────────────────────────────────────────────
 
   /**
    * GET /api/v1/admin/users/:id

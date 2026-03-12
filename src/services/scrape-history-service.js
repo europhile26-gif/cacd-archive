@@ -10,14 +10,15 @@ const logger = require('../utils/logger');
  * Record the start of a scrape operation
  * @param {string} scrapeType - Type: 'scheduled', 'startup', 'manual'
  * @param {string} summaryPageUrl - URL of summary page
+ * @param {number} dataSourceId - Data source ID
  * @returns {Promise<number>} Scrape history ID
  */
-async function recordScrapeStart(scrapeType, summaryPageUrl) {
+async function recordScrapeStart(scrapeType, summaryPageUrl, dataSourceId) {
   const result = await query(
     `INSERT INTO scrape_history (
-      scrape_type, status, summary_page_url, started_at
-    ) VALUES (?, ?, ?, NOW())`,
-    [scrapeType, 'success', summaryPageUrl] // Optimistic, will update if fails
+      scrape_type, data_source_id, status, summary_page_url, started_at
+    ) VALUES (?, ?, ?, ?, NOW())`,
+    [scrapeType, dataSourceId, 'success', summaryPageUrl] // Optimistic, will update if fails
   );
 
   return result.insertId;
@@ -96,17 +97,24 @@ async function recordScrapeError(scrapeId, error) {
 }
 
 /**
- * Get last successful scrape time
+ * Get last successful scrape time, optionally filtered by data source
+ * @param {number} [dataSourceId] - Data source ID (if omitted, checks all sources)
  * @returns {Promise<Date|null>} Last scrape time or null
  */
-async function getLastSuccessfulScrape() {
-  const rows = await query(
-    `SELECT started_at 
-     FROM scrape_history 
-     WHERE status = 'success' 
-     ORDER BY started_at DESC 
-     LIMIT 1`
-  );
+async function getLastSuccessfulScrape(dataSourceId) {
+  let sql = `SELECT started_at
+     FROM scrape_history
+     WHERE status = 'success'`;
+  const params = [];
+
+  if (dataSourceId) {
+    sql += ' AND data_source_id = ?';
+    params.push(dataSourceId);
+  }
+
+  sql += ' ORDER BY started_at DESC LIMIT 1';
+
+  const rows = await query(sql, params);
 
   if (rows.length === 0) {
     return null;
@@ -145,15 +153,16 @@ async function getRecentScrapes(limit = 10) {
 }
 
 /**
- * Check if enough time has passed since last scrape
+ * Check if enough time has passed since last scrape for a given data source
  * @param {number} intervalHours - Required interval in hours
+ * @param {number} [dataSourceId] - Data source ID
  * @returns {Promise<boolean>} True if should scrape
  */
-async function shouldScrape(intervalHours) {
-  const lastScrape = await getLastSuccessfulScrape();
+async function shouldScrape(intervalHours, dataSourceId) {
+  const lastScrape = await getLastSuccessfulScrape(dataSourceId);
 
   if (!lastScrape) {
-    logger.info('No previous scrapes found, should scrape');
+    logger.info('No previous scrapes found, should scrape', { dataSourceId });
     return true;
   }
 
@@ -163,6 +172,7 @@ async function shouldScrape(intervalHours) {
   const should = hoursSince >= intervalHours;
 
   logger.debug('Checking if should scrape', {
+    dataSourceId,
     lastScrape: lastScrape.toISOString(),
     hoursSince: hoursSince.toFixed(2),
     intervalHours,

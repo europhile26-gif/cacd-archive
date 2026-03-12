@@ -8,17 +8,19 @@ const logger = require('../utils/logger');
  */
 
 /**
- * Synchronize records for a specific list date
+ * Synchronize records for a specific list date and data source
  * @param {Array<Object>} newRecords - Newly scraped records
  * @param {string} listDate - Date of the list (YYYY-MM-DD)
+ * @param {number} dataSourceId - Data source ID to scope operations
  * @returns {Promise<Object>} Sync statistics
  */
-async function synchronizeRecords(newRecords, listDate) {
+async function synchronizeRecords(newRecords, listDate, dataSourceId) {
   const connection = await getConnection();
 
   try {
     logger.info('Starting record synchronization', {
       listDate,
+      dataSourceId,
       newRecordCount: newRecords.length
     });
 
@@ -47,10 +49,11 @@ async function synchronizeRecords(newRecords, listDate) {
     let toDelete = [];
 
     try {
-      // Get existing records for this date
-      const [existingRows] = await connection.query('SELECT * FROM hearings WHERE list_date = ?', [
-        listDate
-      ]);
+      // Get existing records for this date and source
+      const [existingRows] = await connection.query(
+        'SELECT * FROM hearings WHERE list_date = ? AND data_source_id = ?',
+        [listDate, dataSourceId]
+      );
 
       logger.debug('Retrieved existing records', {
         listDate,
@@ -101,7 +104,7 @@ async function synchronizeRecords(newRecords, listDate) {
 
       // Bulk insert new records
       if (toAdd.length > 0) {
-        await bulkInsertRecords(connection, toAdd);
+        await bulkInsertRecords(connection, toAdd, dataSourceId);
         addedCount = toAdd.length;
       }
 
@@ -256,13 +259,15 @@ function formatDateTimeForMySQL(date) {
  * Bulk insert hearing records using multi-value INSERT
  * @param {Object} connection - Database connection
  * @param {Array<Object>} records - Records to insert
+ * @param {number} dataSourceId - Data source ID
  * @param {number} batchSize - Max records per INSERT statement
  */
-async function bulkInsertRecords(connection, records, batchSize = 500) {
+async function bulkInsertRecords(connection, records, dataSourceId, batchSize = 500) {
   const columns = `(list_date, case_number, time, hearing_datetime,
     venue, judge, case_details, hearing_type, additional_information,
-    division, source_url, scraped_at)`;
-  const placeholder = '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    crown_court, reporting_restriction,
+    division, data_source_id, source_url, scraped_at)`;
+  const placeholder = '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
   for (let i = 0; i < records.length; i += batchSize) {
     const batch = records.slice(i, i + batchSize);
@@ -280,7 +285,10 @@ async function bulkInsertRecords(connection, records, batchSize = 500) {
         record['case details'] || null,
         record['hearing type'] || null,
         record['additional information'] || null,
+        record['crown court'] || null,
+        record['reporting restriction'] || null,
         record.division,
+        dataSourceId,
         record.sourceUrl,
         formatDateTimeForMySQL(record.scrapedAt)
       );
@@ -322,8 +330,159 @@ async function updateRecord(connection, record, id) {
   );
 }
 
+/**
+ * Full-replace synchronization for volatile sources (e.g. Future Hearing List).
+ * Deletes all existing records for the given data source, then bulk inserts
+ * new records using INSERT IGNORE to skip any that conflict with records
+ * from a higher-precedence source (e.g. Daily Cause List).
+ *
+ * @param {Array<Object>} newRecords - Newly scraped records
+ * @param {number} dataSourceId - Data source ID
+ * @returns {Promise<Object>} Sync statistics
+ */
+async function fullReplaceSynchronize(newRecords, dataSourceId) {
+  const connection = await getConnection();
+
+  try {
+    logger.info('Starting full-replace synchronization', {
+      dataSourceId,
+      newRecordCount: newRecords.length
+    });
+
+    // Deduplicate new records (keep last occurrence)
+    const deduplicatedMap = {};
+    for (const record of newRecords) {
+      const key = createRecordKey(record);
+      deduplicatedMap[key] = record;
+    }
+    const deduplicatedRecords = Object.values(deduplicatedMap);
+
+    if (deduplicatedRecords.length < newRecords.length) {
+      logger.warn('Duplicate records found in scraped data', {
+        dataSourceId,
+        original: newRecords.length,
+        deduplicated: deduplicatedRecords.length,
+        duplicates: newRecords.length - deduplicatedRecords.length
+      });
+    }
+
+    await connection.beginTransaction();
+
+    try {
+      // Count existing records before delete
+      const [countResult] = await connection.query(
+        'SELECT COUNT(*) as cnt FROM hearings WHERE data_source_id = ?',
+        [dataSourceId]
+      );
+      const previousCount = countResult[0].cnt;
+
+      // Delete all existing records for this source
+      await connection.query('DELETE FROM hearings WHERE data_source_id = ?', [dataSourceId]);
+
+      logger.info('Deleted existing records for full replace', {
+        dataSourceId,
+        deletedCount: previousCount
+      });
+
+      // Bulk insert with INSERT IGNORE to skip conflicts with other sources
+      let addedCount = 0;
+      if (deduplicatedRecords.length > 0) {
+        addedCount = await bulkInsertIgnoreRecords(connection, deduplicatedRecords, dataSourceId);
+      }
+
+      const skippedCount = deduplicatedRecords.length - addedCount;
+
+      await connection.commit();
+
+      logger.info('Full-replace synchronization completed', {
+        dataSourceId,
+        previousCount,
+        newRecordCount: deduplicatedRecords.length,
+        added: addedCount,
+        skipped: skippedCount
+      });
+
+      return {
+        success: true,
+        dataSourceId,
+        added: addedCount,
+        updated: 0,
+        deleted: previousCount,
+        skipped: skippedCount,
+        total: deduplicatedRecords.length
+      };
+    } catch (error) {
+      await connection.rollback();
+      logger.error('Full-replace synchronization failed, transaction rolled back', {
+        dataSourceId,
+        error: {
+          message: error.message,
+          code: error.code,
+          sqlMessage: error.sqlMessage
+        }
+      });
+      throw error;
+    }
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * Bulk insert with INSERT IGNORE (skips rows that violate unique constraints)
+ * @param {Object} connection - Database connection
+ * @param {Array<Object>} records - Records to insert
+ * @param {number} dataSourceId - Data source ID
+ * @param {number} batchSize - Max records per INSERT statement
+ * @returns {Promise<number>} Number of rows actually inserted
+ */
+async function bulkInsertIgnoreRecords(connection, records, dataSourceId, batchSize = 500) {
+  const columns = `(list_date, case_number, time, hearing_datetime,
+    venue, judge, case_details, hearing_type, additional_information,
+    crown_court, reporting_restriction,
+    division, data_source_id, source_url, scraped_at)`;
+  const placeholder = '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+
+  let totalInserted = 0;
+
+  for (let i = 0; i < records.length; i += batchSize) {
+    const batch = records.slice(i, i + batchSize);
+    const placeholders = batch.map(() => placeholder).join(', ');
+    const params = [];
+
+    for (const record of batch) {
+      params.push(
+        record.listDate,
+        record['case number'],
+        record.time,
+        record.hearingDateTime,
+        record.venue || null,
+        record.judge || null,
+        record['case details'] || null,
+        record['hearing type'] || null,
+        record['additional information'] || null,
+        record['crown court'] || null,
+        record['reporting restriction'] || null,
+        record.division,
+        dataSourceId,
+        record.sourceUrl,
+        formatDateTimeForMySQL(record.scrapedAt)
+      );
+    }
+
+    const [result] = await connection.query(
+      `INSERT IGNORE INTO hearings ${columns} VALUES ${placeholders}`,
+      params
+    );
+    totalInserted += result.affectedRows;
+  }
+
+  return totalInserted;
+}
+
 module.exports = {
   synchronizeRecords,
+  fullReplaceSynchronize,
   hasChanged,
   createKeyMap
 };

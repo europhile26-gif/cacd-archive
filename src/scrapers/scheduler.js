@@ -1,9 +1,9 @@
 /**
  * Scheduler Module
  *
- * Manages automatic periodic scraping of CACD daily cause lists.
- * - Uses node-cron for scheduling
- * - Checks if scraping interval has elapsed before scraping
+ * Manages automatic periodic scraping for all enabled data sources.
+ * - Uses node-cron for scheduling (checks every minute)
+ * - Each data source has its own interval and time window (from data_sources table)
  * - Only runs on PM2 instance 0 (when NODE_APP_INSTANCE=0)
  * - Supports scrape on startup configuration
  * - Graceful shutdown handling
@@ -14,6 +14,7 @@ const logger = require('../utils/logger');
 const config = require('../config/config');
 const { scrapeAll } = require('../services/scraper-service');
 const { shouldScrape } = require('../services/scrape-history-service');
+const { getEnabledSources } = require('../services/data-source-service');
 
 let scheduledTask = null;
 let isShuttingDown = false;
@@ -28,23 +29,25 @@ function shouldRunScheduler() {
 }
 
 /**
- * Check if current time is within the scraping window
+ * Check if current time is within a source's scraping window
+ * @param {Object} dataSource - Data source row from data_sources table
+ * @returns {boolean}
  */
-function isWithinScrapingWindow() {
-  if (!config.scraping.timeWindow.enabled) {
-    return true; // No window restriction
+function isWithinScrapingWindow(dataSource) {
+  const startHour = dataSource.scrape_window_start_hour;
+  const endHour = dataSource.scrape_window_end_hour;
+
+  // 0-24 means no window restriction
+  if (startHour === 0 && endHour === 24) {
+    return true;
   }
 
-  const now = new Date();
-  const currentHour = now.getHours();
-  const { startHour, endHour } = config.scraping.timeWindow;
-
+  const currentHour = new Date().getHours();
   return currentHour >= startHour && currentHour < endHour;
 }
 
 /**
- * Perform a scheduled scrape
- * Checks if interval has elapsed and if within time window before scraping
+ * Perform a scheduled scrape for all enabled data sources that are due
  */
 async function performScheduledScrape() {
   if (isShuttingDown) {
@@ -57,50 +60,76 @@ async function performScheduledScrape() {
     return;
   }
 
-  // Check if within scraping window
-  if (!isWithinScrapingWindow()) {
-    logger.debug('Skipping scheduled scrape - outside time window', {
-      currentHour: new Date().getHours(),
-      windowStart: config.scraping.timeWindow.startHour,
-      windowEnd: config.scraping.timeWindow.endHour
-    });
+  let sources;
+  try {
+    sources = await getEnabledSources();
+  } catch (error) {
+    logger.error('Failed to load data sources', { error: error.message });
     return;
   }
 
-  try {
-    scrapingInProgress = true;
+  for (const source of sources) {
+    if (isShuttingDown) break;
 
-    // Convert minutes to hours for shouldScrape function
-    const intervalHours = config.scraping.intervalMinutes / 60;
-    const should = await shouldScrape(intervalHours);
-
-    if (!should) {
-      logger.info('Skipping scheduled scrape - interval not elapsed', {
-        intervalMinutes: config.scraping.intervalMinutes
+    // Check time window for this source
+    if (!isWithinScrapingWindow(source)) {
+      logger.debug('Skipping source - outside time window', {
+        source: source.slug,
+        currentHour: new Date().getHours(),
+        windowStart: source.scrape_window_start_hour,
+        windowEnd: source.scrape_window_end_hour
       });
-      return;
+      continue;
     }
 
-    logger.info('Starting scheduled scrape', {
-      intervalMinutes: config.scraping.intervalMinutes
-    });
+    // Check interval for this source
+    const intervalHours = source.scrape_interval_minutes / 60;
+    const should = await shouldScrape(intervalHours, source.id);
 
-    const result = await scrapeAll('scheduled');
+    if (!should) {
+      logger.debug('Skipping source - interval not elapsed', {
+        source: source.slug,
+        intervalMinutes: source.scrape_interval_minutes
+      });
+      continue;
+    }
 
-    logger.info('Scheduled scrape completed successfully', {
-      linksProcessed: result.linksProcessed,
-      recordsAdded: result.recordsAdded,
-      recordsUpdated: result.recordsUpdated,
-      recordsDeleted: result.recordsDeleted,
-      duration: `${result.duration}ms`
-    });
-  } catch (error) {
-    logger.error('Scheduled scrape failed', {
-      error: error.message,
-      stack: error.stack
-    });
-  } finally {
-    scrapingInProgress = false;
+    // Only scrape sources that have an implemented scraper
+    const implementedSources = ['daily_cause_list', 'future_hearing_list'];
+    if (!implementedSources.includes(source.slug)) {
+      logger.debug('Skipping source - no scraper implemented yet', {
+        source: source.slug
+      });
+      continue;
+    }
+
+    try {
+      scrapingInProgress = true;
+
+      logger.info('Starting scheduled scrape', {
+        source: source.slug,
+        intervalMinutes: source.scrape_interval_minutes
+      });
+
+      const result = await scrapeAll('scheduled', source);
+
+      logger.info('Scheduled scrape completed successfully', {
+        source: source.slug,
+        linksProcessed: result.linksProcessed,
+        recordsAdded: result.recordsAdded,
+        recordsUpdated: result.recordsUpdated,
+        recordsDeleted: result.recordsDeleted,
+        duration: `${result.duration}ms`
+      });
+    } catch (error) {
+      logger.error('Scheduled scrape failed', {
+        source: source.slug,
+        error: error.message,
+        stack: error.stack
+      });
+    } finally {
+      scrapingInProgress = false;
+    }
   }
 }
 
@@ -120,11 +149,28 @@ async function performStartupScrape() {
     return;
   }
 
+  let sources;
+  try {
+    sources = await getEnabledSources();
+  } catch (error) {
+    logger.error('Failed to load data sources for startup scrape', {
+      error: error.message
+    });
+    return;
+  }
+
+  // Only scrape sources with implemented scrapers on startup
+  const dclSource = sources.find((s) => s.slug === 'daily_cause_list');
+  if (!dclSource) {
+    logger.warn('Daily cause list source not found or disabled');
+    return;
+  }
+
   try {
     logger.info('Starting startup scrape');
     scrapingInProgress = true;
 
-    const result = await scrapeAll('startup');
+    const result = await scrapeAll('startup', dclSource);
 
     logger.info('Startup scrape completed successfully', {
       linksProcessed: result.linksProcessed,
@@ -145,7 +191,7 @@ async function performStartupScrape() {
 
 /**
  * Start the scheduler
- * Runs every minute and checks if scraping is needed
+ * Runs every minute and checks if scraping is needed for each source
  */
 function startScheduler() {
   if (!shouldRunScheduler()) {
@@ -161,21 +207,13 @@ function startScheduler() {
   }
 
   // Run every minute and check if we should scrape
-  // The shouldScrape() function will determine if the interval has elapsed
+  // Each data source has its own interval checked via shouldScrape()
   scheduledTask = cron.schedule('* * * * *', async () => {
     await performScheduledScrape();
   });
 
   logger.info('Scheduler started', {
     checkInterval: 'Every 1 minute',
-    scrapeInterval: `${config.scraping.intervalMinutes} minutes`,
-    timeWindowEnabled: config.scraping.timeWindow.enabled,
-    timeWindowStart: config.scraping.timeWindow.enabled
-      ? `${String(config.scraping.timeWindow.startHour).padStart(2, '0')}:00`
-      : 'N/A',
-    timeWindowEnd: config.scraping.timeWindow.enabled
-      ? `${String(config.scraping.timeWindow.endHour).padStart(2, '0')}:00`
-      : 'N/A',
     appInstance: config.appInstance
   });
 }
@@ -222,12 +260,6 @@ function getSchedulerStatus() {
     running: scheduledTask !== null,
     shouldRun: shouldRunScheduler(),
     appInstance: config.appInstance,
-    intervalMinutes: config.scraping.intervalMinutes,
-    timeWindowEnabled: config.scraping.timeWindow.enabled,
-    timeWindowStart: config.scraping.timeWindow.startHour,
-    timeWindowEnd: config.scraping.timeWindow.endHour,
-    withinWindow: isWithinScrapingWindow(),
-    scrapeOnStartup: config.scraping.scrapeOnStartup,
     scrapingInProgress,
     isShuttingDown
   };

@@ -1,6 +1,13 @@
 const { synchronizeRecords } = require('../../src/services/sync-service');
 const { query, closePool, clearHearings } = require('../helpers/db');
 
+let dclSourceId;
+
+beforeAll(async () => {
+  const rows = await query("SELECT id FROM data_sources WHERE slug = 'daily_cause_list'");
+  dclSourceId = rows[0].id;
+});
+
 afterAll(async () => {
   await closePool();
 });
@@ -34,7 +41,7 @@ describe('sync-service', () => {
       makeRecord({ 'case number': '202503277 A5', 'case details': 'Robert McCalla' })
     ];
 
-    const result = await synchronizeRecords(records, '2025-12-11');
+    const result = await synchronizeRecords(records, '2025-12-11', dclSourceId);
 
     expect(result.success).toBe(true);
     expect(result.added).toBe(2);
@@ -47,11 +54,11 @@ describe('sync-service', () => {
 
   test('updates changed records', async () => {
     const records = [makeRecord()];
-    await synchronizeRecords(records, '2025-12-11');
+    await synchronizeRecords(records, '2025-12-11', dclSourceId);
 
     // Change the judge
     const updated = [makeRecord({ judge: 'Lady Justice Carr' })];
-    const result = await synchronizeRecords(updated, '2025-12-11');
+    const result = await synchronizeRecords(updated, '2025-12-11', dclSourceId);
 
     expect(result.updated).toBe(1);
     expect(result.added).toBe(0);
@@ -63,10 +70,10 @@ describe('sync-service', () => {
 
   test('deletes records not in new scrape', async () => {
     const records = [makeRecord(), makeRecord({ 'case number': '202503277 A5' })];
-    await synchronizeRecords(records, '2025-12-11');
+    await synchronizeRecords(records, '2025-12-11', dclSourceId);
 
     // Second sync only has one record
-    const result = await synchronizeRecords([makeRecord()], '2025-12-11');
+    const result = await synchronizeRecords([makeRecord()], '2025-12-11', dclSourceId);
 
     expect(result.deleted).toBe(1);
     expect(result.added).toBe(0);
@@ -76,7 +83,7 @@ describe('sync-service', () => {
   });
 
   test('handles empty input gracefully', async () => {
-    const result = await synchronizeRecords([], '2025-12-11');
+    const result = await synchronizeRecords([], '2025-12-11', dclSourceId);
     expect(result.success).toBe(true);
     expect(result.added).toBe(0);
   });
@@ -88,7 +95,7 @@ describe('sync-service', () => {
       makeRecord({ 'case details': 'Second version' })
     ];
 
-    const result = await synchronizeRecords(records, '2025-12-11');
+    const result = await synchronizeRecords(records, '2025-12-11', dclSourceId);
     expect(result.added).toBe(1);
 
     const rows = await query('SELECT case_details FROM hearings WHERE list_date = ?', [
@@ -108,7 +115,7 @@ describe('sync-service', () => {
       );
     }
 
-    const result = await synchronizeRecords(records, '2025-12-11');
+    const result = await synchronizeRecords(records, '2025-12-11', dclSourceId);
     expect(result.added).toBe(50);
 
     const rows = await query('SELECT COUNT(*) as count FROM hearings WHERE list_date = ?', [

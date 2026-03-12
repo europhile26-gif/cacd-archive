@@ -1,6 +1,8 @@
 const { discoverLinks } = require('../scrapers/link-discovery');
 const { parseTable } = require('../scrapers/table-parser');
-const { synchronizeRecords } = require('./sync-service');
+const { discoverFHLLink } = require('../scrapers/fhl-link-discovery');
+const { parseFHLTable } = require('../scrapers/fhl-table-parser');
+const { synchronizeRecords, fullReplaceSynchronize } = require('./sync-service');
 const {
   recordScrapeStart,
   recordScrapeComplete,
@@ -12,46 +14,50 @@ const logger = require('../utils/logger');
 
 /**
  * Scraper Service
- * Orchestrates the workflow: link discovery → fetch HTML → parse table
+ * Orchestrates scraping workflows for all data sources.
+ * Dispatches to source-specific scrapers based on the data source slug.
  */
 
 /**
- * Run full scraping workflow for Criminal Division
+ * Run scraping workflow for a specific data source
  * @param {string} scrapeType - Type of scrape: 'scheduled', 'startup', 'manual'
+ * @param {Object} dataSource - Data source row from data_sources table
  * @returns {Promise<Object>} Result with all scraped records
  */
-async function scrapeAll(scrapeType = 'manual') {
-  logger.info('Starting scraping workflow', { scrapeType });
+async function scrapeAll(scrapeType = 'manual', dataSource) {
+  const sourceSlug = dataSource?.slug || 'daily_cause_list';
+
+  switch (sourceSlug) {
+    case 'daily_cause_list':
+      return scrapeDCL(scrapeType, dataSource);
+    case 'future_hearing_list':
+      return scrapeFHL(scrapeType, dataSource);
+    default:
+      throw new Error(`No scraper implemented for source: ${sourceSlug}`);
+  }
+}
+
+/**
+ * Scrape Daily Cause List (DCL)
+ * Discovers today/tomorrow links → fetches each → parses tables → incremental sync
+ */
+async function scrapeDCL(scrapeType, dataSource) {
+  const dataSourceId = dataSource.id;
+
+  logger.info('Starting DCL scraping workflow', { scrapeType });
   const startTime = Date.now();
   let scrapeId;
 
   try {
-    // Record scrape start
-    logger.info('Recording scrape start in database...');
-    scrapeId = await recordScrapeStart(scrapeType, config.scraping.summaryPageUrl);
-    logger.info('Scrape history record created', { scrapeId });
+    scrapeId = await recordScrapeStart(scrapeType, dataSource.base_url, dataSourceId);
+    logger.info('Scrape history record created', { scrapeId, source: 'daily_cause_list' });
 
     // Step 1: Discover links for today and tomorrow
-    logger.info('Starting link discovery...');
     const linkResult = await discoverLinks('Criminal');
-    logger.info('Link discovery completed', {
-      success: linkResult.success,
-      linksFound: linkResult.linksFound?.length || 0
-    });
 
     if (!linkResult.success || linkResult.linksFound.length === 0) {
-      logger.info('No links found, nothing to scrape');
-      const result = {
-        success: true,
-        scrapeType,
-        linksProcessed: 0,
-        recordsAdded: 0,
-        recordsUpdated: 0,
-        recordsDeleted: 0,
-        duration: Date.now() - startTime,
-        syncResults: []
-      };
-
+      logger.info('No DCL links found, nothing to scrape');
+      const result = buildResult(scrapeType, 0, 0, 0, 0, Date.now() - startTime, []);
       await recordScrapeComplete(scrapeId, result);
       return result;
     }
@@ -61,10 +67,7 @@ async function scrapeAll(scrapeType = 'manual') {
 
     for (const link of linkResult.linksFound) {
       try {
-        logger.info('Processing list', {
-          date: link.targetDate,
-          url: link.url
-        });
+        logger.info('Processing DCL list', { date: link.targetDate, url: link.url });
 
         const html = await fetchListHtml(link.url);
         const records = await parseTable(html, link.targetDate, link.url, link.division);
@@ -74,8 +77,7 @@ async function scrapeAll(scrapeType = 'manual') {
           records: records.length
         });
 
-        // Step 3: Synchronize with database
-        const syncResult = await synchronizeRecords(records, link.targetDate);
+        const syncResult = await synchronizeRecords(records, link.targetDate, dataSourceId);
 
         syncResults.push({
           date: link.targetDate,
@@ -84,24 +86,19 @@ async function scrapeAll(scrapeType = 'manual') {
           ...syncResult
         });
 
-        logger.info('List synchronized successfully', {
+        logger.info('DCL list synchronized', {
           date: link.targetDate,
           added: syncResult.added,
           updated: syncResult.updated,
           deleted: syncResult.deleted
         });
       } catch (error) {
-        logger.error('Failed to process list', {
+        logger.error('Failed to process DCL list', {
           date: link.targetDate,
           url: link.url,
-          error: {
-            message: error.message,
-            code: error.code,
-            errno: error.errno,
-            name: error.name
-          }
+          error: { message: error.message, code: error.code, name: error.name }
         });
-        console.error('Failed to process list - full error:');
+        console.error('Failed to process DCL list - full error:');
         console.error(error);
 
         syncResults.push({
@@ -110,33 +107,29 @@ async function scrapeAll(scrapeType = 'manual') {
           success: false,
           error: error.message
         });
-        // Continue with next list
       }
     }
 
-    const duration = Date.now() - startTime;
     const totalAdded = syncResults.reduce((sum, r) => sum + (r.added || 0), 0);
     const totalUpdated = syncResults.reduce((sum, r) => sum + (r.updated || 0), 0);
     const totalDeleted = syncResults.reduce((sum, r) => sum + (r.deleted || 0), 0);
+    const duration = Date.now() - startTime;
 
-    const result = {
-      success: true,
+    const result = buildResult(
       scrapeType,
-      linksProcessed: linkResult.linksFound.length,
-      recordsAdded: totalAdded,
-      recordsUpdated: totalUpdated,
-      recordsDeleted: totalDeleted,
+      linkResult.linksFound.length,
+      totalAdded,
+      totalUpdated,
+      totalDeleted,
       duration,
       syncResults
-    };
+    );
 
     await recordScrapeComplete(scrapeId, result);
 
-    logger.info('Scraping workflow completed', {
-      scrapeType,
+    logger.info('DCL scraping workflow completed', {
       scrapeId,
       linksProcessed: result.linksProcessed,
-      listsSuccessful: syncResults.filter((r) => r.success).length,
       totalAdded,
       totalUpdated,
       totalDeleted,
@@ -146,9 +139,7 @@ async function scrapeAll(scrapeType = 'manual') {
     // Process saved search notifications if new records were added
     if (totalAdded > 0) {
       try {
-        logger.info('Processing saved search notifications', {
-          newRecords: totalAdded
-        });
+        logger.info('Processing saved search notifications', { newRecords: totalAdded });
         const notificationStats = await notificationService.processSavedSearchNotifications();
         logger.info('Notification processing complete', notificationStats);
         result.notifications = notificationStats;
@@ -157,26 +148,97 @@ async function scrapeAll(scrapeType = 'manual') {
           error: error.message,
           stack: error.stack
         });
-        // Don't fail the scrape if notifications fail
         result.notifications = { error: error.message };
       }
     }
 
     return result;
   } catch (error) {
-    logger.error('Scraping workflow failed', {
+    logger.error('DCL scraping workflow failed', {
       error: error.message,
-      stack: error.stack,
       scrapeType,
       scrapeId
     });
-
-    if (scrapeId) {
-      await recordScrapeError(scrapeId, error);
-    }
-
+    if (scrapeId) await recordScrapeError(scrapeId, error);
     throw error;
   }
+}
+
+/**
+ * Scrape Future Hearing List (FHL)
+ * Discovers document link → fetches page → parses table → full-replace sync
+ */
+async function scrapeFHL(scrapeType, dataSource) {
+  const dataSourceId = dataSource.id;
+
+  logger.info('Starting FHL scraping workflow', { scrapeType });
+  const startTime = Date.now();
+  let scrapeId;
+
+  try {
+    scrapeId = await recordScrapeStart(scrapeType, dataSource.base_url, dataSourceId);
+    logger.info('Scrape history record created', { scrapeId, source: 'future_hearing_list' });
+
+    // Step 1: Discover the FHL document link
+    const discoveryResult = await discoverFHLLink(dataSource.base_url);
+    const documentLink = discoveryResult.link;
+
+    logger.info('FHL document link discovered', { url: documentLink.url });
+
+    // Step 2: Fetch the document page
+    const html = await fetchListHtml(documentLink.url);
+
+    // Step 3: Parse the FHL table
+    const records = await parseFHLTable(html, documentLink.url, 'Criminal');
+
+    logger.info('FHL records parsed', { recordCount: records.length });
+
+    // Step 4: Full-replace sync
+    const syncResult = await fullReplaceSynchronize(records, dataSourceId);
+
+    const duration = Date.now() - startTime;
+
+    const result = buildResult(scrapeType, 1, syncResult.added, 0, syncResult.deleted, duration, [
+      { url: documentLink.url, ...syncResult }
+    ]);
+
+    await recordScrapeComplete(scrapeId, result);
+
+    logger.info('FHL scraping workflow completed', {
+      scrapeId,
+      recordsParsed: records.length,
+      added: syncResult.added,
+      deleted: syncResult.deleted,
+      skipped: syncResult.skipped,
+      duration: `${duration}ms`
+    });
+
+    return result;
+  } catch (error) {
+    logger.error('FHL scraping workflow failed', {
+      error: error.message,
+      scrapeType,
+      scrapeId
+    });
+    if (scrapeId) await recordScrapeError(scrapeId, error);
+    throw error;
+  }
+}
+
+/**
+ * Build a standard result object
+ */
+function buildResult(scrapeType, linksProcessed, added, updated, deleted, duration, syncResults) {
+  return {
+    success: true,
+    scrapeType,
+    linksProcessed,
+    recordsAdded: added,
+    recordsUpdated: updated,
+    recordsDeleted: deleted,
+    duration,
+    syncResults
+  };
 }
 
 /**

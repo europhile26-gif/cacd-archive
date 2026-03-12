@@ -2,13 +2,13 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.10.1-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-1.11.0-blue.svg)]()
 
-An automated scraping and archival system for UK court hearing data, with email notifications for saved searches.
+An automated scraping and archival system for UK court hearing data from multiple sources, with email notifications for saved searches.
 
 ## What it does
 
-CACD Archive scrapes publicly available daily cause lists from the Court of Appeal (Criminal Division) and stores them in a searchable historical database. Users can save search expressions and receive email alerts when newly archived hearings match.
+CACD Archive scrapes publicly available court hearing data from multiple UK government sources — including the Daily Cause List and Future Hearing List — and stores them in a searchable historical database. Users can save search expressions and receive email alerts when newly archived hearings match.
 
 All source data is UK Crown Copyright, published under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/) by HM Courts & Tribunals Service.
 

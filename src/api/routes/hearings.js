@@ -19,6 +19,7 @@ async function hearingsRoutes(fastify, _options) {
             caseNumber: { type: 'string' },
             search: { type: 'string' },
             division: { type: 'string' },
+            dataSource: { type: 'string' },
             sortBy: {
               type: 'string',
               enum: ['hearing_datetime', 'case_number', 'created_at'],
@@ -47,7 +48,9 @@ async function hearingsRoutes(fastify, _options) {
                     caseDetails: { type: 'string' },
                     hearingType: { type: 'string' },
                     additionalInformation: { type: 'string' },
+                    crownCourt: { type: 'string' },
                     division: { type: 'string' },
+                    dataSourceName: { type: 'string' },
                     sourceUrl: { type: 'string' },
                     scrapedAt: { type: 'string' }
                   }
@@ -76,58 +79,80 @@ async function hearingsRoutes(fastify, _options) {
         caseNumber,
         search,
         division,
+        dataSource,
         sortBy = 'hearing_datetime',
         sortOrder = 'desc'
       } = request.query;
 
       // Build query
-      let sql = 'SELECT * FROM hearings WHERE 1=1';
+      let sql = `SELECT h.*, ds.display_name AS data_source_name
+        FROM hearings h
+        JOIN data_sources ds ON ds.id = h.data_source_id
+        WHERE 1=1`;
       const params = [];
 
       if (date) {
-        sql += ' AND list_date = ?';
+        sql += ' AND h.list_date = ?';
         params.push(date);
       }
 
       if (dateFrom) {
-        sql += ' AND list_date >= ?';
+        sql += ' AND h.list_date >= ?';
         params.push(dateFrom);
       }
 
       if (dateTo) {
-        sql += ' AND list_date <= ?';
+        sql += ' AND h.list_date <= ?';
         params.push(dateTo);
       }
 
       if (caseNumber) {
-        sql += ' AND case_number = ?';
+        sql += ' AND h.case_number = ?';
         params.push(caseNumber);
       }
 
       if (division) {
-        sql += ' AND division = ?';
+        sql += ' AND h.division = ?';
         params.push(division);
+      }
+
+      if (dataSource) {
+        if (dataSource === 'none') {
+          sql += ' AND 1=0';
+        } else {
+          const sourceIds = dataSource
+            .split(',')
+            .map(Number)
+            .filter((n) => n > 0);
+          if (sourceIds.length === 1) {
+            sql += ' AND h.data_source_id = ?';
+            params.push(sourceIds[0]);
+          } else if (sourceIds.length > 1) {
+            sql += ` AND h.data_source_id IN (${sourceIds.map(() => '?').join(',')})`;
+            params.push(...sourceIds);
+          }
+        }
       }
 
       if (search) {
         sql +=
-          ' AND (MATCH(case_details, hearing_type, additional_information, judge, venue) AGAINST(? IN NATURAL LANGUAGE MODE) OR case_number LIKE ?)';
+          ' AND (MATCH(h.case_details, h.hearing_type, h.additional_information, h.judge, h.venue) AGAINST(? IN NATURAL LANGUAGE MODE) OR h.case_number LIKE ?)';
         params.push(search, `%${search}%`);
       }
 
       // Get total count
-      const countSql = sql.replace('SELECT *', 'SELECT COUNT(*) as total');
+      const countSql = sql.replace(/SELECT h\.\*.*?FROM/s, 'SELECT COUNT(*) as total FROM');
       const countResult = await query(countSql, params);
       const total = countResult[0].total;
 
       // Add sorting and pagination (whitelist to prevent SQL injection)
       const allowedSortColumns = {
-        hearing_datetime: 'hearing_datetime',
-        case_number: 'case_number',
-        created_at: 'created_at'
+        hearing_datetime: 'h.hearing_datetime',
+        case_number: 'h.case_number',
+        created_at: 'h.created_at'
       };
       const allowedSortOrders = { asc: 'ASC', desc: 'DESC' };
-      const safeSort = allowedSortColumns[sortBy] || 'hearing_datetime';
+      const safeSort = allowedSortColumns[sortBy] || 'h.hearing_datetime';
       const safeOrder = allowedSortOrders[sortOrder] || 'DESC';
       sql += ` ORDER BY ${safeSort} ${safeOrder}`;
       sql += ' LIMIT ? OFFSET ?';
@@ -147,7 +172,9 @@ async function hearingsRoutes(fastify, _options) {
         caseDetails: h.case_details,
         hearingType: h.hearing_type,
         additionalInformation: h.additional_information,
+        crownCourt: h.crown_court,
         division: h.division,
+        dataSourceName: h.data_source_name,
         sourceUrl: h.source_url,
         scrapedAt: h.scraped_at
       }));

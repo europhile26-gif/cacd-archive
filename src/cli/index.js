@@ -93,12 +93,19 @@ scraperCommand
   .description('Run scraper immediately')
   .action(async () => {
     const { scrapeAll } = require('../services/scraper-service');
+    const { getSourceBySlug } = require('../services/data-source-service');
     const { formatError, formatInfo, createSpinner } = require('./utils/format');
 
     try {
       const spinner = createSpinner('Running scraper...').start();
 
-      const result = await scrapeAll('manual');
+      const dclSource = await getSourceBySlug('daily_cause_list');
+      if (!dclSource) {
+        spinner.fail('Daily cause list data source not found or disabled');
+        process.exit(1);
+      }
+
+      const result = await scrapeAll('manual', dclSource);
 
       if (result.success) {
         spinner.succeed('Scraping completed successfully');
