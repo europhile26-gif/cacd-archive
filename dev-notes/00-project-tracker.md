@@ -294,12 +294,15 @@ Expand the archiving pipeline to capture more divisions from the existing DCL so
 - ESLint 10.x upgrade blocked by Node.js >=18 engine requirement (ESLint 10 needs >=20.19)
 - Test suite created but coverage is minimal — expand unit and integration tests
 - CSP allows `unsafe-inline` for scripts and styles — would need to extract inline styles/scripts to external files
+- **ESM migration** — the project is CJS throughout. Migration is a big-bang change (every `require`/`module.exports`, `__dirname`/`__filename` replacements, `package.json` `"type": "module"`, Jest config rework). Not worth doing proactively — trigger points would be: a critical dependency dropping CJS support, or bumping minimum Node.js to 22+ where ESM is the clear default. Until then, pin CJS-compatible versions of affected packages
+- **M2.2b GeoIP package selection** — use the `maxmind` npm package (CJS-compatible, reads `.mmdb` files directly) rather than `@maxmind/geoip2-node` which is ESM-only from v4+. Same CJS constraint as boxen/chalk/etc.
 
 ---
 
 ## Notes for Development
 
-- **CJS only:** The project uses CommonJS throughout. Several dependencies (boxen, chalk, inquirer, ora) are pinned to CJS-compatible versions. An ESM migration would unblock those but is a significant undertaking.
+- **CJS only:** The project uses CommonJS throughout. Several dependencies (boxen, chalk, inquirer, ora) are pinned to CJS-compatible versions. An ESM migration would unblock those but is a significant undertaking. When adding new dependencies, always check CJS compatibility first — several popular packages (chalk 5+, boxen 6+, ora 6+, inquirer 9+, `@maxmind/geoip2-node` 4+) are ESM-only.
 - **PM2 clustering:** Only instance 0 runs migrations, email init, and the scraper scheduler. Any new scheduled work must respect `config.appInstance === 0`.
 - **Scraper architecture:** The current pipeline is `scheduler → scraper-service → link-discovery → table-parser → sync-service`. M2 makes this source-aware via `data_sources` table and per-source scheduling. Each source has its own link-discovery and table-parser implementation, but shares sync-service (scoped by `data_source_id`).
 - **Two distinct source types:** The Daily Cause List (DCL, `court-tribunal-hearings.service.gov.uk`) publishes near-future hearings that change daily. The Future Hearing List (FHL, `gov.uk`) publishes a longer-range schedule that updates less frequently and is volatile. DCL takes precedence. FHL uses full-replace sync; DCL uses incremental sync. Only DCL triggers email notifications.
+- **FHL uses GOV.UK Content API:** As of v1.12.0, FHL link discovery uses the JSON Content API (`/api/content/...`) rather than HTML scraping. The API returns `public_updated_at` for freshness checks and `details.body` containing the table HTML directly. MariaDB `DATETIME` columns require MySQL format (`YYYY-MM-DD HH:MM:SS`), not ISO 8601 — always convert timestamps from external APIs before inserting.
