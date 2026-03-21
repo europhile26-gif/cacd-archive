@@ -66,6 +66,29 @@ Deactivate a user account.
 ./bin/cacd users deactivate -i 5 -n "No longer needed"
 ```
 
+### `db summary`
+
+Show a summary of database contents: hearing counts by source, scrape history with success/failure counts, users, saved searches, and notifications.
+
+```bash
+./bin/cacd db summary
+```
+
+### `db reset`
+
+Reset database data. By default clears hearings and scrape history only. With `--all`, also clears user data. Seed data (roles, capabilities, account statuses, data sources) is always preserved.
+
+```bash
+./bin/cacd db reset              # hearings + scrape history only
+./bin/cacd db reset --all        # also reset users, saved searches, notifications
+./bin/cacd db reset --all --yes  # skip confirmation prompt
+```
+
+| Option      | Description                                        |
+| ----------- | -------------------------------------------------- |
+| `-a, --all` | Also reset user data (users, saved searches, etc.) |
+| `-y, --yes` | Skip confirmation prompt                           |
+
 ### `db migrate`
 
 Run pending database migrations.

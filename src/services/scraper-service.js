@@ -6,7 +6,8 @@ const { synchronizeRecords, fullReplaceSynchronize } = require('./sync-service')
 const {
   recordScrapeStart,
   recordScrapeComplete,
-  recordScrapeError
+  recordScrapeError,
+  getLastSourceUpdatedAt
 } = require('./scrape-history-service');
 const notificationService = require('./notification-service');
 const config = require('../config/config');
@@ -166,7 +167,8 @@ async function scrapeDCL(scrapeType, dataSource) {
 
 /**
  * Scrape Future Hearing List (FHL)
- * Discovers document link → fetches page → parses table → full-replace sync
+ * Uses GOV.UK Content API to discover and fetch FHL data, then full-replace syncs.
+ * Includes freshness check: skips sync if upstream data hasn't changed.
  */
 async function scrapeFHL(scrapeType, dataSource) {
   const dataSourceId = dataSource.id;
@@ -179,17 +181,42 @@ async function scrapeFHL(scrapeType, dataSource) {
     scrapeId = await recordScrapeStart(scrapeType, dataSource.base_url, dataSourceId);
     logger.info('Scrape history record created', { scrapeId, source: 'future_hearing_list' });
 
-    // Step 1: Discover the FHL document link
+    // Step 1: Discover the FHL document via Content API (returns body HTML directly)
     const discoveryResult = await discoverFHLLink(dataSource.base_url);
     const documentLink = discoveryResult.link;
+    const publicUpdatedAt = discoveryResult.publicUpdatedAt;
 
-    logger.info('FHL document link discovered', { url: documentLink.url });
+    logger.info('FHL document discovered via Content API', {
+      url: documentLink.url,
+      publicUpdatedAt
+    });
 
-    // Step 2: Fetch the document page
-    const html = await fetchListHtml(documentLink.url);
+    // Step 2: Freshness check — skip if upstream hasn't changed
+    if (publicUpdatedAt) {
+      const lastSourceUpdatedAt = await getLastSourceUpdatedAt(dataSourceId);
+      if (lastSourceUpdatedAt) {
+        const lastTimestamp = new Date(lastSourceUpdatedAt).getTime();
+        const currentTimestamp = new Date(publicUpdatedAt).getTime();
 
-    // Step 3: Parse the FHL table
-    const records = await parseFHLTable(html, documentLink.url, 'Criminal');
+        if (currentTimestamp <= lastTimestamp) {
+          const duration = Date.now() - startTime;
+          logger.info('FHL data unchanged, skipping sync', {
+            publicUpdatedAt,
+            lastSourceUpdatedAt: new Date(lastSourceUpdatedAt).toISOString(),
+            duration: `${duration}ms`
+          });
+
+          const result = buildResult(scrapeType, 1, 0, 0, 0, duration, []);
+          result.skippedReason = 'upstream_unchanged';
+          result.sourceUpdatedAt = publicUpdatedAt;
+          await recordScrapeComplete(scrapeId, result);
+          return result;
+        }
+      }
+    }
+
+    // Step 3: Parse the FHL table from the body HTML returned by the Content API
+    const records = await parseFHLTable(discoveryResult.body, documentLink.url, 'Criminal');
 
     logger.info('FHL records parsed', { recordCount: records.length });
 
@@ -201,6 +228,7 @@ async function scrapeFHL(scrapeType, dataSource) {
     const result = buildResult(scrapeType, 1, syncResult.added, 0, syncResult.deleted, duration, [
       { url: documentLink.url, ...syncResult }
     ]);
+    result.sourceUpdatedAt = publicUpdatedAt;
 
     await recordScrapeComplete(scrapeId, result);
 
@@ -210,6 +238,7 @@ async function scrapeFHL(scrapeType, dataSource) {
       added: syncResult.added,
       deleted: syncResult.deleted,
       skipped: syncResult.skipped,
+      publicUpdatedAt,
       duration: `${duration}ms`
     });
 

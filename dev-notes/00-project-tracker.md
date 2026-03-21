@@ -1,8 +1,8 @@
 # Project Tracker
 
-**Version:** 1.11.0
-**Last Updated:** 2026-03-12
-**Current Phase:** M2 complete (v1.11.0) — next: M3 (Multi-Division Support)
+**Version:** 1.12.0
+**Last Updated:** 2026-03-21
+**Current Phase:** M2.1 complete (v1.12.0) — next: M3 (Multi-Division Support)
 
 ---
 
@@ -156,6 +156,28 @@ Add a "Data Sources" section to the existing `/admin` page, below User Managemen
 
 - [ ] FHL diff-before-replace: compare incoming FHL data against existing FHL records before the full replace, to identify genuinely new future hearings. This would allow FHL-specific notifications without the duplicate alert problem. Deferred because it adds complexity and depends on the FHL data being consistent enough to diff reliably.
 - [x] Admin UI for managing data sources (enable/disable, adjust intervals, show by default) — implemented in M2c.1
+
+### M2.1: FHL JSON API Migration
+
+Replace HTML scraping in `fhl-link-discovery.js` with the GOV.UK Content API (`/api/content/...`). The JSON API returns structured attachment metadata and the full document body, eliminating fragile text-matching heuristics on rendered HTML.
+
+**API endpoint:** `https://www.gov.uk/api/content/government/publications/court-of-appeal-cases-fixed-for-hearing-criminal-division`
+
+**Key fields:**
+
+- `details.attachments[0].url` — path to the FHL document (replaces Cheerio link search)
+- `public_updated_at` — last-modified timestamp (enables freshness checks without fetching the document)
+- Fetching the attachment URL via the same API returns `details.body` containing the full HTML table directly
+
+**Tasks:**
+
+- [x] Refactor `fhl-link-discovery.js` to fetch the JSON API instead of the HTML publication page
+- [x] Extract attachment URL from `details.attachments[0].url` instead of Cheerio text matching
+- [x] Use `public_updated_at` for freshness check — skip scrape if unchanged since last run
+- [x] Pass `details.body` from the attachment API response directly to `fhl-table-parser.js` (no second HTML page fetch needed)
+- [x] Update error handling and alerting for JSON API failure modes (schema changes, missing fields)
+- [x] Update unit tests for new discovery logic
+- [x] Remove Cheerio dependency from `fhl-link-discovery.js`
 
 ### M3: Multi-Division Support (Existing Source)
 

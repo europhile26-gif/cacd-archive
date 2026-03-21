@@ -7,6 +7,7 @@ const { Command } = require('commander');
 const chalk = require('chalk');
 const { formatHeader } = require('./utils/format');
 const userCommands = require('./commands/users');
+const dbCommands = require('./commands/db');
 
 const program = new Command();
 
@@ -17,7 +18,7 @@ formatHeader('CACD Archive CLI', 'Administrative command-line interface');
 program
   .name('cacd')
   .description('CACD Archive administrative command-line interface')
-  .version('1.10.1');
+  .version('1.12.0');
 
 // User Management Commands
 const usersCommand = program.command('users').description('User management commands');
@@ -84,6 +85,18 @@ dbCommand
       process.exit(1);
     }
   });
+
+dbCommand
+  .command('summary')
+  .description('Show a summary of database contents')
+  .action(dbCommands.summary);
+
+dbCommand
+  .command('reset')
+  .description('Reset database data (hearings + scrape history by default)')
+  .option('-a, --all', 'Also reset user data (users, saved searches, notifications)')
+  .option('-y, --yes', 'Skip confirmation prompt')
+  .action(dbCommands.reset);
 
 // Scraper Commands
 const scraperCommand = program.command('scraper').description('Scraper management commands');

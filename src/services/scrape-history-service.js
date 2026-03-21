@@ -32,6 +32,7 @@ async function recordScrapeStart(scrapeType, summaryPageUrl, dataSourceId) {
 async function recordScrapeComplete(scrapeId, result) {
   const status = result.success ? 'success' : 'failed';
   const duration = result.duration || 0;
+  const sourceUpdatedAt = result.sourceUpdatedAt || null;
 
   await query(
     `UPDATE scrape_history SET
@@ -43,7 +44,8 @@ async function recordScrapeComplete(scrapeId, result) {
       records_deleted = ?,
       summary_page_status = ?,
       completed_at = NOW(),
-      duration_ms = ?
+      duration_ms = ?,
+      source_updated_at = ?
     WHERE id = ?`,
     [
       status,
@@ -54,6 +56,7 @@ async function recordScrapeComplete(scrapeId, result) {
       result.recordsDeleted || 0,
       200, // Assuming success if we got here
       duration,
+      sourceUpdatedAt,
       scrapeId
     ]
   );
@@ -182,11 +185,37 @@ async function shouldScrape(intervalHours, dataSourceId) {
   return should;
 }
 
+/**
+ * Get the source_updated_at value from the last successful scrape for a data source
+ * Used for freshness checks (e.g. comparing GOV.UK public_updated_at)
+ * @param {number} dataSourceId - Data source ID
+ * @returns {Promise<string|null>} ISO timestamp or null
+ */
+async function getLastSourceUpdatedAt(dataSourceId) {
+  const rows = await query(
+    `SELECT source_updated_at
+     FROM scrape_history
+     WHERE status = 'success'
+       AND data_source_id = ?
+       AND source_updated_at IS NOT NULL
+     ORDER BY started_at DESC
+     LIMIT 1`,
+    [dataSourceId]
+  );
+
+  if (rows.length === 0 || !rows[0].source_updated_at) {
+    return null;
+  }
+
+  return rows[0].source_updated_at;
+}
+
 module.exports = {
   recordScrapeStart,
   recordScrapeComplete,
   recordScrapeError,
   getLastSuccessfulScrape,
+  getLastSourceUpdatedAt,
   getRecentScrapes,
   shouldScrape
 };

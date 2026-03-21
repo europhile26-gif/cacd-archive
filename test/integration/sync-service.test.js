@@ -116,10 +116,20 @@ describe('sync-service', () => {
         source_url, scraped_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
-        '2025-12-11', '202403891 A1', '10:30am', '2025-12-11T10:30:00',
-        'RCJ - Court 5', 'Lord Justice Males', 'R v ZDX',
-        'FC Application Sentence', null, 'Snaresbrook Crown Court', null,
-        'Criminal', fhlSourceId, 'http://fhl.example.com'
+        '2025-12-11',
+        '202403891 A1',
+        '10:30am',
+        '2025-12-11T10:30:00',
+        'RCJ - Court 5',
+        'Lord Justice Males',
+        'R v ZDX',
+        'FC Application Sentence',
+        null,
+        'Snaresbrook Crown Court',
+        null,
+        'Criminal',
+        fhlSourceId,
+        'http://fhl.example.com'
       ]
     );
 
@@ -148,10 +158,18 @@ describe('sync-service', () => {
         division, data_source_id, source_url, scraped_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
-        '2025-12-11', '202403891 A1', '10:30am', '2025-12-11T10:30:00',
-        'RCJ - Court 5', 'Lord Justice Males', 'R v ZDX',
-        'FC Application Sentence', 'Snaresbrook Crown Court',
-        'Criminal', fhlSourceId, 'http://fhl.example.com'
+        '2025-12-11',
+        '202403891 A1',
+        '10:30am',
+        '2025-12-11T10:30:00',
+        'RCJ - Court 5',
+        'Lord Justice Males',
+        'R v ZDX',
+        'FC Application Sentence',
+        'Snaresbrook Crown Court',
+        'Criminal',
+        fhlSourceId,
+        'http://fhl.example.com'
       ]
     );
 
@@ -161,10 +179,9 @@ describe('sync-service', () => {
 
     expect(result.added).toBe(1);
 
-    const rows = await query(
-      'SELECT crown_court FROM hearings WHERE list_date = ?',
-      ['2025-12-11']
-    );
+    const rows = await query('SELECT crown_court FROM hearings WHERE list_date = ?', [
+      '2025-12-11'
+    ]);
     expect(rows[0].crown_court).toBe('Inner London Crown Court');
   });
 

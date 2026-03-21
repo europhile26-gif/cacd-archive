@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.12.0] - 2026-03-21
+
+### Added
+
+- **FHL JSON API migration** — `fhl-link-discovery.js` now uses the GOV.UK Content API (`/api/content/...`) instead of scraping HTML. Fetches structured JSON with attachment URLs and document body directly, eliminating fragile text-matching heuristics on rendered HTML
+- **FHL freshness checking** — scraper compares GOV.UK `public_updated_at` timestamp against the last successful scrape; skips sync when upstream data hasn't changed, reducing unnecessary database churn
+- **`db summary` CLI command** — `./bin/cacd db summary` shows counts for hearings (by source), scrape history (success/failed per source), users, saved searches, and notifications
+- **`db reset` CLI command** — `./bin/cacd db reset` clears hearings and scrape history with a confirmation prompt; `--all` also resets user data; `--yes` skips confirmation. Preserves seed data (roles, capabilities, account statuses, data sources)
+- **Database migration** `011_scrape_history_source_updated_at.sql` — adds `source_updated_at` column to `scrape_history` for storing upstream last-modified timestamps
+- **Unit tests** for FHL JSON API link discovery (10 tests covering API flow, error cases, and edge cases)
+
+### Changed
+
+- **FHL scraper pipeline** — discovery now returns the document body HTML directly from the Content API response; scraper service passes it straight to the table parser without a separate page fetch
+- **Scrape history service** — `recordScrapeComplete()` now persists `source_updated_at`; new `getLastSourceUpdatedAt()` query supports freshness checks
+
+### Removed
+
+- **Cheerio dependency removed from `fhl-link-discovery.js`** — no longer needed since link discovery uses structured JSON instead of HTML parsing
+
+---
+
 ## [1.11.1] - 2026-03-12
 
 ### Fixed
