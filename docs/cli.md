@@ -99,11 +99,17 @@ Run pending database migrations.
 
 ### `scraper run`
 
-Run the scraper immediately (outside the normal schedule).
+Run the scraper immediately (outside the normal schedule). Scrapes all enabled data sources by default, or a specific source with `--source`.
 
 ```bash
-./bin/cacd scraper run
+./bin/cacd scraper run                # scrape all enabled sources
+./bin/cacd scraper run --source dcl   # scrape Daily Cause List only
+./bin/cacd scraper run --source fhl   # scrape Future Hearing List only
 ```
+
+| Option                | Description                                                            |
+| --------------------- | ---------------------------------------------------------------------- |
+| `-s, --source <slug>` | Source to scrape: `dcl`, `fhl`, or full slug (e.g. `daily_cause_list`) |
 
 ### `secret generate`
 

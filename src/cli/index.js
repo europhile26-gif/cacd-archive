@@ -18,7 +18,7 @@ formatHeader('CACD Archive CLI', 'Administrative command-line interface');
 program
   .name('cacd')
   .description('CACD Archive administrative command-line interface')
-  .version('1.12.1');
+  .version('1.13.0');
 
 // User Management Commands
 const usersCommand = program.command('users').description('User management commands');
@@ -103,39 +103,84 @@ const scraperCommand = program.command('scraper').description('Scraper managemen
 
 scraperCommand
   .command('run')
-  .description('Run scraper immediately')
-  .action(async () => {
+  .description('Run scraper immediately (all enabled sources, or a specific source)')
+  .option('-s, --source <slug>', 'Source to scrape: dcl, fhl, or full slug (e.g. daily_cause_list)')
+  .action(async (options) => {
     const { scrapeAll } = require('../services/scraper-service');
-    const { getSourceBySlug } = require('../services/data-source-service');
-    const { formatError, formatInfo, createSpinner } = require('./utils/format');
+    const { getEnabledSources, getSourceBySlug } = require('../services/data-source-service');
+    const {
+      formatError,
+      formatInfo,
+      formatSuccess,
+      formatWarning,
+      createSpinner
+    } = require('./utils/format');
+
+    // Shorthand aliases
+    const slugAliases = {
+      dcl: 'daily_cause_list',
+      fhl: 'future_hearing_list'
+    };
 
     try {
-      const spinner = createSpinner('Running scraper...').start();
+      let sources;
 
-      const dclSource = await getSourceBySlug('daily_cause_list');
-      if (!dclSource) {
-        spinner.fail('Daily cause list data source not found or disabled');
-        process.exit(1);
-      }
-
-      const result = await scrapeAll('manual', dclSource);
-
-      if (result.success) {
-        spinner.succeed('Scraping completed successfully');
-        console.log();
-        formatInfo('Results:');
-        console.log(`  Links processed: ${result.linksProcessed}`);
-        console.log(`  Records added: ${result.recordsAdded}`);
-        console.log(`  Records updated: ${result.recordsUpdated}`);
-        console.log(`  Records deleted: ${result.recordsDeleted}`);
-        console.log(`  Duration: ${result.duration}ms`);
+      if (options.source) {
+        const slug = slugAliases[options.source.toLowerCase()] || options.source;
+        const source = await getSourceBySlug(slug);
+        if (!source) {
+          formatError(`Data source '${options.source}' not found or disabled`);
+          process.exit(1);
+        }
+        sources = [source];
       } else {
-        spinner.fail('Scraping completed with errors');
-        console.log();
-        formatError(`Error: ${result.error || 'Unknown error'}`);
+        sources = await getEnabledSources();
+        if (sources.length === 0) {
+          formatWarning('No enabled data sources found');
+          process.exit(0);
+        }
       }
 
-      process.exit(result.success ? 0 : 1);
+      formatInfo(`Scraping ${sources.length} source(s)...`);
+      console.log();
+
+      let hasFailure = false;
+
+      for (const source of sources) {
+        const spinner = createSpinner(`Scraping ${source.display_name}...`).start();
+
+        try {
+          const result = await scrapeAll('manual', source);
+
+          if (result.success) {
+            const skipped = result.skippedReason === 'upstream_unchanged';
+            if (skipped) {
+              spinner.succeed(`${source.display_name}: skipped (upstream unchanged)`);
+            } else {
+              spinner.succeed(`${source.display_name}: done`);
+              console.log(
+                `    Added: ${result.recordsAdded}  Updated: ${result.recordsUpdated}  Deleted: ${result.recordsDeleted}  Duration: ${result.duration}ms`
+              );
+            }
+          } else {
+            spinner.fail(`${source.display_name}: completed with errors`);
+            hasFailure = true;
+          }
+        } catch (error) {
+          spinner.fail(`${source.display_name}: failed`);
+          formatError(`  ${error.message}`);
+          hasFailure = true;
+        }
+      }
+
+      console.log();
+      if (hasFailure) {
+        formatWarning('Some sources failed — check logs for details');
+        process.exit(1);
+      } else {
+        formatSuccess('All sources scraped successfully');
+        process.exit(0);
+      }
     } catch (error) {
       formatError(`Scraping failed: ${error.message}`);
       process.exit(1);

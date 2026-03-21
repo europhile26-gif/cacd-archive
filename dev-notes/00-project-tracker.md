@@ -1,8 +1,8 @@
 # Project Tracker
 
-**Version:** 1.12.0
+**Version:** 1.13.0
 **Last Updated:** 2026-03-21
-**Current Phase:** M2.1 complete (v1.12.0) — next: M3 (Multi-Division Support)
+**Current Phase:** M2.1 complete (v1.13.0) — next: M3 (Multi-Division Support)
 
 ---
 

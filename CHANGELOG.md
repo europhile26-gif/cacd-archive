@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.13.0] - 2026-03-21
+
+### Changed
+
+- **`scraper run` CLI now scrapes all enabled sources** — `./bin/cacd scraper run` iterates all enabled data sources (DCL and FHL) instead of only DCL. Shows per-source progress with spinners and result summaries
+- **`--source` flag for targeted scraping** — `./bin/cacd scraper run --source fhl` or `--source dcl` to scrape a single source. Accepts shorthand aliases (`dcl`, `fhl`) or full slugs (`daily_cause_list`, `future_hearing_list`)
+- **FHL freshness skip reported in CLI** — when FHL data is unchanged upstream, the CLI reports "skipped (upstream unchanged)" instead of showing zero counts
+
+---
+
 ## [1.12.1] - 2026-03-21
 
 ### Fixed
