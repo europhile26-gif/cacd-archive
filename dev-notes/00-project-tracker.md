@@ -179,6 +179,79 @@ Replace HTML scraping in `fhl-link-discovery.js` with the GOV.UK Content API (`/
 - [x] Update unit tests for new discovery logic
 - [x] Remove Cheerio dependency from `fhl-link-discovery.js`
 
+### M2.2: Request Analytics & GeoIP Blocklist
+
+Lightweight request logging for API traffic analysis, vulnerability probe detection, and country-level IP blocking. All functionality gated behind `ANALYTICS_ENABLED=true` in `.env` (disabled by default). Logs API route requests only — static assets, health checks, and Swagger docs are excluded.
+
+**Design decisions:**
+
+- **Batched inserts** — requests buffered in memory (flush every 5 seconds or every 100 records, whichever comes first) to avoid per-request DB writes becoming a bottleneck during bot floods
+- **GeoIP via MaxMind `.mmdb` files** — user has up-to-date GeoLite2 data at `/var/lib/GeoIP/`. Use the `maxmind` npm package for in-memory lookups. Country code resolved at log time and stored with each record. Configurable via `GEOIP_DB_PATH` env var
+- **Country blocklist** — `BLOCKED_COUNTRIES` env var (comma-separated ISO 3166-1 alpha-2 codes, e.g. `RU,BY,IR,IQ,CN`). Blocked requests receive `403 Forbidden` before reaching route handlers. Runs as an early Fastify hook, after GeoIP resolution but before auth/rate-limiting
+- **Purge via cron** — scheduled job (respects PM2 instance 0 pattern) deletes records older than `ANALYTICS_RETENTION_DAYS` (default: 7). Runs daily
+- **Dedicated analytics page** — `/analytics` route, restricted to administrator role. Separate from the existing admin page to keep concerns clean
+
+**Captured fields per request:**
+
+| Field          | Source                          | Notes                                                                              |
+| -------------- | ------------------------------- | ---------------------------------------------------------------------------------- |
+| `ip`           | `request.ip`                    | Respects trust proxy for X-Forwarded-For                                           |
+| `method`       | `request.method`                | GET, POST, PATCH, DELETE                                                           |
+| `route`        | `request.routeOptions.url`      | Route pattern, not raw URL (e.g. `/api/v1/hearings/:id` not `/api/v1/hearings/42`) |
+| `status_code`  | `reply.statusCode`              | Captured in onResponse hook                                                        |
+| `duration_ms`  | `reply.elapsedTime`             | Fastify's built-in request timer                                                   |
+| `user_agent`   | `request.headers['user-agent']` | Truncated to 500 chars                                                             |
+| `country_code` | GeoIP lookup                    | 2-letter ISO code or NULL if lookup fails                                          |
+| `user_id`      | `request.user?.id`              | NULL for unauthenticated requests                                                  |
+| `created_at`   | `NOW()`                         | Insertion timestamp                                                                |
+
+#### M2.2a: Schema, Config & Request Logging Middleware
+
+- [ ] Migration: create `request_log` table with fields above, indexed on `(created_at)`, `(ip, created_at)`, `(country_code, created_at)`, `(route, created_at)`
+- [ ] Config: add `ANALYTICS_ENABLED` (boolean, default false), `ANALYTICS_RETENTION_DAYS` (integer, default 7), `ANALYTICS_EXCLUDE_ROUTES` (comma-separated patterns to skip, default `/api/v1/health,/api/docs`)
+- [ ] Implement `analytics-service.js` — in-memory buffer with `logRequest(data)`, periodic flush via `setInterval`, graceful flush on shutdown
+- [ ] Fastify `onResponse` hook in `server.js` — captures all fields, skips excluded routes and static assets, calls `analytics-service.logRequest()`. Only registered when `ANALYTICS_ENABLED=true`
+- [ ] Unit tests for buffer flush logic and route exclusion filtering
+
+#### M2.2b: GeoIP Lookup & Country Blocklist
+
+- [ ] Config: add `GEOIP_DB_PATH` (default `/var/lib/GeoIP/GeoLite2-Country.mmdb`), `BLOCKED_COUNTRIES` (comma-separated country codes, default empty)
+- [ ] Implement `geoip-service.js` — loads MaxMind DB on startup, exposes `lookupCountry(ip)` returning 2-letter code or null. Handles missing/corrupt DB gracefully (log warning, continue without GeoIP)
+- [ ] Add `maxmind` and `@maxmind/geoip2-node` to dependencies
+- [ ] Fastify `onRequest` hook — if `BLOCKED_COUNTRIES` is non-empty, resolve country from IP and return `403` for blocked countries. Runs early, before auth. Log blocked requests to analytics if enabled
+- [ ] Feed country code into analytics logging from M2.2a
+- [ ] Unit tests for blocklist matching, private/localhost IP handling, missing DB fallback
+
+#### M2.2c: Purge Cron Job
+
+- [ ] Add purge function to `analytics-service.js` — `DELETE FROM request_log WHERE created_at < NOW() - INTERVAL ? DAY`
+- [ ] Register daily cron in `scheduler.js` (instance 0 only) — runs at a quiet hour (e.g. 03:00), respects `ANALYTICS_RETENTION_DAYS`
+- [ ] CLI command `./bin/cacd db purge-analytics` for manual purge with optional `--days <n>` override
+- [ ] Log purge results (rows deleted, duration)
+
+#### M2.2d: Analytics Admin Page
+
+- [ ] API: `GET /api/v1/admin/analytics/summary` — returns aggregated stats for a date range: total requests, unique IPs, requests by country, top routes, top IPs, status code distribution, blocked request count. Requires `system:analytics` capability
+- [ ] API: `GET /api/v1/admin/analytics/requests` — paginated raw request log with filters (date range, IP, country, route, status code). Requires `system:analytics` capability
+- [ ] Migration: add `system:analytics` capability, assign to administrator role
+- [ ] Frontend: `/analytics` page (administrator only) with:
+  - Summary cards: total requests, unique IPs, blocked requests (today / 7-day)
+  - Requests by day bar chart (or simple table if we want to avoid a charting dependency)
+  - Top 10 IPs table with request count, country, last seen
+  - Top routes table with request count and average duration
+  - Country breakdown table
+  - Status code distribution (2xx/3xx/4xx/5xx)
+  - Filter controls: date range picker, IP search, country filter, route filter
+- [ ] Navigation: add Analytics link for administrators (after Admin)
+- [ ] Swagger/OpenAPI docs for new endpoints
+
+#### M2.2 — Potential Enhancements (deferred)
+
+- [ ] Fail2ban integration: write blocked/suspicious requests to a structured log file that fail2ban can parse (e.g. `/var/log/cacd-archive/blocked.log` with `ip`, `timestamp`, `reason`)
+- [ ] Rate limit event logging: capture rate-limiter trips as distinct events in `request_log` (status 429) for correlation with IP/country data
+- [ ] Automated alerting: email admin when probe patterns detected (e.g. >N 404s from a single IP in M minutes)
+- [ ] Real-time dashboard: WebSocket push for live request stream on the analytics page
+
 ### M3: Multi-Division Support (Existing Source)
 
 Expand the archiving pipeline to capture more divisions from the existing DCL source at `court-tribunal-hearings.service.gov.uk`. The summary page already lists daily cause lists for 9 divisions beyond Criminal.
@@ -211,6 +284,7 @@ Expand the archiving pipeline to capture more divisions from the existing DCL so
 - Historical data backfill
 - API v2 considerations as data model expands
 - FHL-specific notifications via diff-before-replace (see M2 deferred enhancements)
+- Fail2ban integration for automated IP blocking (see M2.2 deferred enhancements)
 
 ---
 
