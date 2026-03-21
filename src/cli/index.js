@@ -18,7 +18,7 @@ formatHeader('CACD Archive CLI', 'Administrative command-line interface');
 program
   .name('cacd')
   .description('CACD Archive administrative command-line interface')
-  .version('1.12.0');
+  .version('1.12.1');
 
 // User Management Commands
 const usersCommand = program.command('users').description('User management commands');

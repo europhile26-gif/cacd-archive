@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.12.1] - 2026-03-21
+
+### Fixed
+
+- **FHL scrape fails on production** — GOV.UK Content API returns ISO 8601 timestamps with timezone offsets (e.g. `2026-03-20T16:30:02+00:00`) which MariaDB `DATETIME` columns reject. Now converts to MySQL-compatible `YYYY-MM-DD HH:MM:SS` format before inserting into `source_updated_at`
+
+---
+
 ## [1.12.0] - 2026-03-21
 
 ### Added
