@@ -7,6 +7,17 @@ const logger = require('../utils/logger');
  */
 
 /**
+ * Convert an ISO 8601 timestamp to MySQL DATETIME format (YYYY-MM-DD HH:MM:SS)
+ * MariaDB DATETIME columns reject timezone offsets and the 'T' separator.
+ * @param {string} isoString - ISO 8601 timestamp (e.g. '2026-03-20T16:30:02+00:00')
+ * @returns {string} MySQL-compatible datetime (e.g. '2026-03-20 16:30:02')
+ */
+function toMySQLDatetime(isoString) {
+  const date = new Date(isoString);
+  return date.toISOString().slice(0, 19).replace('T', ' ');
+}
+
+/**
  * Record the start of a scrape operation
  * @param {string} scrapeType - Type: 'scheduled', 'startup', 'manual'
  * @param {string} summaryPageUrl - URL of summary page
@@ -32,7 +43,7 @@ async function recordScrapeStart(scrapeType, summaryPageUrl, dataSourceId) {
 async function recordScrapeComplete(scrapeId, result) {
   const status = result.success ? 'success' : 'failed';
   const duration = result.duration || 0;
-  const sourceUpdatedAt = result.sourceUpdatedAt || null;
+  const sourceUpdatedAt = result.sourceUpdatedAt ? toMySQLDatetime(result.sourceUpdatedAt) : null;
 
   await query(
     `UPDATE scrape_history SET
