@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **npm audit fix** — resolved 11 advisories (1 critical, 6 high, 4 moderate) across `@fastify/static`, `fastify`, `handlebars`, `nodemailer`, and transitive deps (`brace-expansion`, `fast-uri`, `flatted`, `lodash`, `picomatch`, `undici`, `yaml`). All within-major bumps; 0 vulnerabilities remain
+
+### Removed
+
+- **`@fastify/jwt` dependency** — declared but never imported (auth uses `jsonwebtoken` directly + `@fastify/cookie` for transport). Removing it also dropped transitive `fast-jwt`, which was the other critical advisory
+
 ---
 
 ## [1.13.1] - 2026-05-21
