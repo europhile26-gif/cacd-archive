@@ -1,4 +1,5 @@
 const cheerio = require('cheerio');
+const { fromZonedTime } = require('date-fns-tz');
 const logger = require('../utils/logger');
 const emailService = require('../services/email-service');
 
@@ -9,6 +10,7 @@ const emailService = require('../services/email-service');
  */
 
 const INHERITABLE_COLUMNS = ['venue', 'judge'];
+const COURT_TIMEZONE = 'Europe/London';
 
 /**
  * Parse daily cause list table from HTML
@@ -341,10 +343,12 @@ function validateCaseNumber(caseNumber, rowNumber) {
 }
 
 /**
- * Combine date and time into ISO datetime
+ * Combine date and time into ISO datetime (UTC)
+ * Hearing times on the source page are Europe/London local time; convert to UTC
+ * so storage and downstream rendering stay correct across BST/GMT.
  * @param {string} listDate - Date (YYYY-MM-DD)
  * @param {string} timeString - Time (e.g., "10:30am", "10am")
- * @returns {string} ISO datetime string
+ * @returns {string} ISO 8601 UTC datetime string (e.g. "2026-05-21T09:30:00.000Z")
  */
 function combineDateTime(listDate, timeString) {
   // Parse time string
@@ -367,11 +371,11 @@ function combineDateTime(listDate, timeString) {
     hours = 0;
   }
 
-  // Construct datetime
   const hoursStr = hours.toString().padStart(2, '0');
   const minutesStr = minutes.toString().padStart(2, '0');
+  const naiveLondon = `${listDate}T${hoursStr}:${minutesStr}:00`;
 
-  return `${listDate}T${hoursStr}:${minutesStr}:00`;
+  return fromZonedTime(naiveLondon, COURT_TIMEZONE).toISOString();
 }
 
 /**

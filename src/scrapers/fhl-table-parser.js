@@ -1,6 +1,9 @@
 const cheerio = require('cheerio');
+const { fromZonedTime } = require('date-fns-tz');
 const logger = require('../utils/logger');
 const emailService = require('../services/email-service');
+
+const COURT_TIMEZONE = 'Europe/London';
 
 /**
  * FHL Table Parser Module
@@ -309,10 +312,12 @@ function validateCaseNumber(caseNumber, rowNumber) {
 }
 
 /**
- * Combine date and time into ISO datetime
+ * Combine date and time into ISO datetime (UTC)
+ * Hearing times on the source page are Europe/London local time; convert to UTC
+ * so storage and downstream rendering stay correct across BST/GMT.
  * @param {string} listDate - YYYY-MM-DD
  * @param {string} timeString - e.g. "10:30am"
- * @returns {string} ISO datetime
+ * @returns {string} ISO 8601 UTC datetime string
  */
 function combineDateTime(listDate, timeString) {
   const pattern = /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/i;
@@ -329,8 +334,9 @@ function combineDateTime(listDate, timeString) {
 
   const hoursStr = hours.toString().padStart(2, '0');
   const minutesStr = minutes.toString().padStart(2, '0');
+  const naiveLondon = `${listDate}T${hoursStr}:${minutesStr}:00`;
 
-  return `${listDate}T${hoursStr}:${minutesStr}:00`;
+  return fromZonedTime(naiveLondon, COURT_TIMEZONE).toISOString();
 }
 
 module.exports = {

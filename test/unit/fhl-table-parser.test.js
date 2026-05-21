@@ -42,11 +42,18 @@ describe('fhl-table-parser', () => {
   });
 
   describe('combineDateTime', () => {
-    test('combines date and time correctly', () => {
-      expect(combineDateTime('2026-04-01', '10:30am')).toBe('2026-04-01T10:30:00');
-      expect(combineDateTime('2026-04-01', '2:00pm')).toBe('2026-04-01T14:00:00');
-      expect(combineDateTime('2026-04-01', '12pm')).toBe('2026-04-01T12:00:00');
-      expect(combineDateTime('2026-04-01', '12am')).toBe('2026-04-01T00:00:00');
+    test('shifts BST times back by one hour when converting to UTC', () => {
+      // April 1 2026 is after the last-Sunday-of-March DST switch, so BST (UTC+1)
+      expect(combineDateTime('2026-04-01', '10:30am')).toBe('2026-04-01T09:30:00.000Z');
+      expect(combineDateTime('2026-04-01', '2:00pm')).toBe('2026-04-01T13:00:00.000Z');
+      expect(combineDateTime('2026-04-01', '12pm')).toBe('2026-04-01T11:00:00.000Z');
+      expect(combineDateTime('2026-04-01', '12am')).toBe('2026-03-31T23:00:00.000Z');
+    });
+
+    test('leaves GMT times unchanged when converting to UTC', () => {
+      // March 10 2026 is before the DST switch, so GMT (UTC+0)
+      expect(combineDateTime('2026-03-10', '10:30am')).toBe('2026-03-10T10:30:00.000Z');
+      expect(combineDateTime('2026-03-10', '2:00pm')).toBe('2026-03-10T14:00:00.000Z');
     });
   });
 
@@ -92,7 +99,7 @@ describe('fhl-table-parser', () => {
         listDate: '2026-03-10',
         'case number': '202500054 A4',
         time: '10:30am',
-        hearingDateTime: '2026-03-10T10:30:00',
+        hearingDateTime: '2026-03-10T10:30:00.000Z',
         venue: 'RCJ - Court 6',
         'case details': 'Smith, John',
         'crown court': 'Woolwich',

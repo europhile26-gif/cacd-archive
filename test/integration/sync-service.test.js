@@ -25,7 +25,7 @@ describe('sync-service', () => {
       listDate: '2025-12-11',
       'case number': '202403891 A1',
       time: '10:30am',
-      hearingDateTime: '2025-12-11T10:30:00',
+      hearingDateTime: '2025-12-11T10:30:00.000Z',
       venue: 'RCJ - Court 5',
       judge: 'Lord Justice Males',
       'case details': 'R v ZDX',

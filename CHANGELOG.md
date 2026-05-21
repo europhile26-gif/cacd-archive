@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.13.1] - 2026-05-21
+
+### Fixed
+
+- **Hearing times off by one hour during BST** — `hearing_datetime` was built from the source page's local time (e.g. `10:30am`) as a naive datetime string and stored in MariaDB without timezone conversion. With the pool configured `timezone: '+00:00'`, mysql2 then read the value back as UTC, so a 10:30 BST hearing rendered as 11:30 in the browser. Times now go through `fromZonedTime('Europe/London')` in both DCL and FHL parsers so storage is true UTC and matches the source page year-round. Existing buggy rows self-heal on the next scrape (DCL via `hasChanged`/update, FHL via full-replace); rows that no longer appear in either source page stay 1 hour ahead during May–Oct only
+
+---
+
 ## [1.13.0] - 2026-03-21
 
 ### Changed

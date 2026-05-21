@@ -329,7 +329,7 @@ async function bulkInsertRecords(connection, records, dataSourceId, batchSize = 
         record.listDate,
         record['case number'],
         record.time,
-        record.hearingDateTime,
+        formatDateTimeForMySQL(record.hearingDateTime),
         record.venue || null,
         record.judge || null,
         record['case details'] || null,
@@ -367,7 +367,7 @@ async function updateRecord(connection, record, id) {
       scraped_at = ?
     WHERE id = ?`,
     [
-      record.hearingDateTime,
+      formatDateTimeForMySQL(record.hearingDateTime),
       record.venue || null,
       record.judge || null,
       record['case details'] || null,
@@ -505,7 +505,7 @@ async function bulkInsertIgnoreRecords(connection, records, dataSourceId, batchS
         record.listDate,
         record['case number'],
         record.time,
-        record.hearingDateTime,
+        formatDateTimeForMySQL(record.hearingDateTime),
         record.venue || null,
         record.judge || null,
         record['case details'] || null,

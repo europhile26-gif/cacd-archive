@@ -30,16 +30,23 @@ describe('table-parser', () => {
   });
 
   describe('combineDateTime', () => {
-    test('combines date and time correctly', () => {
-      expect(combineDateTime('2025-12-11', '10:30am')).toBe('2025-12-11T10:30:00');
-      expect(combineDateTime('2025-12-11', '2:00pm')).toBe('2025-12-11T14:00:00');
-      expect(combineDateTime('2025-12-11', '12:00pm')).toBe('2025-12-11T12:00:00');
-      expect(combineDateTime('2025-12-11', '12:00am')).toBe('2025-12-11T00:00:00');
+    test('treats source time as Europe/London and returns UTC ISO string (GMT)', () => {
+      // December — Europe/London == UTC
+      expect(combineDateTime('2025-12-11', '10:30am')).toBe('2025-12-11T10:30:00.000Z');
+      expect(combineDateTime('2025-12-11', '2:00pm')).toBe('2025-12-11T14:00:00.000Z');
+      expect(combineDateTime('2025-12-11', '12:00pm')).toBe('2025-12-11T12:00:00.000Z');
+      expect(combineDateTime('2025-12-11', '12:00am')).toBe('2025-12-11T00:00:00.000Z');
+    });
+
+    test('shifts BST times back by one hour when converting to UTC', () => {
+      // May — Europe/London is BST (UTC+1); 10:30 BST == 09:30 UTC
+      expect(combineDateTime('2026-05-21', '10:30am')).toBe('2026-05-21T09:30:00.000Z');
+      expect(combineDateTime('2026-05-21', '2:00pm')).toBe('2026-05-21T13:00:00.000Z');
     });
 
     test('handles times without minutes', () => {
-      expect(combineDateTime('2025-12-11', '10am')).toBe('2025-12-11T10:00:00');
-      expect(combineDateTime('2025-12-11', '2pm')).toBe('2025-12-11T14:00:00');
+      expect(combineDateTime('2025-12-11', '10am')).toBe('2025-12-11T10:00:00.000Z');
+      expect(combineDateTime('2025-12-11', '2pm')).toBe('2025-12-11T14:00:00.000Z');
     });
 
     test('throws on invalid time format', () => {
@@ -115,7 +122,7 @@ describe('table-parser', () => {
       expect(records[0].division).toBe('Criminal');
       expect(records[0].listDate).toBe('2025-12-11');
       expect(records[0].sourceUrl).toBe('http://test.example.com');
-      expect(records[0].hearingDateTime).toBe('2025-12-11T10:30:00');
+      expect(records[0].hearingDateTime).toBe('2025-12-11T10:30:00.000Z');
 
       // Second record — inherits venue and judge from first row
       expect(records[1]['case number']).toBe('202503277 A5');
@@ -125,7 +132,7 @@ describe('table-parser', () => {
       // Third record — new venue and judge
       expect(records[2].venue).toBe('RCJ - Court 3');
       expect(records[2].time).toBe('2:00pm');
-      expect(records[2].hearingDateTime).toBe('2025-12-11T14:00:00');
+      expect(records[2].hearingDateTime).toBe('2025-12-11T14:00:00.000Z');
     });
 
     test('returns empty array for empty table', async () => {
