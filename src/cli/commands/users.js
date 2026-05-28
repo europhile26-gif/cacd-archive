@@ -10,6 +10,7 @@ const {
   formatError,
   formatWarning,
   formatInfo,
+  formatSuccess,
   createTable,
   createSpinner
 } = require('../utils/format');
@@ -368,10 +369,86 @@ async function showUser(options) {
   }
 }
 
+/**
+ * Reset a user's password (admin-driven, no token required)
+ */
+async function resetPassword(options) {
+  try {
+    let user;
+
+    if (options.id) {
+      user = await User.findById(parseInt(options.id));
+    } else if (options.email) {
+      user = await User.findByEmail(options.email);
+    } else {
+      formatError('Please specify --id or --email');
+      process.exit(1);
+    }
+
+    if (!user) {
+      formatError('User not found');
+      process.exit(1);
+    }
+
+    console.log();
+    console.log('Resetting password for:');
+    console.log('  ID:', user.id);
+    console.log('  Email:', user.email);
+    console.log('  Name:', user.name);
+    console.log('  Status:', user.status.name);
+    console.log();
+
+    let newPassword;
+
+    if (options.password) {
+      // Non-interactive mode
+      newPassword = options.password;
+    } else {
+      // Interactive mode
+      newPassword = await password('New Password:', (value) => {
+        const validation = AuthService.validatePassword(value);
+        if (!validation.valid) {
+          return validation.errors.join('\n');
+        }
+        return true;
+      });
+
+      const passwordConfirm = await password('Confirm New Password:');
+      if (newPassword !== passwordConfirm) {
+        formatError('Passwords do not match');
+        process.exit(1);
+      }
+    }
+
+    // Validate strength regardless of mode (--password skips the prompt validator)
+    const validation = AuthService.validatePassword(newPassword);
+    if (!validation.valid) {
+      formatError('Password does not meet requirements:');
+      validation.errors.forEach((err) => console.error('  -', err));
+      process.exit(1);
+    }
+
+    const spinner = createSpinner('Resetting password...').start();
+
+    const password_hash = await AuthService.hashPassword(newPassword);
+    await User.updatePassword(user.id, password_hash);
+
+    spinner.succeed('Password reset successfully');
+    console.log();
+    formatSuccess(`Password updated for ${user.email}`);
+
+    process.exit(0);
+  } catch (error) {
+    formatError(`Failed to reset password: ${error.message}`);
+    process.exit(1);
+  }
+}
+
 module.exports = {
   createUser,
   listUsers,
   approveUser,
   deactivateUser,
-  showUser
+  showUser,
+  resetPassword
 };

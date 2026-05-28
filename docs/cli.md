@@ -66,6 +66,21 @@ Deactivate a user account.
 ./bin/cacd users deactivate -i 5 -n "No longer needed"
 ```
 
+### `users reset-password`
+
+Reset a user's password. Useful when a user is locked out and the self-service "forgot password" flow is unavailable. Identify the account with `-e/--email` or `-i/--id`; the command shows the matched account, then prompts for a new password (entered twice, masked) validated against the standard strength rules.
+
+```bash
+./bin/cacd users reset-password -e user@example.com
+./bin/cacd users reset-password -i 5
+```
+
+| Option | Description |
+| --- | --- |
+| `-i, --id <id>` | User ID |
+| `-e, --email <email>` | User email |
+| `-p, --password <password>` | New password (omit for interactive prompt; note it leaks into shell history) |
+
 ### `db summary`
 
 Show a summary of database contents: hearing counts by source, scrape history with success/failure counts, users, saved searches, and notifications.

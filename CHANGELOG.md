@@ -5,15 +5,19 @@ All notable changes to the CACD Archive project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.14.0] - 2026-05-28
 
-### Security
+### Added
 
-- **npm audit fix** — resolved 11 advisories (1 critical, 6 high, 4 moderate) across `@fastify/static`, `fastify`, `handlebars`, `nodemailer`, and transitive deps (`brace-expansion`, `fast-uri`, `flatted`, `lodash`, `picomatch`, `undici`, `yaml`). All within-major bumps; 0 vulnerabilities remain
+- **`users reset-password` CLI command** — admin-driven password reset for when a user is locked out (the self-service "forgot password" front-end isn't built yet). `./bin/cacd users reset-password --email <email>` looks up the account, shows it for confirmation, then prompts for a new password (masked, entered twice) validated against the standard strength rules. Supports `--id` as an alternative lookup and `--password` for non-interactive use
 
 ### Removed
 
 - **`@fastify/jwt` dependency** — declared but never imported (auth uses `jsonwebtoken` directly + `@fastify/cookie` for transport). Removing it also dropped transitive `fast-jwt`, which was the other critical advisory
+
+### Security
+
+- **npm audit fix** — resolved 11 advisories (1 critical, 6 high, 4 moderate) across `@fastify/static`, `fastify`, `handlebars`, `nodemailer`, and transitive deps (`brace-expansion`, `fast-uri`, `flatted`, `lodash`, `picomatch`, `undici`, `yaml`). All within-major bumps; 0 vulnerabilities remain
 
 ---
 

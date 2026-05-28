@@ -18,7 +18,7 @@ formatHeader('CACD Archive CLI', 'Administrative command-line interface');
 program
   .name('cacd')
   .description('CACD Archive administrative command-line interface')
-  .version('1.13.1');
+  .version('1.14.0');
 
 // User Management Commands
 const usersCommand = program.command('users').description('User management commands');
@@ -64,6 +64,14 @@ usersCommand
   .option('-e, --email <email>', 'User email')
   .option('-n, --notes <notes>', 'Reason for deactivation')
   .action(userCommands.deactivateUser);
+
+usersCommand
+  .command('reset-password')
+  .description("Reset a user's password")
+  .option('-i, --id <id>', 'User ID')
+  .option('-e, --email <email>', 'User email')
+  .option('-p, --password <password>', 'New password (omit for interactive prompt)')
+  .action(userCommands.resetPassword);
 
 // Database Commands
 const dbCommand = program.command('db').description('Database management commands');
