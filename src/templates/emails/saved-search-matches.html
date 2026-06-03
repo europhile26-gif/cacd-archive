@@ -136,6 +136,9 @@
         {{#each matches}}
         <div class="case-card">
           <div class="case-title">{{this.case_name}}</div>
+          {{#if this.case_number}}
+          <div class="case-details"><strong>Case Number:</strong> {{this.case_number}}</div>
+          {{/if}}
           <div class="case-details"><strong>Date:</strong> {{this.list_date_formatted}}</div>
           <div class="case-details"><strong>Time:</strong> {{this.hearing_time}}</div>
           <div class="case-details">

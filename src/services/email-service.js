@@ -343,6 +343,9 @@ class EmailService {
 
       search.matches.forEach((match) => {
         text += `\n  ${match.case_name}\n`;
+        if (match.case_number) {
+          text += `  Case Number: ${match.case_number}\n`;
+        }
         text += `  Date: ${match.list_date_formatted}\n`;
         text += `  Time: ${match.hearing_time}\n`;
         text += `  Court: ${match.court_room}`;

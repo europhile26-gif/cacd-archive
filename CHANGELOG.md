@@ -5,6 +5,18 @@ All notable changes to the CACD Archive project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.1] - 2026-06-03
+
+### Fixed
+
+- **Saved-search alerts (and on-site search) returned false matches** — a search for a phrase such as `Criminal Cases Review Commission` was run with `MATCH ... AGAINST(... IN NATURAL LANGUAGE MODE)`, which treats the term as a bag of individual words and matched any hearing containing merely `Criminal` (e.g. a case whose hearing type cites the _Criminal_ Justice Act 1988). Searching is now an exact, case-insensitive phrase match (`LOWER(col) LIKE`) across the same columns (`case_details`, `hearing_type`, `additional_information`, `judge`, `venue`, `case_number`). LIKE wildcards (`%`, `_`) in the term are escaped and matched literally, and a single pair of surrounding quotes is trimmed so a quoted phrase still matches. Logic is shared between the search API and the notification matcher via `src/utils/search-filter.js` so the two cannot drift apart
+
+### Added
+
+- **Case Number in saved-search match emails** — each matched case in the notification email (HTML and plain-text) now shows its case number, previously omitted
+
+---
+
 ## [1.14.0] - 2026-05-28
 
 ### Added

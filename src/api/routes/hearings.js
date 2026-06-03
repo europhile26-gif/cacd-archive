@@ -1,4 +1,5 @@
 const { query } = require('../../config/database');
+const { buildHearingSearchFilter } = require('../../utils/search-filter');
 
 async function hearingsRoutes(fastify, _options) {
   // GET /api/v1/hearings
@@ -135,9 +136,10 @@ async function hearingsRoutes(fastify, _options) {
       }
 
       if (search) {
-        sql +=
-          ' AND (MATCH(h.case_details, h.hearing_type, h.additional_information, h.judge, h.venue) AGAINST(? IN NATURAL LANGUAGE MODE) OR h.case_number LIKE ?)';
-        params.push(search, `%${search}%`);
+        // Exact, case-insensitive phrase match (see utils/search-filter.js).
+        const filter = buildHearingSearchFilter(search, 'h.');
+        sql += ` AND ${filter.sql}`;
+        params.push(...filter.params);
       }
 
       // Get total count

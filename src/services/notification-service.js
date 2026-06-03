@@ -9,6 +9,7 @@ const db = require('../config/database');
 const emailService = require('./email-service');
 const logger = require('../utils/logger');
 const config = require('../config/config');
+const { buildHearingSearchFilter } = require('../utils/search-filter');
 
 class NotificationService {
   /**
@@ -177,22 +178,20 @@ class NotificationService {
       const today = format(new Date(), 'yyyy-MM-dd');
       const tomorrow = format(new Date(Date.now() + 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
 
-      // Build query using same logic as hearings API endpoint
+      // Build query using same logic as hearings API endpoint.
+      // Exact, case-insensitive phrase match (see utils/search-filter.js).
+      const filter = buildHearingSearchFilter(searchText);
       const sql = `
-        SELECT * 
+        SELECT *
         FROM hearings
-        WHERE 
+        WHERE
           list_date >= ? AND list_date <= ?
-          AND (
-            MATCH(case_details, hearing_type, additional_information, judge, venue) 
-            AGAINST(? IN NATURAL LANGUAGE MODE) 
-            OR case_number LIKE ?
-          )
+          AND ${filter.sql}
         ORDER BY list_date ASC, hearing_datetime ASC
         LIMIT 100
       `;
 
-      const params = [today, tomorrow, searchText, `%${searchText}%`];
+      const params = [today, tomorrow, ...filter.params];
       const hearings = await db.query(sql, params);
 
       // Format matches for email - map actual column names from hearings table
@@ -200,6 +199,7 @@ class NotificationService {
         case_name:
           hearing.case_details ||
           (hearing.case_number ? `Case ${hearing.case_number}` : 'Unknown Case'),
+        case_number: hearing.case_number,
         list_date_formatted: format(new Date(hearing.list_date), 'EEEE, d MMMM yyyy'),
         hearing_time: hearing.time || 'Not specified',
         court_room: hearing.venue || 'Not specified',
