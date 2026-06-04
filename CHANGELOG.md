@@ -5,6 +5,18 @@ All notable changes to the CACD Archive project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2026-06-04
+
+### Added
+
+- **`search` CLI command group** — tooling to test saved-search matching and notifications from the command line, reusing the same production code paths (`buildHearingSearchFilter`, the notification matcher, and the email templates) so results mirror what users receive:
+  - **`search run <phrase>`** — run the matcher for a phrase and print the matching hearings. Defaults to the today + tomorrow notification window; `--all`, `--from`, and `--to` adjust the date range, `--verbose` shows the `LIKE` pattern and which column matched each row, and `--json` emits machine-readable output (info logs are suppressed so stdout stays pipeable).
+  - **`search saved [--user <email>]`** — list saved searches with their owners and preview what each matches now, flagging searches that wouldn't actually notify (disabled, notifications off, or inactive user).
+  - **`search preview-email <phrase>`** — render the saved-search notification email (plain text, `--html`, or `--out <file>`) without sending it.
+  - **`search notify`** — exercise the notification pipeline; dry-run by default (reports who would be emailed and why), `--send` runs the real pipeline after confirmation.
+
+---
+
 ## [1.14.1] - 2026-06-03
 
 ### Fixed

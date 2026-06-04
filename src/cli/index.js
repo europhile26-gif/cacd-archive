@@ -8,17 +8,20 @@ const chalk = require('chalk');
 const { formatHeader } = require('./utils/format');
 const userCommands = require('./commands/users');
 const dbCommands = require('./commands/db');
+const searchCommands = require('./commands/search');
 
 const program = new Command();
 
-// CLI Header
-formatHeader('CACD Archive CLI', 'Administrative command-line interface');
+// CLI Header (suppressed for --json so machine-readable output stays clean)
+if (!process.argv.includes('--json')) {
+  formatHeader('CACD Archive CLI', 'Administrative command-line interface');
+}
 
 // Program configuration
 program
   .name('cacd')
   .description('CACD Archive administrative command-line interface')
-  .version('1.14.1');
+  .version('1.15.0');
 
 // User Management Commands
 const usersCommand = program.command('users').description('User management commands');
@@ -194,6 +197,42 @@ scraperCommand
       process.exit(1);
     }
   });
+
+// Search Commands
+const searchCommand = program.command('search').description('Saved-search matching commands');
+
+searchCommand
+  .command('run <phrase>')
+  .description('Run the saved-search matcher for a phrase and print matches')
+  .option('-a, --all', 'Search all dates (default: today + tomorrow, as notifications do)')
+  .option('--from <date>', 'Earliest list_date to include (YYYY-MM-DD)')
+  .option('--to <date>', 'Latest list_date to include (YYYY-MM-DD)')
+  .option('-l, --limit <limit>', 'Max results', '100')
+  .option('-j, --json', 'Output results as JSON')
+  .option('-v, --verbose', 'Show the LIKE pattern and which column matched each row')
+  .action(searchCommands.runSearch);
+
+searchCommand
+  .command('saved')
+  .description('List saved searches with owners and preview what each matches now')
+  .option('-u, --user <email>', 'Only show searches owned by this user')
+  .option('-v, --verbose', 'List the matching hearings under each saved search')
+  .action(searchCommands.savedSearches);
+
+searchCommand
+  .command('preview-email <phrase>')
+  .description('Render the notification email for a phrase without sending it')
+  .option('--html', 'Output the HTML email instead of plain text')
+  .option('-o, --out <file>', 'Write the HTML email to a file')
+  .option('-n, --name <name>', 'Recipient name to render in the email', 'Preview User')
+  .action(searchCommands.previewEmail);
+
+searchCommand
+  .command('notify')
+  .description('Run the saved-search notification pipeline (dry-run by default)')
+  .option('--send', 'Actually send notification emails (prompts for confirmation)')
+  .option('-y, --yes', 'Skip the confirmation prompt when using --send')
+  .action(searchCommands.notify);
 
 // Secret Commands
 const secretCommand = program.command('secret').description('Secret and token management');

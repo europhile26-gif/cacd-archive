@@ -6,6 +6,13 @@
  */
 
 const path = require('path');
+
+// Keep stdout clean for machine-readable output: silence info-level logs
+// (which go to stdout) before anything loads the logger. Must run first.
+if (process.argv.includes('--json')) {
+  process.env.LOG_LEVEL = 'warn';
+}
+
 const { runStartupSecurityChecks } = require('../src/utils/startup-security');
 
 // Run security checks before loading dotenv

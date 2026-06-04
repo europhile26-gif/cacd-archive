@@ -75,10 +75,10 @@ Reset a user's password. Useful when a user is locked out and the self-service "
 ./bin/cacd users reset-password -i 5
 ```
 
-| Option | Description |
-| --- | --- |
-| `-i, --id <id>` | User ID |
-| `-e, --email <email>` | User email |
+| Option                      | Description                                                                  |
+| --------------------------- | ---------------------------------------------------------------------------- |
+| `-i, --id <id>`             | User ID                                                                      |
+| `-e, --email <email>`       | User email                                                                   |
 | `-p, --password <password>` | New password (omit for interactive prompt; note it leaks into shell history) |
 
 ### `db summary`
@@ -125,6 +125,69 @@ Run the scraper immediately (outside the normal schedule). Scrapes all enabled d
 | Option                | Description                                                            |
 | --------------------- | ---------------------------------------------------------------------- |
 | `-s, --source <slug>` | Source to scrape: `dcl`, `fhl`, or full slug (e.g. `daily_cause_list`) |
+
+### `search run`
+
+Run the saved-search matcher for a phrase and print the matching hearings. Uses the same exact, case-insensitive phrase matching as the on-site search and the notification alerts, so it's the quickest way to see exactly what a given saved search would match. Defaults to the today + tomorrow notification window.
+
+```bash
+./bin/cacd search run "Criminal Cases Review Commission"        # today + tomorrow
+./bin/cacd search run "Criminal Justice Act" --all --verbose    # all dates, show matched columns
+./bin/cacd search run "R v Smith" --all --json | jq             # machine-readable
+```
+
+| Option            | Description                                               |
+| ----------------- | --------------------------------------------------------- |
+| `-a, --all`       | Search all dates (default: today + tomorrow)              |
+| `--from <date>`   | Earliest `list_date` to include (`YYYY-MM-DD`)            |
+| `--to <date>`     | Latest `list_date` to include (`YYYY-MM-DD`)              |
+| `-l, --limit <n>` | Max results (default: 100)                                |
+| `-j, --json`      | Output results as JSON (info logs suppressed)             |
+| `-v, --verbose`   | Show the `LIKE` pattern and which column matched each row |
+
+### `search saved`
+
+List saved searches with their owners and preview what each one matches in the notification window (today + tomorrow). Searches that wouldn't actually trigger a notification — disabled, notifications off, or an inactive user — are flagged.
+
+```bash
+./bin/cacd search saved
+./bin/cacd search saved --user user@example.com -v
+```
+
+| Option               | Description                                        |
+| -------------------- | -------------------------------------------------- |
+| `-u, --user <email>` | Only show searches owned by this user              |
+| `-v, --verbose`      | List the matching hearings under each saved search |
+
+### `search preview-email`
+
+Render the saved-search notification email for a phrase without sending it. Prints the plain-text version by default; use `--html` to print the HTML or `--out` to write the HTML to a file.
+
+```bash
+./bin/cacd search preview-email "Criminal Justice Act"
+./bin/cacd search preview-email "Criminal Justice Act" --out /tmp/preview.html
+```
+
+| Option              | Description                                        |
+| ------------------- | -------------------------------------------------- |
+| `--html`            | Output the HTML email instead of plain text        |
+| `-o, --out <file>`  | Write the HTML email to a file                     |
+| `-n, --name <name>` | Recipient name to render (default: `Preview User`) |
+
+### `search notify`
+
+Exercise the saved-search notification pipeline. Dry-run by default: reports which users would be emailed and why (matches found, rate limits) without sending anything. Use `--send` to run the real pipeline.
+
+```bash
+./bin/cacd search notify              # dry-run, no emails sent
+./bin/cacd search notify --send       # send for real (prompts to confirm)
+./bin/cacd search notify --send --yes # send for real, skip confirmation
+```
+
+| Option      | Description                                            |
+| ----------- | ------------------------------------------------------ |
+| `--send`    | Actually send notification emails (prompts to confirm) |
+| `-y, --yes` | Skip the confirmation prompt when using `--send`       |
 
 ### `secret generate`
 
