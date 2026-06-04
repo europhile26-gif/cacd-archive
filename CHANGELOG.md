@@ -5,6 +5,14 @@ All notable changes to the CACD Archive project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0] - 2026-06-04
+
+### Added
+
+- **Admin System Info panel** — the `/admin` page now shows a System Info card with deployment diagnostics: app version, environment, Node.js version, uptime, database connectivity, and migration state (applied/total, latest migration, and any pending migrations). Backed by a new `GET /api/v1/admin/system-info` endpoint restricted to the **administrator role** (`requireAuth` + `requireAdmin`); it degrades gracefully to a `disconnected` database status rather than failing the panel if the migration query errors. Migration state is derived from a new reusable `getMigrationStatus()` helper in `src/db/migrator.js` that compares the `schema_migrations` table against the migration files on disk.
+
+---
+
 ## [1.15.0] - 2026-06-04
 
 ### Added

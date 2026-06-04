@@ -121,6 +121,66 @@
         <div id="dataSourcesError" class="alert alert-danger d-none"></div>
       </div>
 
+      <!-- System Info Section -->
+      <div class="admin-card mb-4">
+        <h1>System Info</h1>
+        <div id="systemInfoLoading" class="text-center py-3">
+          <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <span class="ms-2">Loading system info...</span>
+        </div>
+        <div id="systemInfoContent" class="d-none">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <table class="table table-sm mb-0">
+                <tbody>
+                  <tr>
+                    <th scope="row" class="text-muted fw-normal">Version</th>
+                    <td id="sysVersion">—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row" class="text-muted fw-normal">Environment</th>
+                    <td id="sysEnv">—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row" class="text-muted fw-normal">Node.js</th>
+                    <td id="sysNode">—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row" class="text-muted fw-normal">Uptime</th>
+                    <td id="sysUptime">—</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <table class="table table-sm mb-0">
+                <tbody>
+                  <tr>
+                    <th scope="row" class="text-muted fw-normal">Database</th>
+                    <td id="sysDb">—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row" class="text-muted fw-normal">Migrations applied</th>
+                    <td id="sysMigrations">—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row" class="text-muted fw-normal">Latest migration</th>
+                    <td id="sysMigrationLatest">—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row" class="text-muted fw-normal">Pending</th>
+                    <td id="sysMigrationPending">—</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div id="systemInfoError" class="alert alert-danger d-none"></div>
+      </div>
+
       <!-- Loading State -->
       <div id="loadingState" class="text-center py-5">
         <div class="spinner-border text-primary" role="status">

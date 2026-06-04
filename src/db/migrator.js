@@ -2,6 +2,45 @@ const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
 const config = require('../config/config');
+const { query } = require('../config/database');
+
+const MIGRATIONS_DIR = path.join(__dirname, 'migrations');
+
+/**
+ * Return the .sql migration filenames on disk (version = filename without .sql),
+ * sorted. Shared by runMigrations() and getMigrationStatus().
+ */
+function listMigrationFiles() {
+  return fs
+    .readdirSync(MIGRATIONS_DIR)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
+}
+
+/**
+ * Summarise migration state for reporting (e.g. the admin system-info panel).
+ * Compares the schema_migrations table against the files on disk.
+ * @returns {Promise<{applied:number,total:number,pending:number,
+ *   pendingVersions:string[],latest:{version:string,applied_at:Date}|null}>}
+ */
+async function getMigrationStatus() {
+  const appliedRows = await query(
+    'SELECT version, applied_at FROM schema_migrations ORDER BY version'
+  );
+  const appliedVersions = new Set(appliedRows.map((r) => r.version));
+
+  const versions = listMigrationFiles().map((f) => f.replace('.sql', ''));
+  const pendingVersions = versions.filter((v) => !appliedVersions.has(v));
+  const latest = appliedRows.length > 0 ? appliedRows[appliedRows.length - 1] : null;
+
+  return {
+    applied: appliedRows.length,
+    total: versions.length,
+    pending: pendingVersions.length,
+    pendingVersions,
+    latest: latest ? { version: latest.version, applied_at: latest.applied_at } : null
+  };
+}
 
 async function runMigrations() {
   const connection = await mysql.createConnection(config.database);
@@ -24,11 +63,8 @@ async function runMigrations() {
     const appliedVersions = new Set(rows.map((r) => r.version));
 
     // Get migration files
-    const migrationsDir = path.join(__dirname, 'migrations');
-    const files = fs
-      .readdirSync(migrationsDir)
-      .filter((f) => f.endsWith('.sql'))
-      .sort();
+    const migrationsDir = MIGRATIONS_DIR;
+    const files = listMigrationFiles();
 
     if (files.length === 0) {
       console.log('No migration files found');
@@ -99,4 +135,4 @@ async function runMigrations() {
   }
 }
 
-module.exports = { runMigrations };
+module.exports = { runMigrations, getMigrationStatus };

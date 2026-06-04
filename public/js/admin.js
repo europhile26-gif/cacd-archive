@@ -17,8 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
     userModal = new bootstrap.Modal(modalElement);
   }
 
-  // Load data sources and users
+  // Load data sources, system info, and users
   loadDataSources();
+  loadSystemInfo();
   loadUsers();
 
   // Event listeners
@@ -80,6 +81,93 @@ async function loadDataSources() {
       'Error loading data sources. Please try again.';
     document.getElementById('dataSourcesError').classList.remove('d-none');
   }
+}
+
+// ─── System Info ────────────────────────────────────────────────────
+
+/**
+ * Load system info from the admin API (administrator role only)
+ */
+async function loadSystemInfo() {
+  try {
+    const response = await fetch('/api/v1/admin/system-info', {
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      if (response.status === 403) {
+        showSystemInfoError('Access denied. Administrator role required.');
+        return;
+      }
+      throw new Error('Failed to load system info');
+    }
+
+    const data = await response.json();
+    renderSystemInfo(data);
+
+    document.getElementById('systemInfoLoading').classList.add('d-none');
+    document.getElementById('systemInfoContent').classList.remove('d-none');
+  } catch (error) {
+    console.error('Error loading system info:', error);
+    showSystemInfoError('Error loading system info. Please try again.');
+  }
+}
+
+function showSystemInfoError(message) {
+  document.getElementById('systemInfoLoading').classList.add('d-none');
+  const errorEl = document.getElementById('systemInfoError');
+  errorEl.textContent = message;
+  errorEl.classList.remove('d-none');
+}
+
+/**
+ * Format an uptime in seconds as a short human-readable string (e.g. "2d 3h 14m")
+ */
+function formatUptime(seconds) {
+  const s = Math.max(0, Math.round(seconds));
+  const days = Math.floor(s / 86400);
+  const hours = Math.floor((s % 86400) / 3600);
+  const mins = Math.floor((s % 3600) / 60);
+  const parts = [];
+  if (days) parts.push(days + 'd');
+  if (hours) parts.push(hours + 'h');
+  parts.push(mins + 'm');
+  return parts.join(' ');
+}
+
+/**
+ * Render the system info card from the API response
+ */
+function renderSystemInfo(data) {
+  const app = data.app || {};
+  const db = data.database || {};
+  const migrations = data.migrations || {};
+
+  document.getElementById('sysVersion').textContent = app.version || '—';
+  document.getElementById('sysEnv').textContent = app.environment || '—';
+  document.getElementById('sysNode').textContent = app.nodeVersion || '—';
+  document.getElementById('sysUptime').textContent =
+    typeof app.uptimeSeconds === 'number' ? formatUptime(app.uptimeSeconds) : '—';
+
+  const dbEl = document.getElementById('sysDb');
+  const connected = db.status === 'connected';
+  dbEl.textContent = connected ? 'Connected' : 'Disconnected';
+  dbEl.className = connected ? 'text-success' : 'text-danger';
+
+  document.getElementById('sysMigrations').textContent =
+    (migrations.applied != null ? migrations.applied : '—') +
+    ' of ' +
+    (migrations.total != null ? migrations.total : '—');
+
+  document.getElementById('sysMigrationLatest').textContent = migrations.latest
+    ? migrations.latest.version
+    : 'none';
+
+  const pendingEl = document.getElementById('sysMigrationPending');
+  const pending = migrations.pending || 0;
+  const pendingVersions = migrations.pendingVersions || [];
+  pendingEl.textContent = pending > 0 ? pending + ' (' + pendingVersions.join(', ') + ')' : 'none';
+  pendingEl.className = pending > 0 ? 'text-warning' : '';
 }
 
 /**

@@ -7,9 +7,93 @@ const User = require('../../models/User');
 const Role = require('../../models/Role');
 const { query } = require('../../config/database');
 const { clearCache } = require('../../services/data-source-service');
-const { requireAuth, requireCapability } = require('../middleware/auth');
+const { requireAuth, requireCapability, requireAdmin } = require('../middleware/auth');
+const { getMigrationStatus } = require('../../db/migrator');
+const config = require('../../config/config');
+const { version } = require('../../../package.json');
 
 async function adminRoutes(fastify, _options) {
+  /**
+   * GET /api/v1/admin/system-info
+   * Application/system diagnostics for the admin dashboard.
+   * Administrator role only (not capability-gated) — surfaces deployment
+   * details (version, environment, migration state) that are admin-only.
+   */
+  fastify.get(
+    '/system-info',
+    {
+      preHandler: [requireAuth, requireAdmin],
+      schema: {
+        tags: ['Admin'],
+        description: 'System and deployment info (administrator role only)',
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              app: {
+                type: 'object',
+                properties: {
+                  version: { type: 'string' },
+                  environment: { type: 'string' },
+                  nodeVersion: { type: 'string' },
+                  uptimeSeconds: { type: 'number' }
+                }
+              },
+              database: {
+                type: 'object',
+                properties: {
+                  status: { type: 'string' }
+                }
+              },
+              migrations: {
+                type: 'object',
+                properties: {
+                  applied: { type: 'integer' },
+                  total: { type: 'integer' },
+                  pending: { type: 'integer' },
+                  pendingVersions: { type: 'array', items: { type: 'string' } },
+                  latest: {
+                    type: ['object', 'null'],
+                    properties: {
+                      version: { type: 'string' },
+                      applied_at: { type: 'string' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    async (_request, reply) => {
+      // Database connectivity + migration state. If the DB is unreachable we
+      // still return the app-level info rather than failing the whole panel.
+      let databaseStatus = 'connected';
+      let migrations = { applied: 0, total: 0, pending: 0, pendingVersions: [], latest: null };
+
+      try {
+        migrations = await getMigrationStatus();
+      } catch (error) {
+        fastify.log.error({ error }, 'System info: migration status query failed');
+        databaseStatus = 'disconnected';
+      }
+
+      return reply.send({
+        app: {
+          version,
+          environment: config.env,
+          nodeVersion: process.version,
+          uptimeSeconds: Math.round(process.uptime())
+        },
+        database: {
+          status: databaseStatus
+        },
+        migrations
+      });
+    }
+  );
+
   /**
    * GET /api/v1/admin/users
    * List all users with pagination and filters
