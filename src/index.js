@@ -45,6 +45,17 @@ async function start() {
     logger.info(`API server listening on ${displayUrl}`);
     logger.info(`API documentation available at ${displayUrl}/api/docs`);
 
+    // Signal readiness to PM2 (ecosystem.config.js `wait_ready: true`). We do
+    // this as soon as the HTTP server is accepting connections — migrations and
+    // email init have already finished above, and the scheduler/startup scrape
+    // below run in the background and shouldn't delay the ready signal (or trip
+    // PM2's listen_timeout). process.send only exists when launched with an IPC
+    // channel (PM2, cluster), so direct `node`/nodemon runs are unaffected.
+    if (process.send) {
+      process.send('ready');
+      logger.info('Sent ready signal to process manager');
+    }
+
     // Start scraper scheduler (only on instance 0)
     if (config.appInstance === 0) {
       logger.info('Starting scraper scheduler...');

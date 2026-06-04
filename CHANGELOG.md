@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **`search saved [--user <email>]`** — list saved searches with their owners and preview what each matches now, flagging searches that wouldn't actually notify (disabled, notifications off, or inactive user).
   - **`search preview-email <phrase>`** — render the saved-search notification email (plain text, `--html`, or `--out <file>`) without sending it.
   - **`search notify`** — exercise the notification pipeline; dry-run by default (reports who would be emailed and why), `--send` runs the real pipeline after confirmation.
+- **PM2 graceful-reload readiness signal** — the app now emits `process.send('ready')` once the HTTP server is accepting connections, so `wait_ready: true` makes `pm2 reload` a true zero-downtime reload (PM2 holds the old instance until the new one is ready). `ecosystem.config.js.example` enables `wait_ready` with a 10s `listen_timeout` fallback, and `docs/pm2-deployment.md` documents it. The signal is guarded by `process.send`, so direct `node`/nodemon runs are unaffected.
 
 ---
 

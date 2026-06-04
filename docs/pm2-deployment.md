@@ -87,6 +87,15 @@ pm2 list
 pm2 show cacd-archive
 ```
 
+### Graceful (Zero-Downtime) Reloads
+
+`pm2 reload` is only truly zero-downtime when PM2 waits for the new instance to be ready before retiring the old one. This project supports that:
+
+- The app emits `process.send('ready')` once the HTTP server is accepting connections (after migrations and email-service init).
+- `ecosystem.config.js` sets `wait_ready: true` so PM2 holds the old instance until that signal arrives, with `listen_timeout` (10s) as the fallback if it never does.
+
+No extra steps are needed at deploy time — `pm2 reload cacd-archive` just works as a graceful reload. If you copied an older `ecosystem.config.js`, make sure `wait_ready: true` and `listen_timeout: 10000` are set (see `ecosystem.config.js.example`).
+
 ### Monitoring
 
 ```bash
