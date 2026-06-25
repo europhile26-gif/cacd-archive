@@ -5,6 +5,14 @@ All notable changes to the CACD Archive project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] - 2026-06-25
+
+### Added
+
+- **"Future hearings only" option for saved searches** — each saved search now has an optional _Only match hearings that are still in the future_ flag (off by default). When enabled, the notification matcher drops any hearing whose start time has already passed, so a user is no longer alerted at, say, 5pm about a 10:30am hearing that morning. `hearing_datetime` is stored as a UTC instant, so the matcher compares it against `UTC_TIMESTAMP()` — correct relative to the current Europe/London moment regardless of the database server's timezone. Surfaced as a checkbox in the dashboard saved-search modal (with a "Future only" badge in the list), accepted as `future_only` on the `POST`/`PATCH /api/v1/searches` endpoints, and reflected in the `search saved` CLI preview. Backed by migration `012_saved_search_future_only.sql` (`future_only BOOLEAN NOT NULL DEFAULT FALSE`); existing searches keep their current behaviour.
+
+---
+
 ## [1.16.0] - 2026-06-04
 
 ### Added

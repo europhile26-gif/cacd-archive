@@ -147,7 +147,7 @@ Run the saved-search matcher for a phrase and print the matching hearings. Uses 
 
 ### `search saved`
 
-List saved searches with their owners and preview what each one matches in the notification window (today + tomorrow). Searches that wouldn't actually trigger a notification — disabled, notifications off, or an inactive user — are flagged.
+List saved searches with their owners and preview what each one matches in the notification window (today + tomorrow). Searches that wouldn't actually trigger a notification — disabled, notifications off, or an inactive user — are flagged. Searches with the _future only_ flag set are previewed exactly as the matcher sees them, with hearings whose start time has already passed excluded.
 
 ```bash
 ./bin/cacd search saved

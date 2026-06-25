@@ -190,7 +190,7 @@ async function savedSearches(options) {
     }
 
     const sql = `
-      SELECT ss.id AS search_id, ss.search_text, ss.enabled,
+      SELECT ss.id AS search_id, ss.search_text, ss.enabled, ss.future_only,
              u.email, u.name, u.email_notifications_enabled, u.status_id
       FROM saved_searches ss
       JOIN users u ON ss.user_id = u.id
@@ -216,8 +216,9 @@ async function savedSearches(options) {
     const verboseRows = [];
 
     for (const s of searches) {
-      // runSearch() uses the same today+tomorrow window the scheduler uses.
-      const matches = await notificationService.runSearch(s.search_text);
+      // runSearch() uses the same today+tomorrow window the scheduler uses,
+      // honouring the search's future_only flag exactly as the matcher would.
+      const matches = await notificationService.runSearch(s.search_text, !!s.future_only);
       // A search only feeds a notification if it's enabled, the user is active
       // (status_id 2) and has notifications on. Flag rows that wouldn't notify.
       const wouldNotify = s.enabled && s.email_notifications_enabled && s.status_id === 2;

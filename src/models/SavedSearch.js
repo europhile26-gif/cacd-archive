@@ -89,10 +89,11 @@ class SavedSearch {
    * @param {number} userId - User ID
    * @param {string} searchText - Search text
    * @param {boolean} [enabled=true] - Is search enabled
+   * @param {boolean} [futureOnly=false] - Only match hearings still in the future
    * @returns {Promise<Object>} Created search object
    * @throws {Error} If validation fails or limit exceeded
    */
-  static async create(userId, searchText, enabled = true) {
+  static async create(userId, searchText, enabled = true, futureOnly = false) {
     // Validate search text
     const validatedText = this.validateSearchText(searchText);
 
@@ -103,11 +104,16 @@ class SavedSearch {
     }
 
     const sql = `
-      INSERT INTO saved_searches (user_id, search_text, enabled)
-      VALUES (?, ?, ?)
+      INSERT INTO saved_searches (user_id, search_text, enabled, future_only)
+      VALUES (?, ?, ?, ?)
     `;
 
-    const result = await db.query(sql, [userId, validatedText, enabled ? 1 : 0]);
+    const result = await db.query(sql, [
+      userId,
+      validatedText,
+      enabled ? 1 : 0,
+      futureOnly ? 1 : 0
+    ]);
 
     return await this.findById(result.insertId, userId);
   }
@@ -127,7 +133,7 @@ class SavedSearch {
       throw new Error('Saved search not found');
     }
 
-    const allowedFields = ['search_text', 'enabled'];
+    const allowedFields = ['search_text', 'enabled', 'future_only'];
     const fields = Object.keys(updates).filter((key) => allowedFields.includes(key));
 
     if (fields.length === 0) {
@@ -142,6 +148,9 @@ class SavedSearch {
     // Convert boolean to 1/0 for MySQL
     if (updates.enabled !== undefined) {
       updates.enabled = updates.enabled ? 1 : 0;
+    }
+    if (updates.future_only !== undefined) {
+      updates.future_only = updates.future_only ? 1 : 0;
     }
 
     const setClause = fields.map((field) => `${field} = ?`).join(', ');
@@ -179,10 +188,11 @@ class SavedSearch {
    */
   static async getActiveSearchesForNotifications() {
     const sql = `
-      SELECT 
+      SELECT
         ss.id as search_id,
         ss.user_id,
         ss.search_text,
+        ss.future_only,
         u.email,
         u.name
       FROM saved_searches ss

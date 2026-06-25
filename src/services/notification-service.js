@@ -80,7 +80,8 @@ class NotificationService {
 
       grouped[search.user_id].searches.push({
         id: search.search_id,
-        text: search.search_text
+        text: search.search_text,
+        futureOnly: !!search.future_only
       });
     });
 
@@ -157,7 +158,7 @@ class NotificationService {
     const results = [];
 
     for (const search of searches) {
-      const matches = await this.runSearch(search.text);
+      const matches = await this.runSearch(search.text, search.futureOnly);
 
       results.push({
         searchText: search.text,
@@ -170,9 +171,14 @@ class NotificationService {
 
   /**
    * Run a single saved search query
-   * Searches cases with hearing dates TODAY or TOMORROW
+   * Searches cases with hearing dates TODAY or TOMORROW.
+   * When futureOnly is set, also excludes hearings whose start time has already
+   * passed. hearing_datetime is stored as a UTC instant, so comparing against
+   * UTC_TIMESTAMP() correctly reflects the current Europe/London moment.
+   * @param {string} searchText - Phrase to match
+   * @param {boolean} [futureOnly=false] - Drop hearings that have already started
    */
-  async runSearch(searchText) {
+  async runSearch(searchText, futureOnly = false) {
     try {
       // Get today and tomorrow's dates
       const today = format(new Date(), 'yyyy-MM-dd');
@@ -181,12 +187,14 @@ class NotificationService {
       // Build query using same logic as hearings API endpoint.
       // Exact, case-insensitive phrase match (see utils/search-filter.js).
       const filter = buildHearingSearchFilter(searchText);
+      const futureClause = futureOnly ? 'AND hearing_datetime > UTC_TIMESTAMP()' : '';
       const sql = `
         SELECT *
         FROM hearings
         WHERE
           list_date >= ? AND list_date <= ?
           AND ${filter.sql}
+          ${futureClause}
         ORDER BY list_date ASC, hearing_datetime ASC
         LIMIT 100
       `;

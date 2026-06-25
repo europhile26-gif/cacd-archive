@@ -105,16 +105,17 @@ async function savedSearchRoutes(fastify, _options) {
               minLength: config.savedSearches.minLength,
               maxLength: config.savedSearches.maxLength
             },
-            enabled: { type: 'boolean', default: true }
+            enabled: { type: 'boolean', default: true },
+            future_only: { type: 'boolean', default: false }
           }
         }
       }
     },
     async (request, reply) => {
       try {
-        const { search_text, enabled = true } = request.body;
+        const { search_text, enabled = true, future_only = false } = request.body;
 
-        const search = await SavedSearch.create(request.user.id, search_text, enabled);
+        const search = await SavedSearch.create(request.user.id, search_text, enabled, future_only);
 
         return reply.status(201).send({ search });
       } catch (error) {
@@ -163,7 +164,8 @@ async function savedSearchRoutes(fastify, _options) {
               minLength: config.savedSearches.minLength,
               maxLength: config.savedSearches.maxLength
             },
-            enabled: { type: 'boolean' }
+            enabled: { type: 'boolean' },
+            future_only: { type: 'boolean' }
           }
         }
       }

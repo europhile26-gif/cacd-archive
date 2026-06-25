@@ -241,6 +241,7 @@ function displaySavedSearches(searches) {
             <span class="badge ${search.enabled ? 'bg-success' : 'bg-secondary'} me-2">
               ${search.enabled ? 'Enabled' : 'Disabled'}
             </span>
+            ${search.future_only ? '<span class="badge bg-info me-2">Future only</span>' : ''}
             <span>Created: ${new Date(search.created_at).toLocaleDateString()}</span>
           </div>
         </div>
@@ -290,6 +291,7 @@ async function handleSearchAction(event) {
 async function handleSaveSearch() {
   const searchText = document.getElementById('searchText').value.trim();
   const enabled = document.getElementById('searchEnabled').checked;
+  const futureOnly = document.getElementById('futureOnly').checked;
   const searchId = document.getElementById('searchId').value;
 
   if (!searchText) {
@@ -299,7 +301,8 @@ async function handleSaveSearch() {
 
   const searchData = {
     search_text: searchText,
-    enabled
+    enabled,
+    future_only: futureOnly
   };
 
   try {
@@ -364,6 +367,7 @@ async function editSearch(id) {
     document.getElementById('searchId').value = search.id;
     document.getElementById('searchText').value = search.search_text;
     document.getElementById('searchEnabled').checked = search.enabled;
+    document.getElementById('futureOnly').checked = search.future_only;
     document.getElementById('searchModalTitle').textContent = 'Edit Saved Search';
 
     searchModal.show();
