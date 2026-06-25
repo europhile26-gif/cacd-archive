@@ -5,6 +5,13 @@ All notable changes to the CACD Archive project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- **Dependency refresh + in-range `npm audit fix`** — applied all available in-range dependency updates (lockfile only; no declared ranges changed) and `npm audit fix`. This cleared the `undici` high-severity advisories (a transitive dependency of `cheerio`; never reachable in our code, which does not use `cheerio.fromURL`) and a dev-only low. Notable in-range bumps: `mysql2` 3.19→3.22.5, `node-cron` 4.2→4.5, `date-fns` 4.1→4.4, `nodemailer` 8.0.7→8.0.11, plus dev tooling (`jest` 30.2→30.4.2, `esbuild`, `prettier`, `eslint` patch). Tests, lint, and build all pass.
+- **Known remaining advisories (no clean fix yet):** the `nodemailer` high requires a deliberate 9.x major upgrade (our plain-SMTP usage does not touch the affected OAuth2/`jsonTransport`/`raw`/List-header vectors), and 17 moderate advisories are dev-only test tooling (`jest` → `babel-plugin-istanbul` → `js-yaml`) whose only npm-offered "fix" is an absurd downgrade to jest 25. Both deferred pending upstream fixes / a planned major-bump pass.
+
 ## [1.17.0] - 2026-06-25
 
 ### Added
