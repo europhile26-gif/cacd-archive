@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs').promises;
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireAuth, requireRole, requireCapability } = require('../middleware/auth');
 
 /**
  * Frontend routes with clean URLs and authentication
@@ -23,7 +23,16 @@ async function frontendRoutes(fastify, _options) {
   };
 
   // Redirect .html extensions to clean URLs
-  const redirects = ['index', 'login', 'register', 'reset-password', 'dashboard', 'admin'];
+  const redirects = [
+    'index',
+    'login',
+    'register',
+    'reset-password',
+    'dashboard',
+    'admin',
+    'analytics',
+    'privacy'
+  ];
   redirects.forEach((page) => {
     fastify.get(`/${page}.html`, async (request, reply) => {
       const target = page === 'index' ? '/' : `/${page}`;
@@ -42,6 +51,11 @@ async function frontendRoutes(fastify, _options) {
     reply.type('text/html').send(html);
   });
 
+  fastify.get('/privacy', async (request, reply) => {
+    const html = await serveHTML('privacy.html');
+    reply.type('text/html').send(html);
+  });
+
   fastify.get('/reset-password', async (request, reply) => {
     const html = await serveHTML('reset-password.html');
     reply.type('text/html').send(html);
@@ -55,6 +69,18 @@ async function frontendRoutes(fastify, _options) {
     },
     async (request, reply) => {
       const html = await serveHTML('dashboard.html');
+      reply.type('text/html').send(html);
+    }
+  );
+
+  // Protected route - gated on the same capability as the analytics endpoints
+  fastify.get(
+    '/analytics',
+    {
+      preHandler: [requireAuth, requireCapability('system:analytics')]
+    },
+    async (request, reply) => {
+      const html = await serveHTML('analytics.html');
       reply.type('text/html').send(html);
     }
   );

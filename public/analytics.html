@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics - CACD Archive</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/styles.css" />
+
+    <style>
+      .admin-nav {
+        background: var(--site-primary);
+        color: white;
+        padding: 1rem 0;
+        margin-bottom: 2rem;
+      }
+
+      .admin-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+      }
+
+      .admin-card h2 {
+        font-size: 1.1rem;
+        color: var(--site-primary);
+        margin-bottom: 1rem;
+      }
+
+      .stat-tile {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        height: 100%;
+      }
+
+      .stat-tile .stat-value {
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: var(--site-primary);
+        line-height: 1.2;
+      }
+
+      .stat-tile .stat-label {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--site-secondary);
+      }
+
+      .stat-tile .stat-note {
+        font-size: 0.8rem;
+        color: var(--site-secondary);
+      }
+
+      /* Charts are inline SVG - no charting library */
+      .chart {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      .chart .bar {
+        fill: var(--site-primary);
+      }
+
+      .chart .bar:hover {
+        fill: var(--site-primary-hover);
+      }
+
+      .chart .axis-line {
+        stroke: #dee2e6;
+        stroke-width: 1;
+      }
+
+      .chart .axis-label {
+        font-size: 11px;
+        fill: #64748b;
+      }
+
+      .chart .empty-label {
+        font-size: 13px;
+        fill: #64748b;
+      }
+
+      .table-compact {
+        font-size: 0.875rem;
+      }
+
+      .table-compact td,
+      .table-compact th {
+        padding: 0.4rem 0.5rem;
+        vertical-align: middle;
+      }
+
+      .route-cell {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.8rem;
+        word-break: break-all;
+      }
+
+      .fingerprint-link {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.75rem;
+        cursor: pointer;
+      }
+
+      .status-2xx {
+        color: #198754;
+      }
+      .status-3xx {
+        color: #0d6efd;
+      }
+      .status-4xx {
+        color: #fd7e14;
+      }
+      .status-5xx {
+        color: #dc3545;
+      }
+
+      .collection-off {
+        border-left: 4px solid #fd7e14;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Navigation -->
+    <nav class="admin-nav">
+      <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+          <h1 class="h4 mb-0">CACD Archive - Analytics</h1>
+          <div>
+            <a href="/admin" class="btn btn-outline-light btn-sm me-2">Admin</a>
+            <a href="/dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+            <a href="/" class="btn btn-outline-light btn-sm">Home</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <!-- Shown when ANALYTICS_ENABLED is false -->
+      <div id="collectionWarning" class="admin-card collection-off d-none">
+        <h2 class="mb-2">Collection is switched off</h2>
+        <p class="mb-0 text-muted">
+          <code>ANALYTICS_ENABLED</code> is <code>false</code>, so no new requests are being
+          recorded. Anything below is historical data still inside the retention window.
+        </p>
+      </div>
+
+      <!-- Range selector -->
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div class="btn-group" role="group" aria-label="Time range">
+          <button type="button" class="btn btn-outline-primary btn-sm" data-range="1">
+            24 hours
+          </button>
+          <button type="button" class="btn btn-outline-primary btn-sm active" data-range="7">
+            7 days
+          </button>
+          <button type="button" class="btn btn-outline-primary btn-sm" data-range="30">
+            30 days
+          </button>
+        </div>
+        <div class="text-muted small" id="retentionNote"></div>
+      </div>
+
+      <!-- Summary tiles -->
+      <div class="row g-3 mb-4" id="statTiles"></div>
+
+      <!-- Daily charts -->
+      <div class="row g-3">
+        <div class="col-lg-6">
+          <div class="admin-card">
+            <h2>Requests per day</h2>
+            <svg
+              id="requestsChart"
+              class="chart"
+              viewBox="0 0 720 240"
+              preserveAspectRatio="xMidYMid meet"
+              role="img"
+              aria-label="Requests per day"
+            ></svg>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="admin-card">
+            <h2>Visitors per day</h2>
+            <p class="text-muted small mt--1 mb-2">
+              Distinct pseudo-session fingerprints. These rotate daily, so a returning visitor
+              counts once per day.
+            </p>
+            <svg
+              id="visitorsChart"
+              class="chart"
+              viewBox="0 0 720 240"
+              preserveAspectRatio="xMidYMid meet"
+              role="img"
+              aria-label="Visitors per day"
+            ></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Breakdowns -->
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <div class="admin-card">
+            <h2>Top routes</h2>
+            <div class="table-responsive">
+              <table class="table table-sm table-compact mb-0">
+                <thead>
+                  <tr>
+                    <th>Route</th>
+                    <th class="text-end">Requests</th>
+                    <th class="text-end">Visitors</th>
+                    <th class="text-end">Avg</th>
+                  </tr>
+                </thead>
+                <tbody id="topRoutes"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="admin-card">
+            <h2>Status codes</h2>
+            <div class="table-responsive">
+              <table class="table table-sm table-compact mb-0">
+                <thead>
+                  <tr>
+                    <th>Band</th>
+                    <th class="text-end">Requests</th>
+                    <th class="text-end">Share</th>
+                  </tr>
+                </thead>
+                <tbody id="statusBands"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <div class="admin-card">
+            <h2>Networks (ASN)</h2>
+            <p class="text-muted small mt--1 mb-2">
+              The practical split between real visitors and datacentre, VPN or crawler traffic.
+            </p>
+            <div class="table-responsive">
+              <table class="table table-sm table-compact mb-0">
+                <thead>
+                  <tr>
+                    <th>ASN</th>
+                    <th>Organisation</th>
+                    <th class="text-end">Requests</th>
+                    <th class="text-end">Visitors</th>
+                  </tr>
+                </thead>
+                <tbody id="topAsns"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="admin-card">
+            <h2>Countries</h2>
+            <div class="table-responsive">
+              <table class="table table-sm table-compact mb-0">
+                <thead>
+                  <tr>
+                    <th>Country</th>
+                    <th class="text-end">Requests</th>
+                    <th class="text-end">Visitors</th>
+                  </tr>
+                </thead>
+                <tbody id="topCountries"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h2>Top addresses</h2>
+        <div class="table-responsive">
+          <table class="table table-sm table-compact mb-0">
+            <thead>
+              <tr>
+                <th>Address</th>
+                <th>Country</th>
+                <th class="text-end">Requests</th>
+                <th class="text-end">Visitors</th>
+                <th>Last seen</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="topAddresses"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Raw log -->
+      <div class="admin-card">
+        <h2>Request log</h2>
+
+        <div class="row g-2 mb-3" id="logFilters">
+          <div class="col-6 col-md-2">
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              id="filterIp"
+              placeholder="IP address"
+            />
+          </div>
+          <div class="col-6 col-md-2">
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              id="filterRoute"
+              placeholder="Route contains"
+            />
+          </div>
+          <div class="col-6 col-md-2">
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              id="filterCountry"
+              placeholder="Country (GB)"
+              maxlength="2"
+            />
+          </div>
+          <div class="col-6 col-md-2">
+            <input
+              type="number"
+              class="form-control form-control-sm"
+              id="filterStatus"
+              placeholder="Status"
+            />
+          </div>
+          <div class="col-6 col-md-2">
+            <input
+              type="number"
+              class="form-control form-control-sm"
+              id="filterAsn"
+              placeholder="ASN"
+            />
+          </div>
+          <div class="col-6 col-md-2 d-grid">
+            <button class="btn btn-sm btn-outline-secondary" id="clearFilters">Clear</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-sm table-compact mb-0">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Method</th>
+                <th>Route</th>
+                <th class="text-end">Status</th>
+                <th class="text-end">Duration</th>
+                <th>Address</th>
+                <th>Network</th>
+                <th>Session</th>
+              </tr>
+            </thead>
+            <tbody id="requestLog"></tbody>
+          </table>
+        </div>
+
+        <div class="pagination-controls d-flex justify-content-between align-items-center mt-3">
+          <span class="text-muted small" id="logCount"></span>
+          <div>
+            <button class="btn btn-sm btn-outline-secondary" id="prevPage">Previous</button>
+            <button class="btn btn-sm btn-outline-secondary" id="nextPage">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pseudo-session detail -->
+    <div class="modal fade" id="sessionModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Pseudo-session</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted small" id="sessionFingerprint"></p>
+            <div class="table-responsive">
+              <table class="table table-sm table-compact mb-0">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Method</th>
+                    <th>Route</th>
+                    <th class="text-end">Status</th>
+                    <th class="text-end">Duration</th>
+                  </tr>
+                </thead>
+                <tbody id="sessionRequests"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/analytics.js"></script>
+  </body>
+</html>

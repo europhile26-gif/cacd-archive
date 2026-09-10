@@ -8,7 +8,7 @@
   if (!navContainer) return; // Not on a page with main nav
 
   // Pages that manage their own auth (dashboard, admin) don't need nav auth check
-  const selfAuthPages = ['/dashboard', '/admin'];
+  const selfAuthPages = ['/dashboard', '/admin', '/analytics'];
   if (selfAuthPages.includes(window.location.pathname)) return;
 
   // Only check /users/me if the loggedIn hint cookie exists

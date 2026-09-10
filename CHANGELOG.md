@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-09-10
+
+### Added
+
+- **Analytics page at `/analytics` (M2.2d)** — admin-gated view of the request analytics collected since v1.19.0. Completes M2.2 alongside the privacy notice below.
+  - **Summary tiles** — requests, visitors (distinct fingerprints), distinct addresses, error rate split into 4xx/5xx, and average response time, over a selectable 24-hour, 7-day or 30-day window.
+  - **Two bar charts** — requests per day and visitors per day, as **hand-rolled inline SVG with no charting dependency**. Given separate scales rather than a dual axis, because visitor counts are an order of magnitude below request counts and would be invisible on a shared one. Empty days are filled so the time axis stays even, and each bar carries a native `<title>` tooltip.
+  - **Breakdown tables** — top routes with average duration, status-code bands with percentage share, networks by ASN with organisation, countries, and top addresses with a one-click filter through to the log.
+  - **Request log** — paginated, filterable by address, route substring, country, status and ASN, with a click-through from any fingerprint to its pseudo-session: every request that fingerprint made, in order.
+  - **`system:analytics` capability** (migration `014_analytics_capability.sql`), granted to the administrator role. Gating the page and its endpoints on a dedicated capability rather than the administrator role means access to IP addresses and pseudo-session data can be granted separately from the wider admin surface.
+  - Four endpoints under `/api/v1/admin/analytics/`: `summary`, `requests`, `sessions/:fingerprint` and `status`. Every aggregate is bounded by a date window and served by one of the `(column, created_at)` indexes.
+- **Privacy notice at `/privacy` (M2.2e)** — public page, linked from the footer of every page that has one. Covers what is collected and why, what is deliberately not collected, how the pseudonymous identifier works, the lawful basis, retention, and how to exercise data subject rights including the right to object. Written to be read by a visitor, not a lawyer.
+- **`docs/legitimate-interests-assessment.md`** — the LIA supporting Article 6(1)(f) as the lawful basis: purpose, necessity and balancing tests, with each design decision recorded against the more intrusive alternative it replaced. Names the changes that would invalidate it and require it to be redone.
+- **37 further tests** covering the aggregates, the date-window boundary, filters and pagination, pseudo-session grouping, and that every endpoint refuses both unauthenticated callers and callers without the capability.
+
+### Security
+
+- **Analytics output is escaped before rendering.** Unmatched request paths are recorded as sent, so a probe for `/<script>…` puts an attacker-chosen string in the request log. Every value rendered on the analytics page passes through HTML escaping, so a probe cannot become stored XSS in the admin interface.
+- The analytics `status` endpoint reports collection settings but never the fingerprint secret; a test asserts the secret does not appear in the response.
+
+---
+
 ## [1.19.1] - 2026-09-10
 
 ### Fixed

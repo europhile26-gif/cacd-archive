@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy - CACD Archive</title>
+    <meta
+      name="description"
+      content="How CACD Archive handles personal data: what is collected, why, how long it is kept, and your rights."
+    />
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="/vendor/bootstrap-icons/bootstrap-icons.css" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/styles.css" />
+
+    <style>
+      .privacy-content {
+        max-width: 52rem;
+      }
+
+      .privacy-content h2 {
+        font-size: 1.35rem;
+        color: var(--site-primary);
+        margin-top: 2.25rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .privacy-content h3 {
+        font-size: 1.05rem;
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .privacy-content table {
+        font-size: 0.925rem;
+      }
+
+      .privacy-lead {
+        font-size: 1.05rem;
+      }
+
+      .summary-box {
+        background: #f8f9fa;
+        border-left: 4px solid var(--site-primary);
+        border-radius: 4px;
+        padding: 1rem 1.25rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Navigation (shared) -->
+    <div id="navbar-container"></div>
+
+    <main class="container py-4">
+      <div class="privacy-content">
+        <h1 class="mb-3">Privacy</h1>
+
+        <p class="text-muted">Last updated: 10 September 2026</p>
+
+        <div class="summary-box mb-4">
+          <p class="mb-2 privacy-lead"><strong>The short version</strong></p>
+          <p class="mb-2">
+            This site sets <strong>no cookies for tracking</strong> and stores nothing in your
+            browser for analytics. There is no third-party analytics service, no advertising network
+            and no tracking pixel.
+          </p>
+          <p class="mb-0">
+            The server keeps a basic record of requests — including your IP address — for up to 30
+            days, so we can see how the site is used and spot abuse. We never record what you
+            searched for.
+          </p>
+        </div>
+
+        <h2>Who we are</h2>
+        <p>
+          CACD Archive publishes an archive of Court of Appeal (Criminal Division) daily cause
+          lists. For UK data protection law, the operator of this site is the data controller. To
+          contact us about anything on this page, including a request relating to your own data, use
+          the contact route given at the bottom of this page.
+        </p>
+
+        <h2>What we collect</h2>
+
+        <h3>Server request records</h3>
+        <p>
+          Like almost any web server, this site records basic technical details of each request.
+          These records are generated on the server.
+          <strong>Nothing is stored on your device</strong>
+          — no cookies, no local storage, and no analytics script runs in your browser.
+        </p>
+
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th scope="col">What</th>
+                <th scope="col">Why</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>IP address</td>
+                <td>Identifying abuse and automated scraping; approximate location and network</td>
+              </tr>
+              <tr>
+                <td>Date and time of the request</td>
+                <td>Understanding traffic patterns and enforcing our retention period</td>
+              </tr>
+              <tr>
+                <td>Request method and page or endpoint address</td>
+                <td>Understanding which parts of the site are used</td>
+              </tr>
+              <tr>
+                <td>Response status and how long the request took</td>
+                <td>Monitoring errors and performance</td>
+              </tr>
+              <tr>
+                <td>Browser user agent string</td>
+                <td>Distinguishing browsers from automated crawlers</td>
+              </tr>
+              <tr>
+                <td>Country and network operator (ASN), derived from the IP address</td>
+                <td>
+                  Distinguishing real visitors from datacentre, VPN and crawler traffic, and
+                  applying country-level blocking where necessary
+                </td>
+              </tr>
+              <tr>
+                <td>A short-lived pseudonymous identifier (see below)</td>
+                <td>Counting visitors rather than raw requests</td>
+              </tr>
+              <tr>
+                <td>Your account identifier, if you are signed in</td>
+                <td>Diagnosing problems reported by signed-in users</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>What we deliberately do not collect</h3>
+        <ul>
+          <li>
+            <strong>Search terms and case numbers.</strong> When you search this archive, the terms
+            you use are <strong>never</strong> written to our request records. We store only the
+            address of the endpoint that was called, never the query attached to it.
+          </li>
+          <li><strong>Your town or city</strong> — we resolve country only, not finer location.</li>
+          <li><strong>The page you arrived from</strong> — no referrer is recorded.</li>
+          <li>
+            <strong>Requests for images, stylesheets, fonts and scripts</strong> — only pages and
+            API endpoints are recorded.
+          </li>
+        </ul>
+
+        <h3>The pseudonymous identifier</h3>
+        <p>
+          To count visitors rather than raw requests without using a cookie, the server computes a
+          one-way cryptographic hash from your IP address, your browser's user agent string, a
+          secret known only to the server, and the current date. The result cannot practically be
+          reversed to recover your IP address, and because the date forms part of it,
+          <strong>it changes every day</strong>. This means we can tell that several requests came
+          from the same visitor within a single day, but we cannot recognise you across days, and we
+          cannot link you to any other website.
+        </p>
+
+        <h3>Account information</h3>
+        <p>
+          If you create an account, we store your name, email address and a securely hashed
+          password, together with any saved searches you create and your notification preferences.
+          This information is kept for as long as your account exists, and is used to operate the
+          service and send the alerts you have asked for. It is separate from the request records
+          described above.
+        </p>
+
+        <h2>Our lawful basis</h2>
+        <p>
+          For the server request records, our lawful basis is
+          <strong>legitimate interests</strong> (Article 6(1)(f) UK GDPR). The interests we pursue
+          are understanding how the archive is used, keeping it available and performant, and
+          protecting it from abuse and automated scraping. We have assessed that these interests are
+          not overridden by your rights, in particular because we minimise what is collected — no
+          search terms, no city-level location, no cross-day tracking — and delete everything within
+          30 days.
+        </p>
+        <p>
+          For account information and email alerts, our lawful basis is
+          <strong>performance of a contract</strong> (Article 6(1)(b)) — providing the service you
+          signed up for.
+        </p>
+        <p>
+          <strong>No consent banner is shown</strong> because we do not store or read any
+          information on your device beyond what is strictly necessary to operate the site. The
+          Privacy and Electronic Communications Regulations require consent for storing information
+          on your device; we do not do that for analytics.
+        </p>
+
+        <h2>How long we keep it</h2>
+        <ul>
+          <li>
+            <strong>Server request records: 30 days.</strong> A scheduled job deletes anything
+            older, automatically, every night.
+          </li>
+          <li>
+            <strong>Account information:</strong> for as long as your account exists, and deleted
+            when you close it.
+          </li>
+        </ul>
+
+        <h2>Who we share it with</h2>
+        <p>
+          We do not sell your data, and we do not share it with advertisers or analytics companies.
+          Request records stay on our own server. Country and network lookups are performed
+          <strong>locally</strong>, against a database held on our server — your IP address is not
+          sent to a third party to do this. We may disclose information where we are legally
+          required to, or where it is necessary to investigate abuse of the service.
+        </p>
+
+        <h2>Your rights</h2>
+        <p>You have the right to:</p>
+        <ul>
+          <li>ask what personal data we hold about you, and get a copy of it;</li>
+          <li>ask us to correct information that is wrong;</li>
+          <li>ask us to delete information;</li>
+          <li>ask us to restrict how we use it;</li>
+          <li>
+            <strong>object to our use of legitimate interests</strong> — including our request
+            records — at any time.
+          </li>
+        </ul>
+        <p>
+          A practical note on making a request about the server request records: those records
+          contain no name and no account reference unless you were signed in, so to find them we
+          would need the <strong>IP address you were using</strong> and the
+          <strong>approximate date and time</strong>. Without those we may be unable to identify any
+          data relating to you — and in that case we are not required to obtain more information
+          about you simply to find it. Records older than 30 days will already have been deleted.
+        </p>
+        <p>
+          You also have the right to complain to the
+          <a href="https://ico.org.uk/make-a-complaint/" target="_blank" rel="noopener noreferrer"
+            >Information Commissioner's Office</a
+          >, the UK's data protection regulator.
+        </p>
+
+        <h2>Do Not Track</h2>
+        <p>
+          If your browser sends a <code>DNT: 1</code> header, we do not record the request at all.
+        </p>
+
+        <h2>Source data</h2>
+        <p>
+          The hearing data published on this site is public information from HM Courts &amp;
+          Tribunals Service, licensed under the
+          <a
+            href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Open Government Licence v3.0</a
+          >. It is not personal data that we have collected about you, and this notice does not
+          govern it. If you believe a court record published here is inaccurate, that is a matter
+          for the publishing court rather than for us.
+        </p>
+
+        <h2>Changes to this notice</h2>
+        <p>
+          If we change what we collect or why, we will update this page and the date at the top of
+          it.
+        </p>
+
+        <h2>Contact</h2>
+        <p>
+          To exercise any of the rights above, or to ask a question about this notice, contact the
+          site operator. If you have an account, the quickest route is to reply to any notification
+          email you have received from us.
+        </p>
+      </div>
+    </main>
+
+    <footer class="bg-light py-4 mt-5">
+      <div class="container text-center text-muted">
+        <p class="mb-1">
+          CACD Archive - Court of Appeal Criminal Division Daily Cause List Archive
+        </p>
+        <p class="mb-1 small">
+          Contains public sector information licensed under the
+          <a
+            href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-decoration-none"
+            >Open Government Licence v3.0</a
+          >. Source data published by HM Courts &amp; Tribunals Service.
+        </p>
+        <p class="mb-0">
+          <a href="/privacy" class="text-decoration-none">Privacy</a>
+          <span class="mx-1">·</span>
+          <a href="/api/docs" class="text-decoration-none">API Documentation</a>
+        </p>
+      </div>
+    </footer>
+
+    <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/nav.js"></script>
+  </body>
+</html>

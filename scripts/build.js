@@ -17,7 +17,15 @@ const packageJson = require('../package.json');
 const VERSION = packageJson.version;
 
 // List of JavaScript files to minify
-const JS_FILES = ['app.js', 'auth.js', 'nav.js', 'dashboard.js', 'admin.js', 'login.js'];
+const JS_FILES = [
+  'app.js',
+  'auth.js',
+  'nav.js',
+  'dashboard.js',
+  'admin.js',
+  'analytics.js',
+  'login.js'
+];
 
 // List of HTML files to process
 const HTML_FILES = [
@@ -26,7 +34,9 @@ const HTML_FILES = [
   'register.html',
   'reset-password.html',
   'dashboard.html',
-  'admin.html'
+  'admin.html',
+  'analytics.html',
+  'privacy.html'
 ];
 
 async function build() {

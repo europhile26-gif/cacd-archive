@@ -1,8 +1,8 @@
 # Project Tracker
 
-**Version:** 1.19.1
+**Version:** 1.20.0
 **Last Updated:** 2026-09-10
-**Current Phase:** M2.1 complete (v1.13.0) — next: M3 (Multi-Division Support)
+**Current Phase:** M2.2 complete (v1.20.0) — next: M3 (Multi-Division Support)
 
 ---
 
@@ -255,12 +255,12 @@ Lightweight request logging for API traffic analysis, vulnerability probe detect
 - [x] CLI command `./bin/cacd db purge-analytics` for manual purge with optional `--days <n>` override
 - [x] Log purge results (rows deleted, duration)
 
-#### M2.2d: Analytics Admin Page
+#### M2.2d: Analytics Admin Page — done in v1.20.0
 
-- [ ] API: `GET /api/v1/admin/analytics/summary` — returns aggregated stats for a date range: total requests, unique visitors (distinct `fingerprint`), unique IPs, requests by country, top routes, top ASNs, top IPs, status code distribution, blocked request count. Requires `system:analytics` capability
-- [ ] API: `GET /api/v1/admin/analytics/requests` — paginated raw request log with filters (date range, IP, country, ASN, route, status code, fingerprint). Requires `system:analytics` capability
-- [ ] Migration: add `system:analytics` capability, assign to administrator role
-- [ ] Frontend: `/analytics` page (administrator only) with:
+- [x] API: `GET /api/v1/admin/analytics/summary` — returns aggregated stats for a date range: total requests, unique visitors (distinct `fingerprint`), unique IPs, requests by country, top routes, top ASNs, top IPs, status code distribution, blocked request count. Requires `system:analytics` capability
+- [x] API: `GET /api/v1/admin/analytics/requests` — paginated raw request log with filters (date range, IP, country, ASN, route, status code, fingerprint). Requires `system:analytics` capability
+- [x] Migration: add `system:analytics` capability, assign to administrator role
+- [x] Frontend: `/analytics` page (administrator only) with:
   - Summary cards: total requests, unique visitors, unique IPs, blocked requests (today / 7-day / 30-day)
   - Requests by day bar chart — hand-rolled inline SVG, no charting dependency (bar and line charts over a single series are little work; Chart.js is ~200KB and would be the largest frontend dependency in the project)
   - Top 10 IPs table with request count, country, ASN, last seen
@@ -270,18 +270,18 @@ Lightweight request logging for API traffic analysis, vulnerability probe detect
   - Status code distribution (2xx/3xx/4xx/5xx)
   - Pseudo-session view: requests grouped by `fingerprint` for a chosen day, showing page sequence and duration
   - Filter controls: date range picker, IP search, country filter, ASN filter, route filter
-- [ ] Navigation: add Analytics link for administrators (after Admin). `/admin` itself is left untouched
-- [ ] Swagger/OpenAPI docs for new endpoints
+- [x] Navigation: add Analytics link for administrators (after Admin). `/admin` itself is left untouched
+- [x] Swagger/OpenAPI docs for new endpoints
 
-#### M2.2e: Privacy Policy & Legitimate Interests Assessment
+#### M2.2e: Privacy Policy & Legitimate Interests Assessment — done in v1.20.0
 
 No consent banner is required — PECR/ePrivacy governs storage on the user's device and we store nothing there. UK GDPR still applies, because IP addresses are personal data (_Breyer_, C-582/14; ICO guidance follows it) and a salted fingerprint is pseudonymised, not anonymised (Recital 26). Legitimate interests (Art 6(1)(f)) is the lawful basis, which carries its own obligations.
 
-- [ ] Frontend: `/privacy` page — public, no auth. Must state: controller identity and contact, what is collected (the field table above), the lawful basis and the interest pursued, the 30-day retention period, that no cookies or browser storage are used, data subject rights including the right to object (Art 21), and how to exercise them
-- [ ] Frontend: Privacy Policy link in the site footer on all pages (footer markup already exists in each `public/*.html`, currently carrying the OGL attribution)
-- [ ] `docs/legitimate-interests-assessment.md` — the LIA itself: purpose test (why the analytics are needed), necessity test (why less data would not do — this is where "no query params, no city, ASN not raw geolocation" is the argument), and balancing test against visitor expectations. Being a court-records archive raises the bar; record that reasoning
-- [ ] Decide and document the objection route — with only an IP and a rotating hash there is no way to identify a person to erase, so the notice should explain what a requester needs to supply (address plus timeframe) and that data self-deletes at 30 days
-- [ ] Confirm the analytics hook honours a `DNT: 1` request header by skipping the log (cheap to implement, easy to point at in the LIA)
+- [x] Frontend: `/privacy` page — public, no auth. Must state: controller identity and contact, what is collected (the field table above), the lawful basis and the interest pursued, the 30-day retention period, that no cookies or browser storage are used, data subject rights including the right to object (Art 21), and how to exercise them
+- [x] Frontend: Privacy Policy link in the site footer on all pages (footer markup already exists in each `public/*.html`, currently carrying the OGL attribution)
+- [x] `docs/legitimate-interests-assessment.md` — the LIA itself: purpose test (why the analytics are needed), necessity test (why less data would not do — this is where "no query params, no city, ASN not raw geolocation" is the argument), and balancing test against visitor expectations. Being a court-records archive raises the bar; record that reasoning
+- [x] Decide and document the objection route — with only an IP and a rotating hash there is no way to identify a person to erase, so the notice should explain what a requester needs to supply (address plus timeframe) and that data self-deletes at 30 days
+- [x] Confirm the analytics hook honours a `DNT: 1` request header by skipping the log (cheap to implement, easy to point at in the LIA)
 
 #### M2.2 — Potential Enhancements (deferred)
 

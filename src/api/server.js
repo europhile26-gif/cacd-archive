@@ -163,6 +163,7 @@ async function createServer() {
         { name: 'Authentication', description: 'User authentication and registration' },
         { name: 'Users', description: 'User profile management' },
         { name: 'Admin', description: 'Administrative user management' },
+        { name: 'Analytics', description: 'Request analytics (system:analytics capability)' },
         { name: 'System', description: 'Health check and configuration' }
       ]
     }
@@ -224,6 +225,9 @@ async function createServer() {
       await apiServer.register(require('./routes/auth'), { prefix: '/api/v1/auth' });
       await apiServer.register(require('./routes/users'), { prefix: '/api/v1/users' });
       await apiServer.register(require('./routes/admin'), { prefix: '/api/v1/admin' });
+      await apiServer.register(require('./routes/analytics'), {
+        prefix: '/api/v1/admin/analytics'
+      });
       await apiServer.register(require('./routes/searches'), { prefix: '/api/v1' });
     },
     { prefix: '' }

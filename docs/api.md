@@ -86,6 +86,22 @@ curl "http://localhost:3000/api/v1/dates"
 | `POST`   | `/admin/users/:id/roles`         | Assign role to user   | Admin (`roles:assign`)     |
 | `DELETE` | `/admin/users/:id/roles/:roleId` | Remove role from user | Admin (`roles:remove`)     |
 
+### Analytics
+
+Request analytics, gated on the `system:analytics` capability. See
+[Request Analytics](configuration.md#request-analytics) for what is collected and
+[the LIA](legitimate-interests-assessment.md) for why.
+
+| Method | Path                                     | Description                                | Auth                       |
+| ------ | ---------------------------------------- | ------------------------------------------ | -------------------------- |
+| `GET`  | `/admin/analytics/summary`               | Totals, daily series and top-N breakdowns  | Admin (`system:analytics`) |
+| `GET`  | `/admin/analytics/requests`              | Paginated request log with filters         | Admin (`system:analytics`) |
+| `GET`  | `/admin/analytics/sessions/:fingerprint` | Requests grouped into one pseudo-session   | Admin (`system:analytics`) |
+| `GET`  | `/admin/analytics/status`                | Whether collection is on, and buffer state | Admin (`system:analytics`) |
+
+`summary` and `requests` accept `days` (1-365, default 7). `requests` also accepts
+`limit`, `offset`, `ip`, `country`, `asn`, `status`, `method`, `route` and `fingerprint`.
+
 ### System
 
 | Method | Path      | Description              | Auth |
