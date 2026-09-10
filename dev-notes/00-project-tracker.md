@@ -1,6 +1,6 @@
 # Project Tracker
 
-**Version:** 1.18.2
+**Version:** 1.18.3
 **Last Updated:** 2026-09-10
 **Current Phase:** M2.1 complete (v1.13.0) — next: M3 (Multi-Division Support)
 
@@ -181,69 +181,107 @@ Replace HTML scraping in `fhl-link-discovery.js` with the GOV.UK Content API (`/
 
 ### M2.2: Request Analytics & GeoIP Blocklist
 
-Lightweight request logging for API traffic analysis, vulnerability probe detection, and country-level IP blocking. All functionality gated behind `ANALYTICS_ENABLED=true` in `.env` (disabled by default). Logs API route requests only — static assets, health checks, and Swagger docs are excluded.
+Lightweight request logging for API traffic analysis, vulnerability probe detection, and country-level IP blocking, plus a server-side pseudo-session fingerprint for visitor metrics. All functionality gated behind `ANALYTICS_ENABLED=true` in `.env` (disabled by default). Logs API route requests only — static assets, health checks, and Swagger docs are excluded.
+
+**Nothing is stored in the browser** — no cookies, no localStorage, no client-side script. All measurement happens server-side in a Fastify hook.
 
 **Design decisions:**
 
 - **Batched inserts** — requests buffered in memory (flush every 5 seconds or every 100 records, whichever comes first) to avoid per-request DB writes becoming a bottleneck during bot floods
-- **GeoIP via MaxMind `.mmdb` files** — user has up-to-date GeoLite2 data at `/var/lib/GeoIP/`. Use the `maxmind` npm package for in-memory lookups. Country code resolved at log time and stored with each record. Configurable via `GEOIP_DB_PATH` env var
+- **GeoIP via MaxMind `.mmdb` files** — up-to-date GeoLite2 data at `/var/lib/GeoIP/` (`GeoLite2-Country.mmdb`, `GeoLite2-ASN.mmdb`). Use the `maxmind` npm package for in-memory lookups. Country and ASN resolved at log time and stored with each record. Configurable via `GEOIP_COUNTRY_DB_PATH` and `GEOIP_ASN_DB_PATH`
+- **ASN over city** — ASN separates datacentre/VPN/crawler traffic from real visitors, which is the main signal worth having on a public archive. City is deliberately **not** captured: it is the most identifying geo field and adds little for a UK-focused site
+- **No query parameters, ever** — only the route _pattern_ is stored. The `/api/v1/hearings` querystring carries `search` and `caseNumber`; recording those against an IP would log that a given person looked up a given name in criminal court records. Method + route answers the traffic questions without that exposure
+- **Salted, daily-rotating fingerprint** — `sha256(daily_salt + ip + user_agent)` for pseudo-session grouping. The salt is a server-side secret (`ANALYTICS_FINGERPRINT_SECRET`) combined with the current date; an unsalted hash of IP+UA is trivially reversible (IPv4 is 2³², the realistic UA set is small), so the salt is what makes this pseudonymous rather than decorative. Daily rotation caps linkability at 24h, which is the intended session granularity
 - **Country blocklist** — `BLOCKED_COUNTRIES` env var (comma-separated ISO 3166-1 alpha-2 codes, e.g. `RU,BY,IR,IQ,CN`). Blocked requests receive `403 Forbidden` before reaching route handlers. Runs as an early Fastify hook, after GeoIP resolution but before auth/rate-limiting
-- **Purge via cron** — scheduled job (respects PM2 instance 0 pattern) deletes records older than `ANALYTICS_RETENTION_DAYS` (default: 7). Runs daily
-- **Dedicated analytics page** — `/analytics` route, restricted to administrator role. Separate from the existing admin page to keep concerns clean
+- **Purge via cron** — scheduled job (respects PM2 instance 0 pattern) deletes records older than `ANALYTICS_RETENTION_DAYS` (default: 30). Runs daily. Flat retention: every column, raw IP included, is deleted at the same 30-day boundary
+- **Dedicated analytics page** — `/analytics` route, restricted to administrator role. Separate from the existing admin page to keep concerns clean; all charts and tables live here, with nothing added to `/admin`
+- **Lawful basis is legitimate interests, not consent** — no cookie banner is required (PECR governs storage on the device, and we store nothing there), but UK GDPR still applies because IP addresses are personal data and a salted fingerprint is pseudonymised, not anonymised. This requires a documented LIA, a published privacy notice, and an honoured right to object — see M2.2e
 
 **Captured fields per request:**
 
-| Field          | Source                          | Notes                                                                              |
-| -------------- | ------------------------------- | ---------------------------------------------------------------------------------- |
-| `ip`           | `request.ip`                    | Respects trust proxy for X-Forwarded-For                                           |
-| `method`       | `request.method`                | GET, POST, PATCH, DELETE                                                           |
-| `route`        | `request.routeOptions.url`      | Route pattern, not raw URL (e.g. `/api/v1/hearings/:id` not `/api/v1/hearings/42`) |
-| `status_code`  | `reply.statusCode`              | Captured in onResponse hook                                                        |
-| `duration_ms`  | `reply.elapsedTime`             | Fastify's built-in request timer                                                   |
-| `user_agent`   | `request.headers['user-agent']` | Truncated to 500 chars                                                             |
-| `country_code` | GeoIP lookup                    | 2-letter ISO code or NULL if lookup fails                                          |
-| `user_id`      | `request.user?.id`              | NULL for unauthenticated requests                                                  |
-| `created_at`   | `NOW()`                         | Insertion timestamp                                                                |
+| Field          | Source                          | Notes                                                                               |
+| -------------- | ------------------------------- | ----------------------------------------------------------------------------------- |
+| `ip`           | `request.ip`                    | Requires the `trustProxy` fix below, or this is client-spoofable                    |
+| `method`       | `request.method`                | GET, POST, PATCH, DELETE                                                            |
+| `route`        | `request.routeOptions.url`      | Route pattern, not raw URL (e.g. `/api/v1/hearings/:id` not `/api/v1/hearings/42`)  |
+| `status_code`  | `reply.statusCode`              | Captured in onResponse hook                                                         |
+| `duration_ms`  | `reply.elapsedTime`             | Fastify's built-in request timer                                                    |
+| `user_agent`   | `request.headers['user-agent']` | Truncated to 500 chars                                                              |
+| `country_code` | GeoIP lookup                    | 2-letter ISO code or NULL if lookup fails                                           |
+| `asn`          | GeoIP ASN lookup                | Integer AS number, NULL if lookup fails                                             |
+| `asn_org`      | GeoIP ASN lookup                | Organisation name, truncated to 255 chars                                           |
+| `fingerprint`  | Derived                         | `sha256(daily_salt + ip + user_agent)`, 64 chars. Pseudo-session key; rotates daily |
+| `user_id`      | `request.user?.id`              | NULL for unauthenticated requests                                                   |
+| `created_at`   | `NOW()`                         | Insertion timestamp                                                                 |
+
+**Explicitly not captured:** query parameters (see design decisions), city, region, referrer, and anything client-side.
+
+#### M2.2 — Prerequisite: trust the proxy correctly
+
+**Done in v1.18.3, ahead of the rest of M2.2** — it was a security fix in its own right.
+
+`src/api/server.js` set `trustProxy: true`, which trusted the **entire** `X-Forwarded-For` chain, while both Apache `mod_proxy` and nginx `proxy_add_x_forwarded_for` append the real peer to whatever the client sent. A client could therefore send `X-Forwarded-For: 1.2.3.4` and have it become `request.ip` — which also meant per-IP rate limiting could be evaded by rotating the header. Once M2.2 lands the same flaw would poison every analytics row and let anyone bypass the country blocklist.
+
+- [x] `TRUSTED_PROXIES` env var (default `loopback`) replaces the hardcoded `trustProxy: true`
+- [x] Integration tests asserting a client-supplied `X-Forwarded-For` does **not** override `request.ip`
+- [x] Apache and nginx reverse-proxy guidance in `docs/security.md`
+
+**Note for M2.2:** a hop count (`trustProxy: 1`) is _not_ a valid alternative. Fastify 5 fails closed on numeric values — `getTrustProxyFn` returns `() => false` — so `request.ip` silently resolves to the proxy's own address. Config rejects numeric `TRUSTED_PROXIES` at startup for this reason. Trust must be expressed as addresses, CIDR ranges, or a named preset.
 
 #### M2.2a: Schema, Config & Request Logging Middleware
 
-- [ ] Migration: create `request_log` table with fields above, indexed on `(created_at)`, `(ip, created_at)`, `(country_code, created_at)`, `(route, created_at)`
-- [ ] Config: add `ANALYTICS_ENABLED` (boolean, default false), `ANALYTICS_RETENTION_DAYS` (integer, default 7), `ANALYTICS_EXCLUDE_ROUTES` (comma-separated patterns to skip, default `/api/v1/health,/api/docs`)
+- [ ] Migration: create `request_log` table with fields above, indexed on `(created_at)`, `(ip, created_at)`, `(country_code, created_at)`, `(route, created_at)`, `(fingerprint, created_at)`, `(asn, created_at)`
+- [ ] Config: add `ANALYTICS_ENABLED` (boolean, default false), `ANALYTICS_RETENTION_DAYS` (integer, default 30), `ANALYTICS_EXCLUDE_ROUTES` (comma-separated patterns to skip, default `/api/v1/health,/api/docs`), `ANALYTICS_FINGERPRINT_SECRET` (string, required when analytics enabled — fail loud at startup if missing)
 - [ ] Implement `analytics-service.js` — in-memory buffer with `logRequest(data)`, periodic flush via `setInterval`, graceful flush on shutdown
+- [ ] Fingerprint helper — `sha256(<secret> + <YYYY-MM-DD> + ip + user_agent)`. Salt derived per-request from the current date so rotation needs no scheduled job; note that a request spanning midnight simply lands in the next day's bucket
 - [ ] Fastify `onResponse` hook in `server.js` — captures all fields, skips excluded routes and static assets, calls `analytics-service.logRequest()`. Only registered when `ANALYTICS_ENABLED=true`
-- [ ] Unit tests for buffer flush logic and route exclusion filtering
+- [ ] Confirm buffered writes never block or fail a request — a DB outage must lose analytics rows, not return 500s
+- [ ] Unit tests for buffer flush logic, route exclusion filtering, and fingerprint stability within a day / change across a date boundary
 
-#### M2.2b: GeoIP Lookup & Country Blocklist
+#### M2.2b: GeoIP Lookup, ASN & Country Blocklist
 
-- [ ] Config: add `GEOIP_DB_PATH` (default `/var/lib/GeoIP/GeoLite2-Country.mmdb`), `BLOCKED_COUNTRIES` (comma-separated country codes, default empty)
-- [ ] Implement `geoip-service.js` — loads MaxMind DB on startup, exposes `lookupCountry(ip)` returning 2-letter code or null. Handles missing/corrupt DB gracefully (log warning, continue without GeoIP)
-- [ ] Add `maxmind` and `@maxmind/geoip2-node` to dependencies
+- [ ] Config: add `GEOIP_COUNTRY_DB_PATH` (default `/var/lib/GeoIP/GeoLite2-Country.mmdb`), `GEOIP_ASN_DB_PATH` (default `/var/lib/GeoIP/GeoLite2-ASN.mmdb`), `BLOCKED_COUNTRIES` (comma-separated country codes, default empty)
+- [ ] Implement `geoip-service.js` — loads both MaxMind DBs on startup, exposes `lookupCountry(ip)` and `lookupAsn(ip)`. Handles missing/corrupt DB gracefully (log warning, continue without GeoIP); each DB degrades independently
+- [ ] Add `maxmind` to dependencies (**not** `@maxmind/geoip2-node`, which is ESM-only from v4 — see Technical Debt)
 - [ ] Fastify `onRequest` hook — if `BLOCKED_COUNTRIES` is non-empty, resolve country from IP and return `403` for blocked countries. Runs early, before auth. Log blocked requests to analytics if enabled
-- [ ] Feed country code into analytics logging from M2.2a
+- [ ] Feed country code, ASN and ASN org into analytics logging from M2.2a
+- [ ] Note the `.mmdb` files are refreshed externally (they are root-owned in `/var/lib/GeoIP/`); document the reload story — simplest is that a restart picks up new data
 - [ ] Unit tests for blocklist matching, private/localhost IP handling, missing DB fallback
 
 #### M2.2c: Purge Cron Job
 
 - [ ] Add purge function to `analytics-service.js` — `DELETE FROM request_log WHERE created_at < NOW() - INTERVAL ? DAY`
-- [ ] Register daily cron in `scheduler.js` (instance 0 only) — runs at a quiet hour (e.g. 03:00), respects `ANALYTICS_RETENTION_DAYS`
+- [ ] Register daily cron in `scheduler.js` (instance 0 only) — runs at a quiet hour (e.g. 03:00), respects `ANALYTICS_RETENTION_DAYS` (30). The purge is what enforces the retention promise made in the privacy notice, so it must be verified working before analytics is enabled in production
 - [ ] CLI command `./bin/cacd db purge-analytics` for manual purge with optional `--days <n>` override
 - [ ] Log purge results (rows deleted, duration)
 
 #### M2.2d: Analytics Admin Page
 
-- [ ] API: `GET /api/v1/admin/analytics/summary` — returns aggregated stats for a date range: total requests, unique IPs, requests by country, top routes, top IPs, status code distribution, blocked request count. Requires `system:analytics` capability
-- [ ] API: `GET /api/v1/admin/analytics/requests` — paginated raw request log with filters (date range, IP, country, route, status code). Requires `system:analytics` capability
+- [ ] API: `GET /api/v1/admin/analytics/summary` — returns aggregated stats for a date range: total requests, unique visitors (distinct `fingerprint`), unique IPs, requests by country, top routes, top ASNs, top IPs, status code distribution, blocked request count. Requires `system:analytics` capability
+- [ ] API: `GET /api/v1/admin/analytics/requests` — paginated raw request log with filters (date range, IP, country, ASN, route, status code, fingerprint). Requires `system:analytics` capability
 - [ ] Migration: add `system:analytics` capability, assign to administrator role
 - [ ] Frontend: `/analytics` page (administrator only) with:
-  - Summary cards: total requests, unique IPs, blocked requests (today / 7-day)
-  - Requests by day bar chart (or simple table if we want to avoid a charting dependency)
-  - Top 10 IPs table with request count, country, last seen
+  - Summary cards: total requests, unique visitors, unique IPs, blocked requests (today / 7-day / 30-day)
+  - Requests by day bar chart — hand-rolled inline SVG, no charting dependency (bar and line charts over a single series are little work; Chart.js is ~200KB and would be the largest frontend dependency in the project)
+  - Top 10 IPs table with request count, country, ASN, last seen
   - Top routes table with request count and average duration
   - Country breakdown table
+  - ASN breakdown table — the practical bot/VPN/datacentre split
   - Status code distribution (2xx/3xx/4xx/5xx)
-  - Filter controls: date range picker, IP search, country filter, route filter
-- [ ] Navigation: add Analytics link for administrators (after Admin)
+  - Pseudo-session view: requests grouped by `fingerprint` for a chosen day, showing page sequence and duration
+  - Filter controls: date range picker, IP search, country filter, ASN filter, route filter
+- [ ] Navigation: add Analytics link for administrators (after Admin). `/admin` itself is left untouched
 - [ ] Swagger/OpenAPI docs for new endpoints
+
+#### M2.2e: Privacy Policy & Legitimate Interests Assessment
+
+No consent banner is required — PECR/ePrivacy governs storage on the user's device and we store nothing there. UK GDPR still applies, because IP addresses are personal data (_Breyer_, C-582/14; ICO guidance follows it) and a salted fingerprint is pseudonymised, not anonymised (Recital 26). Legitimate interests (Art 6(1)(f)) is the lawful basis, which carries its own obligations.
+
+- [ ] Frontend: `/privacy` page — public, no auth. Must state: controller identity and contact, what is collected (the field table above), the lawful basis and the interest pursued, the 30-day retention period, that no cookies or browser storage are used, data subject rights including the right to object (Art 21), and how to exercise them
+- [ ] Frontend: Privacy Policy link in the site footer on all pages (footer markup already exists in each `public/*.html`, currently carrying the OGL attribution)
+- [ ] `docs/legitimate-interests-assessment.md` — the LIA itself: purpose test (why the analytics are needed), necessity test (why less data would not do — this is where "no query params, no city, ASN not raw geolocation" is the argument), and balancing test against visitor expectations. Being a court-records archive raises the bar; record that reasoning
+- [ ] Decide and document the objection route — with only an IP and a rotating hash there is no way to identify a person to erase, so the notice should explain what a requester needs to supply (address plus timeframe) and that data self-deletes at 30 days
+- [ ] Confirm the analytics hook honours a `DNT: 1` request header by skipping the log (cheap to implement, easy to point at in the LIA)
 
 #### M2.2 — Potential Enhancements (deferred)
 
@@ -291,10 +329,10 @@ Expand the archiving pipeline to capture more divisions from the existing DCL so
 ## Technical Debt
 
 - `boxen`, `chalk`, `inquirer`, `ora` pinned to old CJS-compatible majors (newer versions are ESM-only; upgrade blocked until project migrates to ESM)
-- ESLint 10.x upgrade blocked by Node.js >=18 engine requirement (ESLint 10 needs >=20.19)
+- ESLint 10.x upgrade **no longer blocked** — the Node baseline moved to >=22 in v1.18.0, which satisfies ESLint 10's `^20.19 || ^22.13 || >=24`. Deferred by choice (no advisory against 9.x) along with `@fastify/rate-limit` 11 and `commander` 15; `commander` 15 needs Node >=22.12, so check the runtime before taking it
 - Test suite created but coverage is minimal — expand unit and integration tests
 - CSP allows `unsafe-inline` for scripts and styles — would need to extract inline styles/scripts to external files
-- **ESM migration** — the project is CJS throughout. Migration is a big-bang change (every `require`/`module.exports`, `__dirname`/`__filename` replacements, `package.json` `"type": "module"`, Jest config rework). Not worth doing proactively — trigger points would be: a critical dependency dropping CJS support, or bumping minimum Node.js to 22+ where ESM is the clear default. Until then, pin CJS-compatible versions of affected packages
+- **ESM migration** — the project is CJS throughout. Migration is a big-bang change (every `require`/`module.exports`, `__dirname`/`__filename` replacements, `package.json` `"type": "module"`, Jest config rework). Not worth doing proactively — trigger points would be: a critical dependency dropping CJS support, or bumping minimum Node.js to 22+ where ESM is the clear default. **The second trigger was reached in v1.18.0** (Node >=22), but there is still no forcing dependency, so this stays deferred rather than becoming urgent — revisit if a package we actually need goes ESM-only. Until then, pin CJS-compatible versions of affected packages
 - **M2.2b GeoIP package selection** — use the `maxmind` npm package (CJS-compatible, reads `.mmdb` files directly) rather than `@maxmind/geoip2-node` which is ESM-only from v4+. Same CJS constraint as boxen/chalk/etc.
 
 ---

@@ -21,7 +21,7 @@ if (!process.argv.includes('--json')) {
 program
   .name('cacd')
   .description('CACD Archive administrative command-line interface')
-  .version('1.18.2');
+  .version('1.18.3');
 
 // User Management Commands
 const usersCommand = program.command('users').description('User management commands');

@@ -57,6 +57,11 @@ const config = {
   },
 
   api: {
+    // Addresses/CIDRs of our own reverse proxies, or the literal 'true' to trust any
+    // hop. Fastify resolves request.ip by walking X-Forwarded-For right-to-left and
+    // stopping at the first address not in this list, so anything not listed here
+    // cannot forge a client IP. Named presets ('loopback', 'uniquelocal') are accepted.
+    trustedProxies: process.env.TRUSTED_PROXIES || 'loopback',
     rateLimit: {
       max: parseInt(process.env.API_RATE_LIMIT_MAX, 10) || 100,
       timeWindow: parseInt(process.env.API_RATE_LIMIT_WINDOW, 10) || 900000
@@ -85,6 +90,18 @@ const config = {
     recordsPerPage: parseInt(process.env.RECORDS_PER_PAGE, 10) || 50
   }
 };
+
+// A bare hop count is rejected rather than passed through: Fastify 5 fails closed on
+// numeric trustProxy (it cannot validate the immediate peer), so request.ip would
+// silently resolve to the proxy's own address instead of the client's.
+if (/^\d+$/.test(config.api.trustedProxies.trim())) {
+  throw new Error(
+    'Invalid configuration: TRUSTED_PROXIES must be addresses, CIDR ranges, or a named ' +
+      'preset (e.g. "loopback", "127.0.0.1,::1", "10.0.0.0/8") — not a hop count. ' +
+      'Fastify ignores numeric values and request.ip would resolve to the proxy. ' +
+      'See .env.example for details.'
+  );
+}
 
 // Validate required config
 const required = ['database.user', 'database.password', 'auth.jwtSecret'];

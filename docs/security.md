@@ -84,13 +84,56 @@ CORS_ALLOWED_ORIGINS=https://your-domain.com,https://app.your-domain.com
 
 ### Reverse Proxy Configuration
 
-When running behind nginx/Apache/Caddy:
+When running behind Apache/nginx/Caddy:
 
-1. Set `trustProxy: true` in Fastify config (already enabled)
-2. Ensure proxy passes correct headers:
+1. Set `TRUSTED_PROXIES` in `.env` to the address of your reverse proxy — **not** `true`
+2. Ensure the proxy passes the correct headers:
    - `X-Forwarded-For`
    - `X-Forwarded-Proto`
    - `X-Forwarded-Host`
+
+### Why `TRUSTED_PROXIES` matters
+
+`request.ip` is resolved from `X-Forwarded-For`, and both Apache and nginx **append** the real
+peer address to whatever the client already sent. A request from a client that supplies its own
+header therefore arrives as:
+
+```
+X-Forwarded-For: 9.9.9.9, 203.0.113.9
+                 ^ forged  ^ real client, added by the proxy
+```
+
+Fastify walks that list right-to-left and stops at the first address not in `TRUSTED_PROXIES`,
+which yields the real client. Setting it to `true` instead trusts every hop and returns the
+leftmost — the value the client controls — letting anyone forge their IP and so evade
+per-IP rate limiting. Set it to your proxy's address:
+
+| Deployment                | Value                    |
+| ------------------------- | ------------------------ |
+| Proxy on the same host    | `loopback` (the default) |
+| Proxy on another host     | `10.0.0.0/8` or its IP   |
+| Proxy plus a CDN in front | `loopback,<cdn ranges>`  |
+
+A hop count (`TRUSTED_PROXIES=1`) is rejected at startup. Fastify 5 fails closed on numeric
+values because a hop count cannot validate the immediate peer, so `request.ip` would silently
+resolve to the proxy's own address rather than the client's.
+
+Example Apache config (`mod_proxy`, which sets `X-Forwarded-For` automatically):
+
+```apache
+<VirtualHost *:443>
+    ServerName cacd-archive.example.com
+
+    ProxyPreserveHost On
+    ProxyPass        / http://127.0.0.1:3000/
+    ProxyPassReverse / http://127.0.0.1:3000/
+
+    # Belt and braces: drop any client-supplied value so the header contains only
+    # what Apache itself adds. TRUSTED_PROXIES already handles this, but stripping
+    # at the edge means a misconfigured app never sees a forged value at all.
+    RequestHeader unset X-Forwarded-For
+</VirtualHost>
+```
 
 Example nginx config:
 

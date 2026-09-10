@@ -8,14 +8,32 @@ const fastifyHelmet = require('@fastify/helmet');
 const fastifyCookie = require('@fastify/cookie');
 const path = require('path');
 const config = require('../config/config');
+const logger = require('../utils/logger');
 const AuthService = require('../services/auth-service');
 const { version } = require('../../package.json');
+
+/**
+ * Resolves the trustProxy value passed to Fastify, warning on the insecure setting.
+ */
+function resolveTrustProxy() {
+  const trustedProxies = config.api.trustedProxies.trim();
+
+  if (trustedProxies === 'true') {
+    logger.warn(
+      'TRUSTED_PROXIES=true trusts every hop in X-Forwarded-For, so any client can forge ' +
+        'its own IP address. Set it to your reverse proxy address instead (e.g. "loopback").'
+    );
+    return true;
+  }
+
+  return trustedProxies;
+}
 
 async function createServer() {
   const server = fastify({
     logger: false, // Disable Fastify's built-in logger
     disableRequestLogging: true,
-    trustProxy: true // Enable if behind nginx/proxy
+    trustProxy: resolveTrustProxy()
   });
 
   // Cookie support (required for JWT in cookies)

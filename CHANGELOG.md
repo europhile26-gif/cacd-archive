@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.3] - 2026-09-10
+
+### Security
+
+- **Clients could forge their own IP address via `X-Forwarded-For`.** `src/api/server.js` hardcoded `trustProxy: true`, which trusts every hop in the header and takes the leftmost entry — the part the client controls. Both Apache `mod_proxy` and nginx `proxy_add_x_forwarded_for` _append_ the real peer to whatever the client sent, so a request arriving as `X-Forwarded-For: 9.9.9.9, 203.0.113.9` resolved `request.ip` to `9.9.9.9`. Because `@fastify/rate-limit` keys its buckets on `request.ip`, per-IP rate limiting could be evaded by rotating the header. Trust is now expressed as a list of proxy addresses, so an address that is not ours cannot forge a client IP.
+
+### Added
+
+- **`TRUSTED_PROXIES` config option** (default `loopback`) — addresses, CIDR ranges, or a named preset identifying our own reverse proxies. `loopback` is correct when Apache or nginx runs on the same host; use the proxy's address or range when it does not. Documented in `.env.example` with the deployment cases spelled out.
+- **`test/integration/trust-proxy.test.js`** — asserts the real client IP is resolved from a proxy-forwarded header, that a client-supplied entry (and a multi-hop forged chain) is ignored, and that the socket address is used when no header is present. One test pins the old `trustProxy: true` behaviour explicitly, documenting why it is not used.
+
+### Changed
+
+- **A numeric `TRUSTED_PROXIES` is rejected at startup** with an explanatory error. Fastify 5 fails closed on numeric `trustProxy` — a hop count cannot validate the immediate peer — so `request.ip` would silently resolve to the proxy's own address instead of the client's. Setting `TRUSTED_PROXIES=true` is still permitted but logs a warning naming the risk.
+- **`docs/security.md` reverse-proxy section rewritten** — explains how `X-Forwarded-For` is resolved and why the trusted list matters, with a table of deployment cases and a worked Apache `mod_proxy` example alongside the existing nginx one. Previously it instructed setting `trustProxy: true`, which was the vulnerable configuration.
+
+---
+
 ## [1.18.2] - 2026-09-10
 
 ### Fixed
