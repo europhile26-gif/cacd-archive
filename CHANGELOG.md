@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.2] - 2026-09-10
+
+### Fixed
+
+- **The API docs reported a stale version.** `src/api/server.js` hardcoded the Swagger `info.version` as `'1.10.1'`, so `/api/docs` and `/api/docs/json` had been advertising a version eight releases behind since v1.11.0. It now reads `version` from `package.json`, matching how `src/api/routes/health.js` and `src/api/routes/admin.js` already source it, and so tracks future releases without a fifth place to remember to bump.
+
+### Added
+
+- **`test/integration/swagger-spec.test.js`** — asserts the generated OpenAPI document and the `/api/docs/json` response both report the `package.json` version, so the value cannot silently go stale again.
+
+---
+
 ## [1.18.1] - 2026-09-10
 
 ### Fixed

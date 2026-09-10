@@ -9,6 +9,7 @@ const fastifyCookie = require('@fastify/cookie');
 const path = require('path');
 const config = require('../config/config');
 const AuthService = require('../services/auth-service');
+const { version } = require('../../package.json');
 
 async function createServer() {
   const server = fastify({
@@ -64,7 +65,7 @@ async function createServer() {
       info: {
         title: 'CACD Archive API',
         description: 'Court of Appeal Criminal Division Daily Cause List Archive',
-        version: '1.10.1'
+        version
       },
       schemes: ['http', 'https'],
       consumes: ['application/json'],
