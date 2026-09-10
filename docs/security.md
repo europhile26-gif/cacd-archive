@@ -106,40 +106,86 @@ X-Forwarded-For: 9.9.9.9, 203.0.113.9
 Fastify walks that list right-to-left and stops at the first address not in `TRUSTED_PROXIES`,
 which yields the real client. Setting it to `true` instead trusts every hop and returns the
 leftmost — the value the client controls — letting anyone forge their IP and so evade
-per-IP rate limiting. Set it to your proxy's address:
+per-IP rate limiting.
 
-| Deployment                | Value                    |
-| ------------------------- | ------------------------ |
-| Proxy on the same host    | `loopback` (the default) |
-| Proxy on another host     | `10.0.0.0/8` or its IP   |
-| Proxy plus a CDN in front | `loopback,<cdn ranges>`  |
+#### Choosing the value
+
+`TRUSTED_PROXIES` must contain **the address the app sees the proxy connecting from**, which is
+not always the address you think of as "the proxy":
+
+| Deployment                 | Value                         |
+| -------------------------- | ----------------------------- |
+| Proxy on the same host     | `loopback` (the default)      |
+| Proxy on another host      | Its address on the path used  |
+| Proxy over a VPN or tunnel | Its address _on that tunnel_  |
+| Proxy plus a CDN in front  | Proxy address plus CDN ranges |
+
+The tunnel case is the easy one to get wrong. If the proxy reaches the app over a private
+network, the app sees the proxy's **private** address, not its public one — so that is the
+address to trust. Confirm it on the proxy host rather than guessing:
+
+```bash
+# Source address the proxy will use to reach the app
+ip route get <app-host-address>
+```
+
+If `TRUSTED_PROXIES` does not match, nothing fails loudly: `request.ip` simply resolves to the
+proxy's own address for every request, so rate limiting applies globally instead of per-client
+and any per-IP data records a single address. Check `/api/v1/health` from two different networks
+and confirm the app distinguishes them before relying on it.
 
 A hop count (`TRUSTED_PROXIES=1`) is rejected at startup. Fastify 5 fails closed on numeric
 values because a hop count cannot validate the immediate peer, so `request.ip` would silently
 resolve to the proxy's own address rather than the client's.
 
-Example Apache config (`mod_proxy`, which sets `X-Forwarded-For` automatically):
+#### Apache (`mod_proxy`)
 
 ```apache
+# Redirect plain HTTP to HTTPS
+<VirtualHost *:80>
+    ServerName cacd-archive.example.com
+    Redirect 301 / https://cacd-archive.example.com/
+</VirtualHost>
+
 <VirtualHost *:443>
     ServerName cacd-archive.example.com
 
-    ProxyPreserveHost On
-    ProxyPass        / http://127.0.0.1:3000/
-    ProxyPassReverse / http://127.0.0.1:3000/
+    KeepAlive On
 
-    # Belt and braces: drop any client-supplied value so the header contains only
-    # what Apache itself adds. TRUSTED_PROXIES already handles this, but stripping
-    # at the edge means a misconfigured app never sees a forged value at all.
-    RequestHeader unset X-Forwarded-For
+    <Location />
+        # ProxyAddHeaders adds X-Forwarded-For, X-Forwarded-Host and X-Forwarded-Server.
+        # TLS terminates here, so the scheme and port must be stated explicitly —
+        # the app would otherwise see the plain-HTTP backend connection.
+        ProxyAddHeaders On
+        ProxyPreserveHost On
+        RequestHeader set X-Forwarded-Proto "https"
+        RequestHeader set X-Forwarded-Port "443"
+
+        ProxyPass        http://app-host:3000/ retry=1 timeout=120
+        ProxyPassReverse http://app-host:3000/
+    </Location>
+
+    <IfModule mod_ssl.c>
+        SSLEngine on
+        SSLProtocol All -SSLv2 -SSLv3 -TLSv1 -TLSv1.1
+        SSLHonorCipherOrder on
+        SSLCertificateFile    /etc/letsencrypt/live/cacd-archive.example.com/fullchain.pem
+        SSLCertificateKeyFile /etc/letsencrypt/live/cacd-archive.example.com/privkey.pem
+    </IfModule>
 </VirtualHost>
 ```
 
-Example nginx config:
+Optionally add `RequestHeader unset X-Forwarded-For` inside the `<Location>` block. This drops
+any client-supplied value so the header contains only what Apache itself adds. `TRUSTED_PROXIES`
+already handles the forgery; stripping at the edge means a misconfigured app never sees a forged
+value at all. Do **not** do this if another trusted proxy or CDN sits in front of Apache — you
+would discard the real client address it recorded.
+
+#### nginx
 
 ```nginx
 location / {
-    proxy_pass http://localhost:3008;
+    proxy_pass http://app-host:3000;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

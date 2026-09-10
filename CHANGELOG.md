@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Reverse-proxy documentation now covers Apache as well as nginx.** `docs/security.md` gains a worked Apache `mod_proxy` example (TLS termination, `ProxyAddHeaders`, explicit `X-Forwarded-Proto`/`X-Forwarded-Port`, HTTP→HTTPS redirect) alongside the existing nginx one, and `docs/pm2-deployment.md` — previously nginx-only — documents both. Neither is presented as preferred; the app only requires that `X-Forwarded-For` and `X-Forwarded-Proto` arrive correctly.
+- **Guidance on choosing `TRUSTED_PROXIES` when the proxy is not on the app host.** The value must be the address the _app_ sees the proxy connecting from, which for a proxy reaching the app over a VPN or private tunnel is its private address on that tunnel, not its public one. A mismatch fails silently — `request.ip` resolves to the proxy for every request, so rate limiting applies globally rather than per-client — so the docs give an `ip route get` command to determine the correct value and a way to verify it afterwards.
+- **Removed the deployment's real hostname from example configuration.** `.env.example` and `docs/configuration.md` used a live domain in their `BASE_URL` examples; both now use `cacd-archive.example.com`, consistent with the rest of the docs.
+
 ## [1.18.3] - 2026-09-10
 
 ### Security

@@ -182,9 +182,49 @@ pm2 save
 - [ ] Backup strategy in place
 - [ ] Email notifications tested (if enabled)
 
-## Nginx Reverse Proxy (Recommended)
+## Reverse Proxy
 
-Example nginx configuration:
+Run the app behind a reverse proxy that terminates TLS. Either Apache or nginx is fine —
+the app only cares that `X-Forwarded-For` and `X-Forwarded-Proto` arrive correctly.
+
+**Whichever you use, set `TRUSTED_PROXIES` in `.env` to the address the app sees the proxy
+connecting from.** It defaults to `loopback`, which is correct only when the proxy runs on the
+same host as the app. If the proxy is on another host — including over a VPN or tunnel — the
+default silently attributes every request to the proxy's own address, breaking per-IP rate
+limiting. See [Reverse Proxy Configuration](security.md#reverse-proxy-configuration) for how to
+determine the value and full worked examples for both servers.
+
+### Apache
+
+```apache
+<VirtualHost *:443>
+    ServerName cacd-archive.example.com
+
+    <Location />
+        ProxyAddHeaders On
+        ProxyPreserveHost On
+        RequestHeader set X-Forwarded-Proto "https"
+        RequestHeader set X-Forwarded-Port "443"
+
+        ProxyPass        http://app-host:3000/ retry=1 timeout=120
+        ProxyPassReverse http://app-host:3000/
+    </Location>
+</VirtualHost>
+```
+
+Requires `mod_proxy`, `mod_proxy_http` and `mod_headers`:
+
+```bash
+sudo a2enmod proxy proxy_http headers
+```
+
+For HTTPS with Let's Encrypt:
+
+```bash
+sudo certbot --apache -d cacd-archive.example.com
+```
+
+### nginx
 
 ```nginx
 server {
@@ -192,7 +232,7 @@ server {
     server_name cacd-archive.example.com;
 
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://app-host:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';

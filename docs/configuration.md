@@ -12,12 +12,12 @@ All configuration is via environment variables in `.env`. See `.env.example` for
 
 ## Application
 
-| Variable    | Default       | Description                                                                                                                   |
-| ----------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `NODE_ENV`  | `development` | `development` or `production`                                                                                                 |
-| `PORT`      | `3000`        | HTTP server port                                                                                                              |
-| `BASE_URL`  | —             | Public-facing URL when behind a reverse proxy (e.g. `https://daily-cause-archive.net`). Used in startup logs and email links. |
-| `LOG_LEVEL` | `info`        | Logging level                                                                                                                 |
+| Variable    | Default       | Description                                                                                                                    |
+| ----------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `NODE_ENV`  | `development` | `development` or `production`                                                                                                  |
+| `PORT`      | `3000`        | HTTP server port                                                                                                               |
+| `BASE_URL`  | —             | Public-facing URL when behind a reverse proxy (e.g. `https://cacd-archive.example.com`). Used in startup logs and email links. |
+| `LOG_LEVEL` | `info`        | Logging level                                                                                                                  |
 
 ## Database
 
