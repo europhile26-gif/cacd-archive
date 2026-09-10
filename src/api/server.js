@@ -61,12 +61,17 @@ async function registerAnalytics(server) {
     analyticsService.start();
 
     server.addHook('onResponse', async (request, reply) => {
-      const route = request.routeOptions?.url || request.url.split('?')[0];
+      const pathname = request.url.split('?')[0];
+      const route = analyticsService.resolveRoute(request.routeOptions?.url, pathname);
 
       // Honouring DNT is cheap and worth being able to point at.
       const doNotTrack = config.analytics.respectDoNotTrack && request.headers.dnt === '1';
 
-      if (doNotTrack || analyticsService.isExcludedRoute(route)) {
+      if (
+        doNotTrack ||
+        analyticsService.isExcludedRoute(route) ||
+        analyticsService.isAssetPath(pathname)
+      ) {
         return;
       }
 

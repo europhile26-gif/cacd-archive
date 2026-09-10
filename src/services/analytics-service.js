@@ -53,6 +53,31 @@ function isExcludedRoute(route) {
   return config.analytics.excludeRoutes.some((excluded) => route.startsWith(excluded));
 }
 
+// Static assets are served through wildcard routes, so a single page view produces a
+// row per stylesheet, script, icon and font. They are excluded by file extension.
+const ASSET_EXTENSION_PATTERN =
+  /\.(?:css|js|mjs|map|json|ico|png|jpe?g|gif|svg|webp|avif|woff2?|ttf|eot|txt|xml|webmanifest)$/i;
+
+/**
+ * True when the path is a static asset rather than a page or API call.
+ */
+function isAssetPath(pathname) {
+  return ASSET_EXTENSION_PATTERN.test(pathname);
+}
+
+/**
+ * Chooses what to record as the route.
+ * Matched routes give their pattern, so /api/v1/hearings/42 is grouped under
+ * /api/v1/hearings/:id. Wildcard and unmatched routes fall back to the real path:
+ * @fastify/static registers everything under '/*', which would otherwise collapse the
+ * homepage, every page view and every probe attempt into one meaningless bucket.
+ */
+function resolveRoute(routePattern, pathname) {
+  const isWildcard = !routePattern || routePattern.includes('*');
+
+  return isWildcard ? pathname : routePattern;
+}
+
 /**
  * Writes the buffered records, replacing the buffer first so concurrent
  * logRequest() calls during the await land in the next batch rather than being lost.
@@ -171,6 +196,8 @@ function reset() {
 module.exports = {
   buildFingerprint,
   isExcludedRoute,
+  isAssetPath,
+  resolveRoute,
   logRequest,
   flush,
   start,

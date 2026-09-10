@@ -99,7 +99,10 @@ const config = {
   analytics: {
     enabled: process.env.ANALYTICS_ENABLED === 'true',
     retentionDays: parseIntOption(process.env.ANALYTICS_RETENTION_DAYS, 30),
-    excludeRoutes: splitList(process.env.ANALYTICS_EXCLUDE_ROUTES, '/api/v1/health,/api/docs'),
+    excludeRoutes: splitList(
+      process.env.ANALYTICS_EXCLUDE_ROUTES,
+      '/api/v1/health,/api/docs,/vendor'
+    ),
     fingerprintSecret: process.env.ANALYTICS_FINGERPRINT_SECRET,
     // Buffer thresholds: whichever is reached first triggers a flush.
     flushIntervalMs: parseIntOption(process.env.ANALYTICS_FLUSH_INTERVAL_MS, 5000),

@@ -78,16 +78,16 @@ All configuration is via environment variables in `.env`. See `.env.example` for
 Server-side request logging. Nothing is stored in the browser — no cookies, no
 localStorage, no client-side script. Disabled by default.
 
-| Variable                       | Default                    | Description                                      |
-| ------------------------------ | -------------------------- | ------------------------------------------------ |
-| `ANALYTICS_ENABLED`            | `false`                    | Master switch for request logging                |
-| `ANALYTICS_RETENTION_DAYS`     | `30`                       | Days to keep records; enforced by the purge cron |
-| `ANALYTICS_EXCLUDE_ROUTES`     | `/api/v1/health,/api/docs` | Route prefixes never logged                      |
-| `ANALYTICS_FINGERPRINT_SECRET` | —                          | **Required** when enabled; salts the fingerprint |
-| `ANALYTICS_FLUSH_INTERVAL_MS`  | `5000`                     | Buffer flush interval                            |
-| `ANALYTICS_FLUSH_BATCH_SIZE`   | `100`                      | Flush early once this many records are buffered  |
-| `ANALYTICS_PURGE_CRON`         | `0 3 * * *`                | When the retention purge runs (instance 0 only)  |
-| `ANALYTICS_RESPECT_DNT`        | `true`                     | Skip requests sending `DNT: 1`                   |
+| Variable                       | Default                            | Description                                      |
+| ------------------------------ | ---------------------------------- | ------------------------------------------------ |
+| `ANALYTICS_ENABLED`            | `false`                            | Master switch for request logging                |
+| `ANALYTICS_RETENTION_DAYS`     | `30`                               | Days to keep records; enforced by the purge cron |
+| `ANALYTICS_EXCLUDE_ROUTES`     | `/api/v1/health,/api/docs,/vendor` | Route prefixes never logged                      |
+| `ANALYTICS_FINGERPRINT_SECRET` | —                                  | **Required** when enabled; salts the fingerprint |
+| `ANALYTICS_FLUSH_INTERVAL_MS`  | `5000`                             | Buffer flush interval                            |
+| `ANALYTICS_FLUSH_BATCH_SIZE`   | `100`                              | Flush early once this many records are buffered  |
+| `ANALYTICS_PURGE_CRON`         | `0 3 * * *`                        | When the retention purge runs (instance 0 only)  |
+| `ANALYTICS_RESPECT_DNT`        | `true`                             | Skip requests sending `DNT: 1`                   |
 
 **What is recorded:** IP, method, route pattern, status code, duration, user agent,
 country, ASN, a pseudo-session fingerprint, and user ID when authenticated.

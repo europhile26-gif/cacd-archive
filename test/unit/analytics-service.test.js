@@ -5,7 +5,7 @@
  */
 process.env.ANALYTICS_ENABLED = 'true';
 process.env.ANALYTICS_FINGERPRINT_SECRET = 'unit-test-secret';
-process.env.ANALYTICS_EXCLUDE_ROUTES = '/api/v1/health,/api/docs';
+process.env.ANALYTICS_EXCLUDE_ROUTES = '/api/v1/health,/api/docs,/vendor';
 
 const analyticsService = require('../../src/services/analytics-service');
 
@@ -57,11 +57,53 @@ describe('analytics route exclusion', () => {
     ['/api/v1/health', true],
     ['/api/docs', true],
     ['/api/docs/json', true],
+    ['/vendor/bootstrap/x.css', true],
     ['/api/v1/hearings', false],
     ['/api/v1/searches', false],
     ['/', false]
   ])('%s excluded: %s', (route, expected) => {
     expect(analyticsService.isExcludedRoute(route)).toBe(expected);
+  });
+});
+
+describe('analytics asset exclusion', () => {
+  test.each([
+    ['/css/styles.css', true],
+    ['/js/app.min.js', true],
+    ['/favicon.ico', true],
+    ['/fonts/bootstrap-icons.woff2', true],
+    ['/img/logo.svg', true],
+    ['/js/app.js.map', true],
+    ['/', false],
+    ['/login', false],
+    ['/api/v1/hearings', false],
+    ['/wp-admin/setup-config.php', false]
+  ])('%s is an asset: %s', (pathname, expected) => {
+    expect(analyticsService.isAssetPath(pathname)).toBe(expected);
+  });
+});
+
+describe('analytics route resolution', () => {
+  test('keeps the pattern for matched routes so ids group together', () => {
+    expect(analyticsService.resolveRoute('/api/v1/hearings/:id', '/api/v1/hearings/42')).toBe(
+      '/api/v1/hearings/:id'
+    );
+  });
+
+  test('uses the real path for wildcard static routes', () => {
+    // '/*' would otherwise collapse the homepage, every page view and every probe
+    // attempt into a single bucket.
+    expect(analyticsService.resolveRoute('/*', '/')).toBe('/');
+    expect(analyticsService.resolveRoute('/*', '/login')).toBe('/login');
+    expect(analyticsService.resolveRoute('/vendor/bootstrap/*', '/vendor/bootstrap/x.css')).toBe(
+      '/vendor/bootstrap/x.css'
+    );
+  });
+
+  test('uses the real path when nothing matched', () => {
+    expect(analyticsService.resolveRoute(undefined, '/wp-admin/setup-config.php')).toBe(
+      '/wp-admin/setup-config.php'
+    );
   });
 });
 

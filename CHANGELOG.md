@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.1] - 2026-09-10
+
+### Fixed
+
+- **Static assets were being logged, and the homepage was indistinguishable from a stylesheet.** `@fastify/static` serves everything through wildcard routes, so the analytics hook recorded the matched pattern `/*` for the homepage, every frontend page view and every probe attempt alike — while also writing a row for every CSS file, script, icon and font. Measured against real traffic on the dev server, **57% of rows were static assets**, and a real browser page load would push that far higher. M2.2 always specified that static assets are excluded; this makes it so.
+  - Asset requests are now skipped by file extension (`.css`, `.js`, `.map`, `.ico`, images, fonts, `.webmanifest` and friends), and `/vendor` joins the default `ANALYTICS_EXCLUDE_ROUTES`.
+  - Wildcard and unmatched routes now record the real path instead of the pattern, so the homepage logs as `/`, page views log as `/login` and `/dashboard`, and probes still log as requested. Matched API routes keep their pattern, so `/api/v1/hearings/42` still groups under `/api/v1/hearings/:id`.
+  - Verified end to end: ten requests including six assets now produce four rows — `/`, `/login`, `/api/v1/hearings`, `/api/v1/config` — and no wildcard rows at all.
+
+### Added
+
+- **17 further tests** covering asset classification, route resolution for matched, wildcard and unmatched routes, and integration coverage asserting that assets produce no rows while the homepage and page views record distinctly.
+
+---
+
 ## [1.19.0] - 2026-09-10
 
 ### Added

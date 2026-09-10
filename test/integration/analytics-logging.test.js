@@ -103,6 +103,33 @@ describe('request analytics logging', () => {
     expect(await query('SELECT * FROM request_log')).toHaveLength(0);
   });
 
+  test('does not log static assets', async () => {
+    await get(server, '/css/styles.css');
+    await get(server, '/vendor/bootstrap/css/bootstrap.min.css');
+    await analyticsService.flush();
+
+    expect(await query('SELECT * FROM request_log')).toHaveLength(0);
+  });
+
+  test('records the homepage as / rather than the static wildcard', async () => {
+    await get(server, '/');
+    await analyticsService.flush();
+
+    const [row] = await query('SELECT * FROM request_log');
+
+    expect(row.route).toBe('/');
+    expect(row.route).not.toContain('*');
+  });
+
+  test('records frontend page views distinctly', async () => {
+    await get(server, '/login');
+    await analyticsService.flush();
+
+    const [row] = await query('SELECT * FROM request_log');
+
+    expect(row.route).toBe('/login');
+  });
+
   test('logs unmatched paths so probe attempts stay visible', async () => {
     await get(server, '/wp-admin/setup-config.php');
     await analyticsService.flush();
