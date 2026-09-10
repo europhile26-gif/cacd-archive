@@ -27,7 +27,7 @@ async function frontendRoutes(fastify, _options) {
   redirects.forEach((page) => {
     fastify.get(`/${page}.html`, async (request, reply) => {
       const target = page === 'index' ? '/' : `/${page}`;
-      return reply.redirect(301, target);
+      return reply.redirect(target, 301);
     });
   });
 

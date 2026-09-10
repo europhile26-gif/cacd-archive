@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.1] - 2026-09-10
+
+### Fixed
+
+- **`.html` URLs returned a 500 instead of redirecting.** `src/api/routes/frontend.js` called `reply.redirect(301, target)` — the Fastify 4 argument order. Fastify 5 takes `reply.redirect(url, code)`, so the status code was being handed the path and every request threw `FST_ERR_BAD_STATUS_CODE`, surfacing as a 500. All six legacy paths were affected (`/index.html`, `/login.html`, `/register.html`, `/reset-password.html`, `/dashboard.html`, `/admin.html`); they now issue the intended `301` to their clean URL. The call site is unchanged since v1.6.0, so this has been broken since the Fastify 5 upgrade — bookmarks and any external links to the old `.html` URLs have been erroring rather than forwarding.
+
+### Added
+
+- **`test/integration/frontend-redirects.test.js`** — boots the real Fastify app and asserts the status code and `Location` header for each redirect, since a route-table assertion would not have caught an argument-order bug. Verified to fail (500) against the pre-fix code.
+
+### Changed
+
+- **Test scripts now run under `NODE_OPTIONS=--experimental-vm-modules`.** `@fastify/cookie` 11.1.2 (picked up in v1.18.0) loads part of itself via dynamic `import()`, which Jest's VM rejects without the flag. This only affects tests that boot the server — the running app is unaffected — but the flag is needed for any integration test that calls `createServer()`.
+
+---
+
 ## [1.18.0] - 2026-09-10
 
 ### Security

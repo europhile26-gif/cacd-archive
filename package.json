@@ -1,6 +1,6 @@
 {
   "name": "cacd-archive",
-  "version": "1.18.0",
+  "version": "1.18.1",
   "description": "Court of Appeal Criminal Division Daily Cause List Archive",
   "main": "src/index.js",
   "scripts": {
@@ -10,9 +10,9 @@
     "clean": "rm -rf dist && mkdir -p dist",
     "migrate": "node src/cli/migrate.js",
     "scrape": "node src/cli/scrape-now.js",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
