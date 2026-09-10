@@ -7,10 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.0] - 2026-09-10
+
 ### Security
 
-- **Dependency refresh + in-range `npm audit fix`** — applied all available in-range dependency updates (lockfile only; no declared ranges changed) and `npm audit fix`. This cleared the `undici` high-severity advisories (a transitive dependency of `cheerio`; never reachable in our code, which does not use `cheerio.fromURL`) and a dev-only low. Notable in-range bumps: `mysql2` 3.19→3.22.5, `node-cron` 4.2→4.5, `date-fns` 4.1→4.4, `nodemailer` 8.0.7→8.0.11, plus dev tooling (`jest` 30.2→30.4.2, `esbuild`, `prettier`, `eslint` patch). Tests, lint, and build all pass.
-- **Known remaining advisories (no clean fix yet):** the `nodemailer` high requires a deliberate 9.x major upgrade (our plain-SMTP usage does not touch the affected OAuth2/`jsonTransport`/`raw`/List-header vectors), and 17 moderate advisories are dev-only test tooling (`jest` → `babel-plugin-istanbul` → `js-yaml`) whose only npm-offered "fix" is an absurd downgrade to jest 25. Both deferred pending upstream fixes / a planned major-bump pass.
+- **All known dependency advisories cleared — `npm audit` now reports 0 vulnerabilities.** Three major upgrades were needed, each verified against how we actually use the package:
+  - **`@fastify/static` 9 → 10** (two highs: [GHSA-8pvw-jcv7-9cmj](https://github.com/advisories/GHSA-8pvw-jcv7-9cmj) authorization bypass via non-canonical URL paths, [GHSA-83w8-p2f5-377r](https://github.com/advisories/GHSA-83w8-p2f5-377r) route-guard bypass via path traversal). Directly relevant — we register three static roots in `src/api/server.js`, including one serving `dist/`/`public/` at `/` behind the frontend and API routes. The v10 breaking change is the `setHeaders` callback receiving a `FastifyReply` instead of a Node response; we don't use `setHeaders`, so no code change was required.
+  - **`@fastify/swagger-ui` 5 → 6** — carried the same vulnerable `@fastify/static`. The v6 major only removes the deprecated `useUnsafeMarkdown` option, which we don't set.
+  - **`nodemailer` 8 → 10** (five highs, including `raw`/`resolveContent()` bypasses of `disableFileAccess`/`disableUrlAccess`, IDN/punycode and RFC 5322 comment allow-list bypasses, and quadratic-time `addressparser` DoS). This clears the advisory that had been deferred since the 2026-06-25 refresh. v10 is a TypeScript rewrite shipping both CJS and ESM builds; `require('nodemailer').createTransport` is unchanged, and our plain-SMTP setup in `src/services/email-service.js` was verified against the live SMTP server via `transporter.verify()`.
+- **`esbuild` 0.27 → 0.28** — [GHSA-g7r4-m6w7-qqqr](https://github.com/advisories/GHSA-g7r4-m6w7-qqqr), arbitrary file read via the dev server on Windows. Dev-only, and not reachable on Linux or from `scripts/build.js` (which never starts the dev server), but the fix was out of our declared range so the bump was taken rather than pinning to the older 0.27.2.
+- **In-range refresh + `npm audit fix`** — cleared the remaining transitive advisories without any declared-range changes: `js-yaml` (the `jest` → `babel-plugin-istanbul` → `@istanbuljs/load-nyc-config` chain that had no fix in June now does), plus `brace-expansion`, `browserslist`, `baseline-browser-mapping`, `fast-uri`, `find-my-way`, and `undici`. Notable in-range bumps: `fastify` 5.8.5 → 5.12.3 (fixes schema-validation bypass via root primitive coercion and `X-Forwarded-*` spoofing under `trustProxy` hop-count — we run with `trustProxy: true` behind nginx), `mysql2` 3.22.5 → 3.24.4 (decompression-bomb DoS in the compressed-protocol handler), `@fastify/cookie` 11.1.2, `@fastify/cors` 11.3.0, `@fastify/helmet` 13.1.1, `@fastify/swagger` 9.8.1, `node-cron` 4.6.0, and dev tooling (`jest` 30.5.1, `prettier` 3.9.6, `eslint` 9.39.5, `globals` 17.12.0).
+
+### Changed
+
+- **Minimum Node.js version raised from 18 to 22.** Forced by `nodemailer` 10, which requires Node ≥20; 22 was chosen over 20 because Node 18 reached end-of-life in April 2025 and Node 20 in April 2026, so 22 is the oldest release still receiving security patches. Updated in `package.json` `engines`, `README.md`, `docs/developing.md`, and `docs/pm2-deployment.md`. **Deployment note:** check the Node version on the production host before deploying this release.
+
+### Notes
+
+- `chalk`, `ora`, `boxen`, and `inquirer` remain pinned to their last CommonJS majors — the newer versions are ESM-only and adopting them is an ESM migration, not a version bump. `@fastify/rate-limit` 11, `commander` 15, and `eslint` 10 are available and non-ESM but carry no advisories; they're deferred to a separate major-bump pass to keep this release scoped to security.
+
+---
 
 ## [1.17.0] - 2026-06-25
 

@@ -4,7 +4,7 @@ This guide covers deploying CACD Archive with PM2 process manager for production
 
 ## Prerequisites
 
-- Node.js 18+ installed
+- Node.js 22+ installed
 - PM2 installed globally: `npm install -g pm2`
 - MariaDB/MySQL database configured
 - Environment variables configured in `.env`

@@ -24,7 +24,7 @@ CACD Archive is a Node.js application that scrapes, parses, and archives UK Cour
 
 ## Tech Stack
 
-- **Runtime:** Node.js 18+ (native JS, CommonJS modules — no TypeScript, no framework abstractions)
+- **Runtime:** Node.js 22+ (native JS, CommonJS modules — no TypeScript, no framework abstractions)
 - **API:** Fastify 5
 - **Database:** MariaDB 10.5+ via `mysql2/promise` (raw SQL, no ORM)
 - **Scraping:** Cheerio (HTML parsing), node-cron (scheduling)
@@ -75,6 +75,6 @@ Jest 30 with real MariaDB test database (requires `.env.test`; DB name must cont
 
 ## Requirements
 
-- Node.js 18+
+- Node.js 22+
 - MariaDB 10.5+
 - `.env` file configured from `.env.example` (must be `chmod 600` on Linux)

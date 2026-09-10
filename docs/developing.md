@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 22+
 - MariaDB 10.5+
 
 ## Setup

@@ -1,8 +1,8 @@
 # CACD Archive
 
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-22%2B-green.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.17.0-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-1.18.0-blue.svg)](<>)
 
 An automated scraping and archival system for UK court hearing data from multiple sources, with email notifications for saved searches.
 
@@ -14,7 +14,7 @@ All source data is UK Crown Copyright, published under the [Open Government Lice
 
 ## Quick Start
 
-**Prerequisites:** Node.js 18+, MariaDB 10.5+
+**Prerequisites:** Node.js 22+, MariaDB 10.5+
 
 ```bash
 # Install dependencies

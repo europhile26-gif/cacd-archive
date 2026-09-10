@@ -527,9 +527,7 @@ Get single hearing by ID.
 ```json
 {
   "success": true,
-  "data": {
-    /* hearing object */
-  }
+  "data": {/* hearing object */}
 }
 ```
 
