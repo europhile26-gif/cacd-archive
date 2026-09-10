@@ -21,7 +21,7 @@ if (!process.argv.includes('--json')) {
 program
   .name('cacd')
   .description('CACD Archive administrative command-line interface')
-  .version('1.18.3');
+  .version('1.19.0');
 
 // User Management Commands
 const usersCommand = program.command('users').description('User management commands');
@@ -108,6 +108,12 @@ dbCommand
   .option('-a, --all', 'Also reset user data (users, saved searches, notifications)')
   .option('-y, --yes', 'Skip confirmation prompt')
   .action(dbCommands.reset);
+
+dbCommand
+  .command('purge-analytics')
+  .description('Delete request log records older than the retention window')
+  .option('-d, --days <n>', 'Override ANALYTICS_RETENTION_DAYS for this run')
+  .action(dbCommands.purgeAnalytics);
 
 // Scraper Commands
 const scraperCommand = program.command('scraper').description('Scraper management commands');

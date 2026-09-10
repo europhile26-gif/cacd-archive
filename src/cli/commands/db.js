@@ -5,6 +5,8 @@
 
 const chalk = require('chalk');
 const { query } = require('../../config/database');
+const config = require('../../config/config');
+const analyticsService = require('../../services/analytics-service');
 const {
   formatInfo,
   formatWarning,
@@ -195,7 +197,35 @@ async function reset(options) {
   }
 }
 
+/**
+ * Delete request_log records older than the retention window
+ */
+async function purgeAnalytics(options) {
+  const retentionDays = options.days ? parseInt(options.days, 10) : config.analytics.retentionDays;
+
+  if (!Number.isInteger(retentionDays) || retentionDays < 1) {
+    formatError('--days must be a positive whole number of days');
+    process.exit(1);
+  }
+
+  const spinner = createSpinner(`Purging analytics older than ${retentionDays} days...`).start();
+
+  try {
+    const [{ total }] = await query('SELECT COUNT(*) AS total FROM request_log');
+    const deleted = await analyticsService.purge(retentionDays);
+
+    spinner.succeed(`Purged ${deleted} of ${total} request log records`);
+    formatInfo(`Retention window: ${retentionDays} days`);
+    process.exit(0);
+  } catch (error) {
+    spinner.fail('Analytics purge failed');
+    formatError(error.message);
+    process.exit(1);
+  }
+}
+
 module.exports = {
   summary,
-  reset
+  reset,
+  purgeAnalytics
 };

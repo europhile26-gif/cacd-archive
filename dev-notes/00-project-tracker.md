@@ -1,6 +1,6 @@
 # Project Tracker
 
-**Version:** 1.18.3
+**Version:** 1.19.0
 **Last Updated:** 2026-09-10
 **Current Phase:** M2.1 complete (v1.13.0) — next: M3 (Multi-Division Support)
 
@@ -228,32 +228,32 @@ Lightweight request logging for API traffic analysis, vulnerability probe detect
 
 **Note for M2.2:** a hop count (`trustProxy: 1`) is _not_ a valid alternative. Fastify 5 fails closed on numeric values — `getTrustProxyFn` returns `() => false` — so `request.ip` silently resolves to the proxy's own address. Config rejects numeric `TRUSTED_PROXIES` at startup for this reason. Trust must be expressed as addresses, CIDR ranges, or a named preset.
 
-#### M2.2a: Schema, Config & Request Logging Middleware
+#### M2.2a: Schema, Config & Request Logging Middleware — done in v1.19.0
 
-- [ ] Migration: create `request_log` table with fields above, indexed on `(created_at)`, `(ip, created_at)`, `(country_code, created_at)`, `(route, created_at)`, `(fingerprint, created_at)`, `(asn, created_at)`
-- [ ] Config: add `ANALYTICS_ENABLED` (boolean, default false), `ANALYTICS_RETENTION_DAYS` (integer, default 30), `ANALYTICS_EXCLUDE_ROUTES` (comma-separated patterns to skip, default `/api/v1/health,/api/docs`), `ANALYTICS_FINGERPRINT_SECRET` (string, required when analytics enabled — fail loud at startup if missing)
-- [ ] Implement `analytics-service.js` — in-memory buffer with `logRequest(data)`, periodic flush via `setInterval`, graceful flush on shutdown
-- [ ] Fingerprint helper — `sha256(<secret> + <YYYY-MM-DD> + ip + user_agent)`. Salt derived per-request from the current date so rotation needs no scheduled job; note that a request spanning midnight simply lands in the next day's bucket
-- [ ] Fastify `onResponse` hook in `server.js` — captures all fields, skips excluded routes and static assets, calls `analytics-service.logRequest()`. Only registered when `ANALYTICS_ENABLED=true`
-- [ ] Confirm buffered writes never block or fail a request — a DB outage must lose analytics rows, not return 500s
-- [ ] Unit tests for buffer flush logic, route exclusion filtering, and fingerprint stability within a day / change across a date boundary
+- [x] Migration: create `request_log` table with fields above, indexed on `(created_at)`, `(ip, created_at)`, `(country_code, created_at)`, `(route, created_at)`, `(fingerprint, created_at)`, `(asn, created_at)`
+- [x] Config: add `ANALYTICS_ENABLED` (boolean, default false), `ANALYTICS_RETENTION_DAYS` (integer, default 30), `ANALYTICS_EXCLUDE_ROUTES` (comma-separated patterns to skip, default `/api/v1/health,/api/docs`), `ANALYTICS_FINGERPRINT_SECRET` (string, required when analytics enabled — fail loud at startup if missing)
+- [x] Implement `analytics-service.js` — in-memory buffer with `logRequest(data)`, periodic flush via `setInterval`, graceful flush on shutdown
+- [x] Fingerprint helper — `sha256(<secret> + <YYYY-MM-DD> + ip + user_agent)`. Salt derived per-request from the current date so rotation needs no scheduled job; note that a request spanning midnight simply lands in the next day's bucket
+- [x] Fastify `onResponse` hook in `server.js` — captures all fields, skips excluded routes and static assets, calls `analytics-service.logRequest()`. Only registered when `ANALYTICS_ENABLED=true`
+- [x] Confirm buffered writes never block or fail a request — a DB outage must lose analytics rows, not return 500s
+- [x] Unit tests for buffer flush logic, route exclusion filtering, and fingerprint stability within a day / change across a date boundary
 
-#### M2.2b: GeoIP Lookup, ASN & Country Blocklist
+#### M2.2b: GeoIP Lookup, ASN & Country Blocklist — done in v1.19.0
 
-- [ ] Config: add `GEOIP_COUNTRY_DB_PATH` (default `/var/lib/GeoIP/GeoLite2-Country.mmdb`), `GEOIP_ASN_DB_PATH` (default `/var/lib/GeoIP/GeoLite2-ASN.mmdb`), `BLOCKED_COUNTRIES` (comma-separated country codes, default empty)
-- [ ] Implement `geoip-service.js` — loads both MaxMind DBs on startup, exposes `lookupCountry(ip)` and `lookupAsn(ip)`. Handles missing/corrupt DB gracefully (log warning, continue without GeoIP); each DB degrades independently
-- [ ] Add `maxmind` to dependencies (**not** `@maxmind/geoip2-node`, which is ESM-only from v4 — see Technical Debt)
-- [ ] Fastify `onRequest` hook — if `BLOCKED_COUNTRIES` is non-empty, resolve country from IP and return `403` for blocked countries. Runs early, before auth. Log blocked requests to analytics if enabled
-- [ ] Feed country code, ASN and ASN org into analytics logging from M2.2a
-- [ ] Note the `.mmdb` files are refreshed externally (they are root-owned in `/var/lib/GeoIP/`); document the reload story — simplest is that a restart picks up new data
-- [ ] Unit tests for blocklist matching, private/localhost IP handling, missing DB fallback
+- [x] Config: add `GEOIP_COUNTRY_DB_PATH` (default `/var/lib/GeoIP/GeoLite2-Country.mmdb`), `GEOIP_ASN_DB_PATH` (default `/var/lib/GeoIP/GeoLite2-ASN.mmdb`), `BLOCKED_COUNTRIES` (comma-separated country codes, default empty)
+- [x] Implement `geoip-service.js` — loads both MaxMind DBs on startup, exposes `lookupCountry(ip)` and `lookupAsn(ip)`. Handles missing/corrupt DB gracefully (log warning, continue without GeoIP); each DB degrades independently
+- [x] Add `maxmind` to dependencies (**not** `@maxmind/geoip2-node`, which is ESM-only from v4 — see Technical Debt)
+- [x] Fastify `onRequest` hook — if `BLOCKED_COUNTRIES` is non-empty, resolve country from IP and return `403` for blocked countries. Runs early, before auth. Log blocked requests to analytics if enabled
+- [x] Feed country code, ASN and ASN org into analytics logging from M2.2a
+- [x] Note the `.mmdb` files are refreshed externally (they are root-owned in `/var/lib/GeoIP/`); document the reload story — simplest is that a restart picks up new data
+- [x] Unit tests for blocklist matching, private/localhost IP handling, missing DB fallback
 
-#### M2.2c: Purge Cron Job
+#### M2.2c: Purge Cron Job — done in v1.19.0
 
-- [ ] Add purge function to `analytics-service.js` — `DELETE FROM request_log WHERE created_at < NOW() - INTERVAL ? DAY`
-- [ ] Register daily cron in `scheduler.js` (instance 0 only) — runs at a quiet hour (e.g. 03:00), respects `ANALYTICS_RETENTION_DAYS` (30). The purge is what enforces the retention promise made in the privacy notice, so it must be verified working before analytics is enabled in production
-- [ ] CLI command `./bin/cacd db purge-analytics` for manual purge with optional `--days <n>` override
-- [ ] Log purge results (rows deleted, duration)
+- [x] Add purge function to `analytics-service.js` — `DELETE FROM request_log WHERE created_at < NOW() - INTERVAL ? DAY`
+- [x] Register daily cron in `scheduler.js` (instance 0 only) — runs at a quiet hour (e.g. 03:00), respects `ANALYTICS_RETENTION_DAYS` (30). The purge is what enforces the retention promise made in the privacy notice, so it must be verified working before analytics is enabled in production
+- [x] CLI command `./bin/cacd db purge-analytics` for manual purge with optional `--days <n>` override
+- [x] Log purge results (rows deleted, duration)
 
 #### M2.2d: Analytics Admin Page
 

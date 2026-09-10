@@ -15,6 +15,7 @@ const { createServer } = require('./api/server');
 const logger = require('./utils/logger');
 const emailService = require('./services/email-service');
 const { startScheduler, stopScheduler, performStartupScrape } = require('./scrapers/scheduler');
+const analyticsService = require('./services/analytics-service');
 
 async function start() {
   try {
@@ -76,19 +77,21 @@ async function start() {
   }
 }
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, shutting down gracefully...');
-  await stopScheduler();
-  await emailService.close();
-  process.exit(0);
-});
+/**
+ * Graceful shutdown. The analytics buffer is per-instance, so it is flushed on
+ * every instance rather than only the one running the scheduler.
+ */
+async function shutdown(signal) {
+  logger.info(`${signal} received, shutting down gracefully...`);
 
-process.on('SIGINT', async () => {
-  logger.info('SIGINT received, shutting down gracefully...');
   await stopScheduler();
+  await analyticsService.stop();
   await emailService.close();
+
   process.exit(0);
-});
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 start();

@@ -7,11 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0] - 2026-09-10
+
+### Added
+
+- **Request analytics collection pipeline (M2.2a–c)** — server-side request logging with GeoIP, a pseudo-session fingerprint, a country blocklist and enforced retention. **Nothing is stored in the browser**: no cookies, no localStorage, no client-side script. Disabled by default via `ANALYTICS_ENABLED`; the `/analytics` page that reads this data follows in the next release.
+  - **What is recorded** — IP, method, route pattern, status code, duration, user agent, country, ASN and organisation, a pseudo-session fingerprint, and user ID when authenticated. Backed by migration `013_request_log.sql`.
+  - **What is deliberately not recorded** — query parameters, city, region and referrer. Only the route _pattern_ is stored for matched routes, so `/api/v1/hearings` is logged and `?search=…&caseNumber=…` never is: tying a search term to a client address would record that a given person looked up a given name in criminal court records. Unmatched paths are stored as requested (minus the query string) so probe attempts stay visible.
+  - **Salted, daily-rotating fingerprint** — `sha256(secret + date + ip + user agent)` groups requests into sessions without a cookie. The date component caps linkability at 24 hours; the secret is what makes it pseudonymous, since IP plus user agent is a brute-forceable input space on its own. `ANALYTICS_FINGERPRINT_SECRET` is required when analytics is enabled and startup fails without it.
+  - **Batched writes** — records buffer in memory and flush every 5s or every 100 records, whichever comes first, so no database write sits on the request path. Writes are best-effort by design: a database failure drops analytics rows and logs the count rather than failing user requests. The buffer is per-instance and flushed on shutdown.
+  - **GeoIP via local MaxMind GeoLite2 files** — country and ASN read from `.mmdb` files through the `maxmind` package. Each database loads independently, so a missing or corrupt file degrades that lookup to `null` rather than failing startup. City is not collected.
+  - **Country blocklist** — `BLOCKED_COUNTRIES` returns `403` from an early hook, before auth and rate limiting. Empty by default, which skips the hook entirely.
+  - **Retention purge** — a nightly cron on PM2 instance 0 deletes records older than `ANALYTICS_RETENTION_DAYS` (default 30). This is what enforces the retention period a privacy notice will state.
+- **`./bin/cacd db purge-analytics`** — runs the same purge on demand, with `--days <n>` to override the retention window.
+- **`test/unit/analytics-service.test.js` and `test/integration/analytics-logging.test.js`, `test/integration/geoip-blocklist.test.js`** — 33 tests covering fingerprint stability and daily rotation, route exclusion, DNT, real country/ASN resolution, the retention boundary, blocklist enforcement across public routes, and graceful handling of private and malformed addresses. Two tests specifically assert that search terms and case numbers never reach the log.
+
 ### Changed
 
-- **Reverse-proxy documentation now covers Apache as well as nginx.** `docs/security.md` gains a worked Apache `mod_proxy` example (TLS termination, `ProxyAddHeaders`, explicit `X-Forwarded-Proto`/`X-Forwarded-Port`, HTTP→HTTPS redirect) alongside the existing nginx one, and `docs/pm2-deployment.md` — previously nginx-only — documents both. Neither is presented as preferred; the app only requires that `X-Forwarded-For` and `X-Forwarded-Proto` arrive correctly.
-- **Guidance on choosing `TRUSTED_PROXIES` when the proxy is not on the app host.** The value must be the address the _app_ sees the proxy connecting from, which for a proxy reaching the app over a VPN or private tunnel is its private address on that tunnel, not its public one. A mismatch fails silently — `request.ip` resolves to the proxy for every request, so rate limiting applies globally rather than per-client — so the docs give an `ip route get` command to determine the correct value and a way to verify it afterwards.
-- **Removed the deployment's real hostname from example configuration.** `.env.example` and `docs/configuration.md` used a live domain in their `BASE_URL` examples; both now use `cacd-archive.example.com`, consistent with the rest of the docs.
+- **Configuration now reports every problem at once** rather than throwing on the first. A misconfigured deployment sees the full list in one startup instead of fixing them one restart at a time.
+- **Integer config options no longer swallow a deliberate `0`.** `parseInt(value, 10) || fallback` silently replaced `ANALYTICS_RETENTION_DAYS=0` with the default, which would have made the retention validation unreachable; the new parser falls back only when a value is absent or unparseable.
+
+### Security
+
+- Analytics defaults to off, and enabling it requires a fingerprint secret. **Do not enable in production until a privacy notice is published** — IP addresses are personal data and the fingerprint is pseudonymous rather than anonymous, so UK GDPR applies even though no cookie banner is required. The notice and the legitimate interests assessment ship with the `/analytics` page in the next release.
+
+---
 
 ## [1.18.3] - 2026-09-10
 

@@ -66,11 +66,66 @@ All configuration is via environment variables in `.env`. See `.env.example` for
 
 ## Security
 
-| Variable                        | Default  | Description                                          |
-| ------------------------------- | -------- | ---------------------------------------------------- |
-| `SKIP_STARTUP_FILESYSTEM_CHECK` | `false`  | Skip `.env` permission check (useful on Windows)     |
-| `API_RATE_LIMIT_MAX`            | `100`    | Max requests per rate limit window (unauthenticated) |
-| `API_RATE_LIMIT_WINDOW`         | `900000` | Rate limit window in ms (15 min)                     |
+| Variable                        | Default    | Description                                          |
+| ------------------------------- | ---------- | ---------------------------------------------------- |
+| `SKIP_STARTUP_FILESYSTEM_CHECK` | `false`    | Skip `.env` permission check (useful on Windows)     |
+| `API_RATE_LIMIT_MAX`            | `100`      | Max requests per rate limit window (unauthenticated) |
+| `API_RATE_LIMIT_WINDOW`         | `900000`   | Rate limit window in ms (15 min)                     |
+| `TRUSTED_PROXIES`               | `loopback` | Reverse proxies allowed to set `X-Forwarded-For`     |
+
+## Request Analytics
+
+Server-side request logging. Nothing is stored in the browser — no cookies, no
+localStorage, no client-side script. Disabled by default.
+
+| Variable                       | Default                    | Description                                      |
+| ------------------------------ | -------------------------- | ------------------------------------------------ |
+| `ANALYTICS_ENABLED`            | `false`                    | Master switch for request logging                |
+| `ANALYTICS_RETENTION_DAYS`     | `30`                       | Days to keep records; enforced by the purge cron |
+| `ANALYTICS_EXCLUDE_ROUTES`     | `/api/v1/health,/api/docs` | Route prefixes never logged                      |
+| `ANALYTICS_FINGERPRINT_SECRET` | —                          | **Required** when enabled; salts the fingerprint |
+| `ANALYTICS_FLUSH_INTERVAL_MS`  | `5000`                     | Buffer flush interval                            |
+| `ANALYTICS_FLUSH_BATCH_SIZE`   | `100`                      | Flush early once this many records are buffered  |
+| `ANALYTICS_PURGE_CRON`         | `0 3 * * *`                | When the retention purge runs (instance 0 only)  |
+| `ANALYTICS_RESPECT_DNT`        | `true`                     | Skip requests sending `DNT: 1`                   |
+
+**What is recorded:** IP, method, route pattern, status code, duration, user agent,
+country, ASN, a pseudo-session fingerprint, and user ID when authenticated.
+
+**What is deliberately not recorded:** query parameters (the hearings endpoint carries
+search terms and case numbers), city, region, and referrer. Only the route _pattern_ is
+stored for matched routes — `/api/v1/hearings`, never `/api/v1/hearings?search=...`.
+Unmatched paths are stored as requested, minus the query string, so probe attempts stay
+visible.
+
+**The fingerprint** is `sha256(secret + date + ip + user agent)`. The date component
+rotates it daily, capping how long a client stays linkable; the secret is what stops the
+hash being reversed, since IP plus user agent is a brute-forceable input space on its own.
+Generate a secret with `./bin/cacd secret generate`.
+
+**Before enabling in production:** IP addresses are personal data and the fingerprint is
+pseudonymous rather than anonymous, so UK GDPR applies even though no cookie banner is
+needed. Publish a privacy notice covering what is collected, the lawful basis, the
+retention period and how to object.
+
+## GeoIP & Country Blocklist
+
+Lookups run against local MaxMind GeoLite2 `.mmdb` files. Each database loads
+independently — a missing file degrades that lookup to `null` rather than failing startup.
+
+| Variable                | Default                                | Description                          |
+| ----------------------- | -------------------------------------- | ------------------------------------ |
+| `GEOIP_COUNTRY_DB_PATH` | `/var/lib/GeoIP/GeoLite2-Country.mmdb` | Country database                     |
+| `GEOIP_ASN_DB_PATH`     | `/var/lib/GeoIP/GeoLite2-ASN.mmdb`     | ASN database                         |
+| `BLOCKED_COUNTRIES`     | _(empty)_                              | ISO alpha-2 codes refused with `403` |
+
+`BLOCKED_COUNTRIES` runs as an early hook, before auth and rate limiting, so blocked
+traffic costs as little as possible. Leaving it empty disables the hook entirely. City is
+not collected: it is the most identifying geo field and adds little for a UK-focused site,
+so only the Country and ASN databases are needed.
+
+The `.mmdb` files are refreshed externally (typically by `geoipupdate`); the app reads them
+at startup, so a restart picks up new data.
 
 ## File Permissions
 

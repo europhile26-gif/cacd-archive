@@ -112,6 +112,20 @@ Run pending database migrations.
 ./bin/cacd db migrate
 ```
 
+### `db purge-analytics`
+
+Delete request log records older than the retention window. The same purge runs
+automatically each night on PM2 instance 0; this is for running it on demand.
+
+```bash
+./bin/cacd db purge-analytics            # uses ANALYTICS_RETENTION_DAYS (default 30)
+./bin/cacd db purge-analytics --days 7   # override for this run
+```
+
+| Option           | Description                                      |
+| ---------------- | ------------------------------------------------ |
+| `-d, --days <n>` | Override `ANALYTICS_RETENTION_DAYS` for this run |
+
 ### `scraper run`
 
 Run the scraper immediately (outside the normal schedule). Scrapes all enabled data sources by default, or a specific source with `--source`.

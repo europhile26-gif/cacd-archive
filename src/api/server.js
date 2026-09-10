@@ -10,6 +10,8 @@ const path = require('path');
 const config = require('../config/config');
 const logger = require('../utils/logger');
 const AuthService = require('../services/auth-service');
+const analyticsService = require('../services/analytics-service');
+const geoipService = require('../services/geoip-service');
 const { version } = require('../../package.json');
 
 /**
@@ -29,12 +31,74 @@ function resolveTrustProxy() {
   return trustedProxies;
 }
 
+/**
+ * Registers the country blocklist and request-logging hooks.
+ * Both are no-ops unless analytics or a blocklist is configured, so the hooks are
+ * only attached when they have work to do.
+ */
+async function registerAnalytics(server) {
+  const blocklistActive = geoipService.hasBlocklist();
+
+  if (!config.analytics.enabled && !blocklistActive) {
+    return;
+  }
+
+  await geoipService.initialize();
+
+  if (blocklistActive) {
+    // Runs before auth and rate limiting so blocked traffic costs as little as possible.
+    server.addHook('onRequest', async (request, reply) => {
+      const countryCode = geoipService.lookupCountry(request.ip);
+
+      if (geoipService.isBlockedCountry(countryCode)) {
+        request.blockedByCountry = countryCode;
+        await reply.status(403).send({ success: false, error: 'Forbidden' });
+      }
+    });
+  }
+
+  if (config.analytics.enabled) {
+    analyticsService.start();
+
+    server.addHook('onResponse', async (request, reply) => {
+      const route = request.routeOptions?.url || request.url.split('?')[0];
+
+      // Honouring DNT is cheap and worth being able to point at.
+      const doNotTrack = config.analytics.respectDoNotTrack && request.headers.dnt === '1';
+
+      if (doNotTrack || analyticsService.isExcludedRoute(route)) {
+        return;
+      }
+
+      const userAgent = request.headers['user-agent'] || null;
+      const { asn, organisation } = geoipService.lookupAsn(request.ip);
+
+      analyticsService.logRequest({
+        ip: request.ip || null,
+        method: request.method,
+        route: route.slice(0, 255),
+        status_code: reply.statusCode,
+        duration_ms: Math.round(reply.elapsedTime || 0),
+        user_agent: userAgent ? userAgent.slice(0, 500) : null,
+        country_code: request.blockedByCountry || geoipService.lookupCountry(request.ip),
+        asn,
+        asn_org: organisation ? organisation.slice(0, 255) : null,
+        fingerprint: analyticsService.buildFingerprint(request.ip, userAgent),
+        user_id: request.user?.id || null,
+        created_at: new Date()
+      });
+    });
+  }
+}
+
 async function createServer() {
   const server = fastify({
     logger: false, // Disable Fastify's built-in logger
     disableRequestLogging: true,
     trustProxy: resolveTrustProxy()
   });
+
+  await registerAnalytics(server);
 
   // Cookie support (required for JWT in cookies)
   await server.register(fastifyCookie, {

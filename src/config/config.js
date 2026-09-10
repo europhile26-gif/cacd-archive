@@ -4,6 +4,30 @@ const path = require('path');
 // Load .env file
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
+/**
+ * Parses an integer env var, falling back only when unset or unparseable.
+ * `parseInt(x, 10) || fallback` would silently replace a deliberate 0.
+ */
+function parseIntOption(value, fallback) {
+  if (value === undefined || value.trim() === '') {
+    return fallback;
+  }
+
+  const parsed = parseInt(value, 10);
+
+  return Number.isNaN(parsed) ? fallback : parsed;
+}
+
+/**
+ * Splits a comma-separated env var into a trimmed list, dropping empty entries.
+ */
+function splitList(value, fallback) {
+  return (value === undefined ? fallback : value)
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
 const config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT, 10) || 3000,
@@ -72,6 +96,24 @@ const config = {
     }
   },
 
+  analytics: {
+    enabled: process.env.ANALYTICS_ENABLED === 'true',
+    retentionDays: parseIntOption(process.env.ANALYTICS_RETENTION_DAYS, 30),
+    excludeRoutes: splitList(process.env.ANALYTICS_EXCLUDE_ROUTES, '/api/v1/health,/api/docs'),
+    fingerprintSecret: process.env.ANALYTICS_FINGERPRINT_SECRET,
+    // Buffer thresholds: whichever is reached first triggers a flush.
+    flushIntervalMs: parseIntOption(process.env.ANALYTICS_FLUSH_INTERVAL_MS, 5000),
+    flushBatchSize: parseIntOption(process.env.ANALYTICS_FLUSH_BATCH_SIZE, 100),
+    purgeCron: process.env.ANALYTICS_PURGE_CRON || '0 3 * * *',
+    respectDoNotTrack: process.env.ANALYTICS_RESPECT_DNT !== 'false'
+  },
+
+  geoip: {
+    countryDbPath: process.env.GEOIP_COUNTRY_DB_PATH || '/var/lib/GeoIP/GeoLite2-Country.mmdb',
+    asnDbPath: process.env.GEOIP_ASN_DB_PATH || '/var/lib/GeoIP/GeoLite2-ASN.mmdb',
+    blockedCountries: splitList(process.env.BLOCKED_COUNTRIES, '').map((code) => code.toUpperCase())
+  },
+
   auth: {
     jwtSecret: process.env.JWT_SECRET,
     cookieSecret: process.env.COOKIE_SECRET || process.env.JWT_SECRET,
@@ -91,26 +133,68 @@ const config = {
   }
 };
 
-// A bare hop count is rejected rather than passed through: Fastify 5 fails closed on
-// numeric trustProxy (it cannot validate the immediate peer), so request.ip would
-// silently resolve to the proxy's own address instead of the client's.
-if (/^\d+$/.test(config.api.trustedProxies.trim())) {
-  throw new Error(
-    'Invalid configuration: TRUSTED_PROXIES must be addresses, CIDR ranges, or a named ' +
-      'preset (e.g. "loopback", "127.0.0.1,::1", "10.0.0.0/8") — not a hop count. ' +
-      'Fastify ignores numeric values and request.ip would resolve to the proxy. ' +
-      'See .env.example for details.'
-  );
-}
+// Every problem is collected before throwing, so a misconfigured deployment sees the
+// full list in one startup rather than fixing them one restart at a time.
+const configProblems = [];
 
-// Validate required config
 const required = ['database.user', 'database.password', 'auth.jwtSecret'];
 
 for (const key of required) {
   const value = key.split('.').reduce((obj, k) => obj?.[k], config);
   if (!value) {
-    throw new Error(`Missing required configuration: ${key}. See .env.example for details.`);
+    configProblems.push(`Missing required configuration: ${key}`);
   }
+}
+
+// A bare hop count is rejected rather than passed through: Fastify 5 fails closed on
+// numeric trustProxy (it cannot validate the immediate peer), so request.ip would
+// silently resolve to the proxy's own address instead of the client's.
+if (/^\d+$/.test(config.api.trustedProxies.trim())) {
+  configProblems.push(
+    'TRUSTED_PROXIES must be addresses, CIDR ranges, or a named preset ' +
+      '(e.g. "loopback", "127.0.0.1,::1", "10.0.0.0/8") — not a hop count. ' +
+      'Fastify ignores numeric values and request.ip would resolve to the proxy.'
+  );
+}
+
+if (config.analytics.enabled) {
+  // Without a secret the fingerprint is a plain hash of IP + user agent, which is
+  // reversible by brute force and so would not be pseudonymous.
+  if (!config.analytics.fingerprintSecret) {
+    configProblems.push(
+      'ANALYTICS_FINGERPRINT_SECRET is required when ANALYTICS_ENABLED=true. ' +
+        'Generate one with: ./bin/cacd secret generate'
+    );
+  }
+
+  if (!Number.isInteger(config.analytics.retentionDays) || config.analytics.retentionDays < 1) {
+    configProblems.push('ANALYTICS_RETENTION_DAYS must be a positive whole number of days.');
+  }
+
+  if (config.analytics.flushIntervalMs < 100) {
+    configProblems.push('ANALYTICS_FLUSH_INTERVAL_MS must be at least 100ms.');
+  }
+
+  if (config.analytics.flushBatchSize < 1) {
+    configProblems.push('ANALYTICS_FLUSH_BATCH_SIZE must be at least 1.');
+  }
+}
+
+const invalidCountryCodes = config.geoip.blockedCountries.filter(
+  (code) => !/^[A-Z]{2}$/.test(code)
+);
+
+if (invalidCountryCodes.length > 0) {
+  configProblems.push(
+    `BLOCKED_COUNTRIES must be ISO 3166-1 alpha-2 codes; got: ${invalidCountryCodes.join(', ')}`
+  );
+}
+
+if (configProblems.length > 0) {
+  throw new Error(
+    `Invalid configuration (${configProblems.length} problem(s)). See .env.example for details:\n` +
+      configProblems.map((problem) => `  - ${problem}`).join('\n')
+  );
 }
 
 module.exports = config;

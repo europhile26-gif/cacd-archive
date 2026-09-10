@@ -15,8 +15,10 @@ const config = require('../config/config');
 const { scrapeAll } = require('../services/scraper-service');
 const { shouldScrape } = require('../services/scrape-history-service');
 const { getEnabledSources } = require('../services/data-source-service');
+const analyticsService = require('../services/analytics-service');
 
 let scheduledTask = null;
+let analyticsPurgeTask = null;
 let isShuttingDown = false;
 let scrapingInProgress = false;
 
@@ -212,6 +214,24 @@ function startScheduler() {
     await performScheduledScrape();
   });
 
+  if (config.analytics.enabled) {
+    analyticsPurgeTask = cron.schedule(config.analytics.purgeCron, async () => {
+      try {
+        await analyticsService.purge();
+      } catch (error) {
+        logger.error('Scheduled analytics purge failed', {
+          error: error.message,
+          stack: error.stack
+        });
+      }
+    });
+
+    logger.info('Analytics purge scheduled', {
+      cron: config.analytics.purgeCron,
+      retentionDays: config.analytics.retentionDays
+    });
+  }
+
   logger.info('Scheduler started', {
     checkInterval: 'Every 1 minute',
     appInstance: config.appInstance
@@ -229,6 +249,11 @@ async function stopScheduler() {
     logger.info('Stopping scheduler...');
     scheduledTask.stop();
     scheduledTask = null;
+  }
+
+  if (analyticsPurgeTask) {
+    analyticsPurgeTask.stop();
+    analyticsPurgeTask = null;
   }
 
   // Wait for any in-progress scrape to complete
