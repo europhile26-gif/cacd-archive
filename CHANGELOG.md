@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.0] - 2026-10-14
+
+API keys for agents acting on a user's behalf, and rate limits shared across PM2 instances through Redis. Guides for agents follow in a later release.
+
+**Upgrading:** run `npm ci` (adds `ioredis`) and `npm run migrate` (applies `016_api_keys.sql`). Set `REDIS_URL` in production so rate limits hold across instances, e.g. `redis://127.0.0.1:6379` — the path, if given, must be a database number, not a name. The `API_KEY_*` variables are optional.
+
 ### Added
 
 - **API keys, so an agent can act on a user's behalf.** `./bin/cacd users api-keys create|list|rotate|revoke|revoke-all` manages long-lived keys (migration `016_api_keys.sql`). A key is sent as `Authorization: Bearer cacd_…` and acts as its owner with the owner's capabilities — but only on an allowlist of routes: hearings, dates, config, data sources, health, the owner's saved searches, their profile and their alert setting. Admin, analytics, `/auth/*` and profile edits refuse keys with 403, even for an administrator, and new routes are closed to keys unless they opt in.
