@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **`npm audit fix` — production dependencies audit clean.** In-range updates to handlebars 4.7.10 (critical: three JavaScript injection advisories in template compilation), nodemailer 10.1.1 (high: address-parser denial of service and malformed envelope recipients), fastify 5.12.7 (moderate: denial of service on HTTP/2 trailer responses), plus transitive fast-uri and brace-expansion. No API changes.
+  - 22 advisories remain, all in development tooling: the Jest 30 chain via `babel-plugin-istanbul` and nodemon via `chokidar` → `braces`. npm's `--force` remedy downgrades to jest@25 and nodemon@1.14, so these wait for upstream releases.
+
 ## [1.20.0] - 2026-09-10
 
 ### Added
