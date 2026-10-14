@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.0] - 2026-10-14
+
+Guides for AI agents, and an API description complete enough for an agent to rely on. Some responses change shape; see Changed.
+
+**Upgrading:** no migrations or new settings. `npm ci && npm run build`, then reload.
+
 ### Added
 
 - **Guides for AI agents in `docs/agents/`.** How to connect with an API key, what the hearing data means, how search matching works, errors and rate limits, and a walkthrough for each task an agent is expected to do: create an alert, list and manage alerts, find upcoming hearings, and search historic ones. Every example was run against a live server. The guides spell out what an agent shouldn't promise: alerts only fire for hearings listed today or tomorrow, not when a case is first fixed weeks ahead.
