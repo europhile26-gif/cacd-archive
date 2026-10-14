@@ -6,6 +6,7 @@
 const AuthService = require('../../services/auth-service');
 const config = require('../../config/config');
 const logger = require('../../utils/logger');
+const User = require('../../models/User');
 const { requireAuth, requireCapability } = require('../middleware/auth');
 
 /**
@@ -23,6 +24,33 @@ function sendServiceError(reply, error, context) {
   return reply.code(500).send({
     error: 'Internal Server Error',
     message: 'Something went wrong. Please try again later.'
+  });
+}
+
+const SESSION_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: config.env === 'production', // HTTPS only in production
+  sameSite: 'strict',
+  path: '/'
+};
+
+// Cookie lifetimes in seconds for a normal session and for "remember me"
+const SESSION_LIFETIMES = {
+  standard: { access: 15 * 60, refresh: 7 * 24 * 60 * 60 },
+  remembered: { access: 7 * 24 * 60 * 60, refresh: 30 * 24 * 60 * 60 }
+};
+
+/**
+ * Sets the access and refresh token cookies for a session.
+ */
+function setSessionCookies(reply, accessToken, refreshToken, lifetimes) {
+  reply.setCookie('accessToken', accessToken, {
+    ...SESSION_COOKIE_OPTIONS,
+    maxAge: lifetimes.access
+  });
+  reply.setCookie('refreshToken', refreshToken, {
+    ...SESSION_COOKIE_OPTIONS,
+    maxAge: lifetimes.refresh
   });
 }
 
@@ -151,31 +179,14 @@ async function authRoutes(fastify, _options) {
         // Authenticate user
         const { user, accessToken, refreshToken } = await AuthService.login(email, password);
 
-        // Set httpOnly cookies
-        const cookieOptions = {
-          httpOnly: true,
-          secure: config.env === 'production', // HTTPS only in production
-          sameSite: 'strict',
-          path: '/'
-        };
-
-        reply.setCookie('accessToken', accessToken, {
-          ...cookieOptions,
-          maxAge: rememberMe ? 7 * 24 * 60 * 60 : 15 * 60 // 7 days or 15 min
-        });
-
-        reply.setCookie('refreshToken', refreshToken, {
-          ...cookieOptions,
-          maxAge: rememberMe ? 30 * 24 * 60 * 60 : 7 * 24 * 60 * 60 // 30 days or 7 days
-        });
+        const lifetimes = rememberMe ? SESSION_LIFETIMES.remembered : SESSION_LIFETIMES.standard;
+        setSessionCookies(reply, accessToken, refreshToken, lifetimes);
 
         // Non-httpOnly hint so client JS can skip /users/me for guests
         reply.setCookie('loggedIn', '1', {
+          ...SESSION_COOKIE_OPTIONS,
           httpOnly: false,
-          secure: config.env === 'production',
-          sameSite: 'strict',
-          path: '/',
-          maxAge: rememberMe ? 30 * 24 * 60 * 60 : 7 * 24 * 60 * 60
+          maxAge: lifetimes.refresh
         });
 
         logger.info('User logged in', { userId: user.id });
@@ -275,23 +286,7 @@ async function authRoutes(fastify, _options) {
         const { accessToken, refreshToken: newRefreshToken } =
           await AuthService.refreshAccessToken(refreshToken);
 
-        // Update cookies
-        const cookieOptions = {
-          httpOnly: true,
-          secure: config.env === 'production',
-          sameSite: 'strict',
-          path: '/'
-        };
-
-        reply.setCookie('accessToken', accessToken, {
-          ...cookieOptions,
-          maxAge: 15 * 60 // 15 minutes
-        });
-
-        reply.setCookie('refreshToken', newRefreshToken, {
-          ...cookieOptions,
-          maxAge: 7 * 24 * 60 * 60 // 7 days
-        });
+        setSessionCookies(reply, accessToken, newRefreshToken, SESSION_LIFETIMES.standard);
 
         return reply.send({
           success: true,
@@ -450,6 +445,15 @@ async function authRoutes(fastify, _options) {
         const { currentPassword, newPassword } = request.body;
 
         await AuthService.changePassword(request.user.id, currentPassword, newPassword);
+
+        // The change revoked every session, including this one; issue it fresh tokens
+        const user = await User.findById(request.user.id);
+        setSessionCookies(
+          reply,
+          AuthService.generateAccessToken(user),
+          AuthService.generateRefreshToken(user),
+          SESSION_LIFETIMES.standard
+        );
 
         return reply.send({
           success: true,

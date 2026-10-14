@@ -444,11 +444,43 @@ async function resetPassword(options) {
   }
 }
 
+/**
+ * Log a user out of every session by invalidating all their issued tokens
+ */
+async function revokeSessions(options) {
+  try {
+    let user;
+
+    if (options.id) {
+      user = await User.findById(parseInt(options.id));
+    } else if (options.email) {
+      user = await User.findByEmail(options.email);
+    } else {
+      formatError('Please specify --id or --email');
+      process.exit(1);
+    }
+
+    if (!user) {
+      formatError('User not found');
+      process.exit(1);
+    }
+
+    await User.revokeSessions(user.id);
+
+    formatSuccess(`Every session for ${user.email} has been revoked; they must log in again`);
+    process.exit(0);
+  } catch (error) {
+    formatError(`Failed to revoke sessions: ${error.message}`);
+    process.exit(1);
+  }
+}
+
 module.exports = {
   createUser,
   listUsers,
   approveUser,
   deactivateUser,
   showUser,
-  resetPassword
+  resetPassword,
+  revokeSessions
 };

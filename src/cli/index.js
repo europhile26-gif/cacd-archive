@@ -77,6 +77,13 @@ usersCommand
   .option('-p, --password <password>', 'New password (omit for interactive prompt)')
   .action(userCommands.resetPassword);
 
+usersCommand
+  .command('revoke-sessions')
+  .description('Log a user out everywhere by invalidating all their tokens')
+  .option('-i, --id <id>', 'User ID')
+  .option('-e, --email <email>', 'User email')
+  .action(userCommands.revokeSessions);
+
 // Database Commands
 const dbCommand = program.command('db').description('Database management commands');
 

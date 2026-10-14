@@ -81,6 +81,22 @@ Reset a user's password. Useful when a user is locked out and the self-service "
 | `-e, --email <email>`       | User email                                                                   |
 | `-p, --password <password>` | New password (omit for interactive prompt; note it leaks into shell history) |
 
+Resetting a password also logs the user out of every existing session.
+
+### `users revoke-sessions`
+
+Log a user out everywhere. Every access and refresh token issued to the account stops working immediately; the password is unchanged. Use it when a device is lost or a session may have been stolen.
+
+```bash
+./bin/cacd users revoke-sessions -e user@example.com
+./bin/cacd users revoke-sessions -i 5
+```
+
+| Option                | Description |
+| --------------------- | ----------- |
+| `-i, --id <id>`       | User ID     |
+| `-e, --email <email>` | User email  |
+
 ### `db summary`
 
 Show a summary of database contents: hearing counts by source, scrape history with success/failure counts, users, saved searches, and notifications.

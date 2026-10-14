@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **Sessions can now be revoked.** Logging out only cleared cookies, and a password change left every other session working: a stolen refresh token stayed valid for up to 30 days. Tokens now carry the user's session generation (`users.token_version`, migration `015_user_token_version.sql`) and are rejected once it moves on. Changing or resetting a password — through the site or `./bin/cacd users reset-password` — logs out every other session; the session that made the change is issued fresh tokens. New `./bin/cacd users revoke-sessions` logs a user out everywhere without touching their password. **Everyone will need to log in once after upgrading**, as earlier tokens carry no generation.
+
 - **Capabilities are now enforced on saved searches, profile, notification and password routes.** The `searches:*`, `profile:*` and `notifications:manage-own` capabilities have been seeded since roles were introduced, but these routes only checked that the caller was signed in. Both default roles already hold them, so nobody loses access; a custom role without them now does.
 - **The saved-search cap held only for one request at a time.** Creating a search counted the user's searches, then inserted — so concurrent requests could all pass the count and exceed `SAVED_SEARCH_MAX_PER_USER`. Creation now locks the user's row for the count and insert.
 

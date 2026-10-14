@@ -102,9 +102,24 @@ class User {
    * @returns {Promise<boolean>} Success status
    */
   static async updatePassword(id, password_hash) {
-    const sql = 'UPDATE users SET password_hash = ? WHERE id = ?';
+    // A new password ends every existing session
+    const sql =
+      'UPDATE users SET password_hash = ?, token_version = token_version + 1 WHERE id = ?';
     await db.query(sql, [password_hash, id]);
     return true;
+  }
+
+  /**
+   * Invalidate every access and refresh token issued to a user
+   * @param {number} id - User ID
+   * @returns {Promise<boolean>} True if the user exists
+   */
+  static async revokeSessions(id) {
+    const result = await db.query(
+      'UPDATE users SET token_version = token_version + 1 WHERE id = ?',
+      [id]
+    );
+    return result.affectedRows > 0;
   }
 
   /**
@@ -297,6 +312,7 @@ class User {
         slug: row.status_slug,
         is_active: Boolean(row.status_is_active)
       },
+      token_version: row.token_version,
       created_at: row.created_at,
       updated_at: row.updated_at
     };

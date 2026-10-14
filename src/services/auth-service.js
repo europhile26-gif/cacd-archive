@@ -91,6 +91,7 @@ class AuthService {
       id: user.id,
       email: user.email,
       name: user.name,
+      ver: user.token_version,
       type: 'access'
     };
 
@@ -109,6 +110,7 @@ class AuthService {
     const payload = {
       id: user.id,
       email: user.email,
+      ver: user.token_version,
       type: 'refresh'
     };
 
@@ -136,6 +138,16 @@ class AuthService {
     }
 
     return payload;
+  }
+
+  /**
+   * Check a verified token was issued for the user's current session generation
+   * @param {Object} payload - Verified token payload
+   * @param {Object} user - User loaded from the database
+   * @returns {boolean} True if the token has not been revoked
+   */
+  static isTokenCurrent(payload, user) {
+    return Number.isInteger(payload.ver) && payload.ver === user.token_version;
   }
 
   /**
@@ -244,6 +256,10 @@ class AuthService {
 
     if (!user) {
       throw new Error('User not found');
+    }
+
+    if (!this.isTokenCurrent(payload, user)) {
+      throw new Error('Refresh token has been revoked');
     }
 
     if (!user.status.is_active) {

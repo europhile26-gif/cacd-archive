@@ -48,10 +48,10 @@ async function requireAuth(request, reply) {
     // Get user from database
     const user = await User.findById(payload.id);
 
-    if (!user) {
+    if (!user || !AuthService.isTokenCurrent(payload, user)) {
       return reply.code(401).send({
         error: 'Unauthorized',
-        message: 'User not found'
+        message: 'Invalid or expired token'
       });
     }
 
@@ -247,7 +247,7 @@ async function optionalAuth(request, _reply) {
     // Get user from database
     const user = await User.findById(payload.id);
 
-    if (user && user.status.is_active) {
+    if (user && user.status.is_active && AuthService.isTokenCurrent(payload, user)) {
       // Attach user to request
       request.user = user;
     }
