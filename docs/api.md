@@ -1,6 +1,8 @@
 # API Guide
 
-Interactive Swagger documentation is available at `/api/docs` when the server is running.
+Interactive Swagger documentation is available at `/api/docs` when the server is running, and the OpenAPI 3.1 document at `/api/docs/json`.
+
+Building an agent? Start with the [agent guides](agents/README.md).
 
 ## Base URL
 

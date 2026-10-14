@@ -45,6 +45,7 @@ Visit `http://localhost:3000` to access the web interface.
 - [Upgrading](docs/upgrading.md) - How to update a running instance to a new version
 - [Configuration Reference](docs/configuration.md) - Environment variables, deployment, PM2 setup
 - [API Guide](docs/api.md) - REST API usage and Swagger docs
+- [Agent Guides](docs/agents/README.md) - Using the API from an AI agent with an API key: alerts, upcoming hearings, historic search
 - [CLI Reference](docs/cli.md) - Command-line tools for administration
 - [Security](docs/security.md) - Security features and best practices
 - [Architecture](docs/architecture.md) - System design and how the components fit together

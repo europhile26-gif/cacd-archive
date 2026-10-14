@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Guides for AI agents in `docs/agents/`.** How to connect with an API key, what the hearing data means, how search matching works, errors and rate limits, and a walkthrough for each task an agent is expected to do: create an alert, list and manage alerts, find upcoming hearings, and search historic ones. Every example was run against a live server. The guides spell out what an agent shouldn't promise: alerts only fire for hearings listed today or tomorrow, not when a case is first fixed weeks ahead.
+- **`GET /users/me` reports `email_notifications_enabled`**, so an agent can tell whether a user's alerts will actually send. The setting could be changed through the API but never read back.
+
+### Changed
+
+- **The API spec is now OpenAPI 3.1** (was Swagger 2.0) at `/api/docs/json`. Each operation lists the credentials it takes, and those open to API keys say "Accepts API keys".
+- Hearing fields with no value (`judge`, `hearingType`, `crownCourt`, `venue` and others) are returned as `null` rather than an empty string, so "not given" can be told apart from blank.
+- `GET /dates` returns dates as `YYYY-MM-DD`, and `GET /data-sources` returns `show_by_default` as a boolean. Both, along with `PATCH /users/me/notifications` and `DELETE /searches/:id`, now have documented response schemas.
+
 ## [1.22.0] - 2026-10-14
 
 API keys for agents acting on a user's behalf, and rate limits shared across PM2 instances through Redis. Guides for agents follow in a later release.
