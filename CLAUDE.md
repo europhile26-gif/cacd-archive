@@ -43,10 +43,10 @@ CACD Archive is a Node.js application that scrapes, parses, and archives UK Cour
 
 ### Key Layers
 
-- **API** (`src/api/`) — Route plugins under `src/api/routes/`. Auth middleware in `src/api/middleware/auth.js`. Rate limiting exempts signed-in users (via `allowList`) except on `/auth/*` credential routes, which have their own stricter limit. Counters live in Redis when `REDIS_URL` is set (`src/config/redis.js`), otherwise per process. Routes prefixed under `/api/v1/`.
-- **Services** (`src/services/`) — Business logic: `scraper-service.js` (orchestrates scraping), `auth-service.js` (authentication), `email-service.js` (notifications), `notification-service.js` (saved search alerts), `sync-service.js` (data persistence), `permission-service.js` (RBAC).
+- **API** (`src/api/`) — Route plugins under `src/api/routes/`. Auth middleware in `src/api/middleware/auth.js`. Rate limiting exempts signed-in users (via `allowList`) except on `/auth/*` credential routes, which have their own stricter limit. Counters live in Redis when `REDIS_URL` is set (`src/config/redis.js`), otherwise per process. `resolveCredentials` in the auth middleware resolves a JWT or an API key (`cacd_…` bearer token) once per request; API keys only work on routes with `config: { apiKey: true }`. Routes prefixed under `/api/v1/`.
+- **Services** (`src/services/`) — Business logic: `scraper-service.js` (orchestrates scraping), `auth-service.js` (authentication), `email-service.js` (notifications), `notification-service.js` (saved search alerts), `sync-service.js` (data persistence), `permission-service.js` (RBAC), `api-key-service.js` (agent API keys).
 - **Scrapers** (`src/scrapers/`) — `link-discovery.js` finds cause list URLs from the summary page, `table-parser.js` extracts hearing data from HTML, `scheduler.js` manages cron-based periodic scraping.
-- **Models** (`src/models/`) — Domain objects: `User.js`, `Role.js`, `Capability.js`, `AccountStatus.js`, `SavedSearch.js`.
+- **Models** (`src/models/`) — Domain objects: `User.js`, `Role.js`, `Capability.js`, `AccountStatus.js`, `SavedSearch.js`, `ApiKey.js`.
 - **Database** (`src/config/database.js`) — Connection pool. Migrations are sequential SQL files in `src/db/migrations/` tracked in a `schema_migrations` table.
 - **Config** (`src/config/config.js`) — Loads `.env` via dotenv. All config centralized here.
 - **Frontend** (`public/`) — Static files served by Fastify. Production uses `dist/` built by `scripts/build.js`. Frontend routes served via `src/api/routes/frontend.js`.

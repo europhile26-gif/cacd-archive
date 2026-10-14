@@ -9,7 +9,13 @@ const fastifyCookie = require('@fastify/cookie');
 const path = require('path');
 const config = require('../config/config');
 const logger = require('../utils/logger');
-const { resolveCredentials, CREDENTIALS_VALID } = require('./middleware/auth');
+const {
+  resolveCredentials,
+  restrictApiKeyRoutes,
+  CREDENTIALS_VALID,
+  AUTH_METHOD_JWT,
+  AUTH_METHOD_API_KEY
+} = require('./middleware/auth');
 const analyticsService = require('../services/analytics-service');
 const geoipService = require('../services/geoip-service');
 const { createRedisClient, waitForFirstConnection } = require('../config/redis');
@@ -17,6 +23,8 @@ const { version } = require('../../package.json');
 
 // Prefix for rate-limit counters in Redis
 const RATE_LIMIT_NAMESPACE = 'cacd-archive:rate-limit:';
+// Prefix for counters kept per API key rather than per address
+const API_KEY_COUNTER_PREFIX = 'api-key:';
 
 /**
  * Resolves the trustProxy value passed to Fastify, warning on the insecure setting.
@@ -123,15 +131,15 @@ function resolveCorsOptions() {
 }
 
 /**
- * Exempts signed-in sessions from the general API rate limit, except on credential routes.
+ * Exempts browser sessions from the general API rate limit, except on credential routes.
  */
 async function isRateLimitExempt(request) {
   let exempt = false;
 
   if (!request.routeOptions.config?.rateLimit) {
     try {
-      const { outcome } = await resolveCredentials(request);
-      exempt = outcome === CREDENTIALS_VALID;
+      const { outcome, authMethod } = await resolveCredentials(request);
+      exempt = outcome === CREDENTIALS_VALID && authMethod === AUTH_METHOD_JWT;
     } catch (error) {
       logger.error('Rate limit credentials check failed', { error: error.message });
     }
@@ -141,12 +149,39 @@ async function isRateLimitExempt(request) {
 }
 
 /**
+ * Counts API key requests per key and everything else per client address.
+ */
+async function rateLimitKey(request) {
+  let counterKey = request.ip;
+
+  try {
+    const { outcome, authMethod, apiKey } = await resolveCredentials(request);
+    if (outcome === CREDENTIALS_VALID && authMethod === AUTH_METHOD_API_KEY) {
+      counterKey = `${API_KEY_COUNTER_PREFIX}${apiKey.public_id}`;
+    }
+  } catch (error) {
+    logger.error('Rate limit credentials check failed', { error: error.message });
+  }
+
+  return counterKey;
+}
+
+/**
+ * Picks the API key limit or the general limit for a counter.
+ */
+function rateLimitFor(apiKeyLimit, generalLimit) {
+  return (_request, counterKey) =>
+    counterKey.startsWith(API_KEY_COUNTER_PREFIX) ? apiKeyLimit : generalLimit;
+}
+
+/**
  * Builds the general rate-limit options, counting in Redis when REDIS_URL is set.
  */
 async function resolveRateLimitOptions(server) {
   const options = {
-    max: config.api.rateLimit.max,
-    timeWindow: config.api.rateLimit.timeWindow,
+    max: rateLimitFor(config.apiKeys.rateLimit.max, config.api.rateLimit.max),
+    timeWindow: rateLimitFor(config.apiKeys.rateLimit.timeWindow, config.api.rateLimit.timeWindow),
+    keyGenerator: rateLimitKey,
     allowList: isRateLimitExempt
   };
 
@@ -274,6 +309,8 @@ async function createServer() {
     async (apiServer) => {
       // allowList is the plugin's exemption hook; it has no 'skip' option.
       await apiServer.register(fastifyRateLimit, await resolveRateLimitOptions(apiServer));
+      // After the rate limiter, so refused API key requests still count
+      apiServer.addHook('onRequest', restrictApiKeyRoutes);
 
       // Register API routes
       await apiServer.register(require('./routes/health'), { prefix: '/api/v1' });

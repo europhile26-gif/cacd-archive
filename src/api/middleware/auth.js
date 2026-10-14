@@ -4,6 +4,7 @@
  */
 
 const AuthService = require('../../services/auth-service');
+const ApiKeyService = require('../../services/api-key-service');
 const PermissionService = require('../../services/permission-service');
 const User = require('../../models/User');
 const logger = require('../../utils/logger');
@@ -13,6 +14,9 @@ const CREDENTIALS_MISSING = 'missing';
 const CREDENTIALS_INVALID = 'invalid';
 const CREDENTIALS_INACTIVE = 'inactive';
 const CREDENTIALS_VALID = 'valid';
+
+const AUTH_METHOD_JWT = 'jwt';
+const AUTH_METHOD_API_KEY = 'api_key';
 
 // One resolution per request, shared by the rate limiter and the auth pre-handlers
 const resolvedCredentials = new WeakMap();
@@ -34,13 +38,34 @@ function extractToken(request) {
 }
 
 /**
- * Verifies the request's access token and loads its user.
+ * Resolves an API key to its owner and records the key's use.
+ */
+async function lookUpApiKey(request, token) {
+  const credentials = { outcome: CREDENTIALS_INVALID, user: null, authMethod: null, apiKey: null };
+  const authenticated = await ApiKeyService.authenticate(token);
+
+  if (authenticated) {
+    const { user, apiKey } = authenticated;
+    credentials.outcome = user.status.is_active ? CREDENTIALS_VALID : CREDENTIALS_INACTIVE;
+    credentials.user = user;
+    credentials.authMethod = AUTH_METHOD_API_KEY;
+    credentials.apiKey = apiKey;
+    ApiKeyService.recordUse(apiKey, request.ip);
+  }
+
+  return credentials;
+}
+
+/**
+ * Verifies the request's access token or API key and loads its user.
  */
 async function lookUpCredentials(request) {
   const token = extractToken(request);
-  const credentials = { outcome: CREDENTIALS_MISSING, user: null, authMethod: null };
+  let credentials = { outcome: CREDENTIALS_MISSING, user: null, authMethod: null, apiKey: null };
 
-  if (token) {
+  if (ApiKeyService.isApiKey(token)) {
+    credentials = await lookUpApiKey(request, token);
+  } else if (token) {
     const payload = AuthService.verifyToken(token);
     const user = payload && payload.type === 'access' ? await User.findById(payload.id) : null;
 
@@ -49,7 +74,7 @@ async function lookUpCredentials(request) {
     } else {
       credentials.outcome = user.status.is_active ? CREDENTIALS_VALID : CREDENTIALS_INACTIVE;
       credentials.user = user;
-      credentials.authMethod = 'jwt';
+      credentials.authMethod = AUTH_METHOD_JWT;
     }
   }
 
@@ -57,7 +82,7 @@ async function lookUpCredentials(request) {
 }
 
 /**
- * Resolves the request's credentials to { outcome, user, authMethod }, once per request.
+ * Resolves the request's credentials to { outcome, user, authMethod, apiKey }, once per request.
  */
 function resolveCredentials(request) {
   if (!resolvedCredentials.has(request)) {
@@ -65,6 +90,18 @@ function resolveCredentials(request) {
   }
 
   return resolvedCredentials.get(request);
+}
+
+/**
+ * Refuses API keys on routes that haven't opted in with `config: { apiKey: true }`.
+ */
+async function restrictApiKeyRoutes(request, reply) {
+  if (ApiKeyService.isApiKey(extractToken(request)) && !request.routeOptions.config?.apiKey) {
+    return reply.code(403).send({
+      error: 'Forbidden',
+      message: 'API keys cannot be used on this endpoint'
+    });
+  }
 }
 
 /**
@@ -260,7 +297,10 @@ async function optionalAuth(request, _reply) {
 
 module.exports = {
   CREDENTIALS_VALID,
+  AUTH_METHOD_JWT,
+  AUTH_METHOD_API_KEY,
   resolveCredentials,
+  restrictApiKeyRoutes,
   requireAuth,
   requireRole,
   requireAnyRole,

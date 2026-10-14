@@ -7,6 +7,7 @@ const { Command } = require('commander');
 const chalk = require('chalk');
 const { formatHeader } = require('./utils/format');
 const userCommands = require('./commands/users');
+const apiKeyCommands = require('./commands/api-keys');
 const dbCommands = require('./commands/db');
 const searchCommands = require('./commands/search');
 const config = require('../config/config');
@@ -83,6 +84,52 @@ usersCommand
   .option('-i, --id <id>', 'User ID')
   .option('-e, --email <email>', 'User email')
   .action(userCommands.revokeSessions);
+
+const apiKeysCommand = usersCommand
+  .command('api-keys')
+  .description('Manage API keys that let an agent act as a user');
+
+apiKeysCommand
+  .command('create')
+  .description('Create an API key for a user (the key is shown once)')
+  .option('-i, --id <id>', 'User ID')
+  .option('-e, --email <email>', 'User email')
+  .option('-l, --label <label>', 'What the key is for, e.g. "Claude agent"')
+  .option(
+    '-x, --expires <days>',
+    'Days until the key expires (default API_KEY_DEFAULT_EXPIRY_DAYS)'
+  )
+  .action(apiKeyCommands.createApiKey);
+
+apiKeysCommand
+  .command('list')
+  .description('List API keys, for every user or one')
+  .option('-i, --id <id>', 'User ID')
+  .option('-e, --email <email>', 'User email')
+  .action(apiKeyCommands.listApiKeys);
+
+apiKeysCommand
+  .command('rotate')
+  .description('Replace a key with a new one for the same owner and label')
+  .option('-k, --key <keyId>', 'Key id (the 8 characters after cacd_)')
+  .option(
+    '-x, --expires <days>',
+    'Days until the new key expires (default API_KEY_DEFAULT_EXPIRY_DAYS)'
+  )
+  .action(apiKeyCommands.rotateApiKey);
+
+apiKeysCommand
+  .command('revoke')
+  .description('Revoke one API key')
+  .option('-k, --key <keyId>', 'Key id (the 8 characters after cacd_)')
+  .action(apiKeyCommands.revokeApiKey);
+
+apiKeysCommand
+  .command('revoke-all')
+  .description('Revoke every API key a user holds')
+  .option('-i, --id <id>', 'User ID')
+  .option('-e, --email <email>', 'User email')
+  .action(apiKeyCommands.revokeAllApiKeys);
 
 // Database Commands
 const dbCommand = program.command('db').description('Database management commands');

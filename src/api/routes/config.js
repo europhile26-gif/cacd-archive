@@ -6,6 +6,7 @@ module.exports = async function (fastify) {
   fastify.get(
     '/config',
     {
+      config: { apiKey: true },
       schema: {
         description: 'Get public application configuration',
         tags: ['System'],
@@ -30,6 +31,7 @@ module.exports = async function (fastify) {
   fastify.get(
     '/data-sources',
     {
+      config: { apiKey: true },
       schema: {
         description: 'Get list of enabled data sources',
         tags: ['System']

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CACD Archive - API Key Expiring</title>
+    <style>
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background-color: #ffffff;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        background-color: #1e3a5f;
+        color: #ffffff;
+        padding: 20px;
+        border-radius: 8px 8px 0 0;
+        margin: -30px -30px 30px -30px;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 600;
+      }
+      .info-grid {
+        display: grid;
+        grid-template-columns: 150px 1fr;
+        gap: 12px;
+        margin: 20px 0;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        border-left: 4px solid #ffc107;
+      }
+      .info-label {
+        font-weight: 600;
+        color: #495057;
+      }
+      .command {
+        font-family: 'Courier New', monospace;
+        background-color: #f8f9fa;
+        padding: 12px;
+        border-radius: 6px;
+        word-break: break-all;
+      }
+      .footer {
+        margin-top: 30px;
+        font-size: 12px;
+        color: #6c757d;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>API key expires {{expiresOn}}</h1>
+      </div>
+
+      <p>
+        An API key on {{environment}} will stop working when it expires. Rotate it and give the new
+        key to the agent before then.
+      </p>
+
+      <div class="info-grid">
+        <div class="info-label">Label:</div>
+        <div>{{label}}</div>
+        <div class="info-label">Key id:</div>
+        <div>{{publicId}}</div>
+        <div class="info-label">Owner:</div>
+        <div>{{ownerName}} &lt;{{ownerEmail}}&gt;</div>
+        <div class="info-label">Expires:</div>
+        <div>{{expiresAt}}</div>
+        <div class="info-label">Last used:</div>
+        <div>{{lastUsed}}</div>
+      </div>
+
+      <p>To rotate it, run on the server:</p>
+      <div class="command">{{rotateCommand}}</div>
+
+      <div class="footer">This is an automated notice from CACD Archive.</div>
+    </div>
+  </body>
+</html>

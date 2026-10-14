@@ -8,6 +8,7 @@ async function healthRoutes(fastify, _options) {
   fastify.get(
     '/health',
     {
+      config: { apiKey: true },
       schema: {
         tags: ['System'],
         description: 'Health check endpoint',

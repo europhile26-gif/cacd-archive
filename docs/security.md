@@ -60,6 +60,19 @@ Cross-Origin Resource Sharing is configurable per environment:
 - **Type Coercion**: Strict type checking on query parameters
 - **SQL Injection Prevention**: Parameterized queries throughout
 
+### 7. API Keys
+
+API keys let an agent call the API as a user. They are long-lived and held outside a browser, so they lose what protects a browser session (`SameSite=strict` cookies, 15-minute tokens). What a stolen key can do is therefore kept small:
+
+- **Route allowlist.** A key works only on routes that opt in with `config: { apiKey: true }`: reading hearings, dates, config, data sources and health; managing the owner's saved searches; reading the owner's profile; and turning their alert emails on or off. Everything else — `/auth/*`, `/admin/*`, analytics, profile edits — refuses keys with 403, even when the owner is an administrator. New routes are closed to keys unless they opt in.
+- **Within the allowlist, the owner's capabilities still apply**, so a key never does more than its owner could.
+- **No spam relay.** No route a key reaches takes an email address. The only email a key can cause is the saved-search digest, sent to the owner's own address, at most once per scrape and from at most `SAVED_SEARCH_MAX_PER_USER` searches.
+- **Stored as a hash.** A key is `cacd_<key id>_<256-bit secret>`. Only its sha256 hash is stored, compared in constant time; the full key is shown once, at creation. A fast hash is enough because the secret is random, not a password.
+- **Expiry.** Every key expires (default 365 days). A warning is emailed to `EMAIL_RECIPIENT_DATA_ERRORS` `API_KEY_EXPIRY_WARNING_DAYS` before, from instance 0; a failed send is retried the next day.
+- **Revocation.** `users api-keys revoke` or `revoke-all` stops a key immediately. Deactivating the owner stops all their keys. Changing the owner's password does not, so an agent keeps working across password changes.
+- **Rate limit.** Each key has its own limit (`API_KEY_RATE_LIMIT_MAX`), shared across instances when `REDIS_URL` is set.
+- **Audit.** `users api-keys list` shows when and from which address each key was last used (written at most once a minute per key). Keys are never logged.
+
 ## Configuration
 
 ### Environment Variables

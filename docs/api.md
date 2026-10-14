@@ -13,7 +13,9 @@ Most endpoints are public. Authenticated endpoints require a JWT access token, s
 - `Authorization: Bearer <token>` header
 - `accessToken` HTTP-only cookie (set automatically on login)
 
-Signed-in users are exempt from the general API rate limit. Login, registration and password routes have a stricter per-IP limit that applies to everyone. See [Security](security.md#2-rate-limiting).
+Agents authenticate with an **API key** in the same header: `Authorization: Bearer cacd_…`. A key acts as the user it was issued to, with that user's capabilities, but only on the endpoints marked **Key** below — everything else answers `403 API keys cannot be used on this endpoint`. Keys are issued with [`./bin/cacd users api-keys create`](cli.md#users-api-keys-create).
+
+Signed-in users are exempt from the general API rate limit. Login, registration and password routes have a stricter per-IP limit that applies to everyone. API key requests are never exempt: each key has its own limit (`API_KEY_RATE_LIMIT_MAX`, default 600 a minute). See [Security](security.md#2-rate-limiting).
 
 ## Example Requests
 
@@ -35,13 +37,15 @@ curl "http://localhost:3000/api/v1/dates"
 
 ### Hearings
 
-| Method | Path            | Description                               | Auth |
-| ------ | --------------- | ----------------------------------------- | ---- |
-| `GET`  | `/hearings`     | List hearings with filters and pagination | No   |
-| `GET`  | `/hearings/:id` | Get single hearing by ID                  | No   |
-| `GET`  | `/dates`        | Available dates with hearing counts       | No   |
+| Method | Path            | Description                               | Auth | Key |
+| ------ | --------------- | ----------------------------------------- | ---- | --- |
+| `GET`  | `/hearings`     | List hearings with filters and pagination | No   | Yes |
+| `GET`  | `/hearings/:id` | Get single hearing by ID                  | No   | Yes |
+| `GET`  | `/dates`        | Available dates with hearing counts       | No   | Yes |
 
 ### Authentication
+
+None of these accept API keys.
 
 | Method | Path                    | Description                   | Auth |
 | ------ | ----------------------- | ----------------------------- | ---- |
@@ -55,24 +59,26 @@ curl "http://localhost:3000/api/v1/dates"
 
 ### Users
 
-| Method  | Path                      | Description                                 | Auth               |
-| ------- | ------------------------- | ------------------------------------------- | ------------------ |
-| `GET`   | `/users/me`               | Current user profile, roles, and navigation | Yes                |
-| `PATCH` | `/users/me`               | Update own display name (`name` only)       | Yes                |
-| `PATCH` | `/users/me/notifications` | Toggle email notification preferences       | Yes                |
-| `GET`   | `/users/:id`              | Get user by ID                              | Yes (`users:view`) |
+| Method  | Path                      | Description                                 | Auth               | Key |
+| ------- | ------------------------- | ------------------------------------------- | ------------------ | --- |
+| `GET`   | `/users/me`               | Current user profile, roles, and navigation | Yes                | Yes |
+| `PATCH` | `/users/me`               | Update own display name (`name` only)       | Yes                | No  |
+| `PATCH` | `/users/me/notifications` | Toggle email notification preferences       | Yes                | Yes |
+| `GET`   | `/users/:id`              | Get user by ID                              | Yes (`users:view`) | No  |
 
 ### Saved Searches
 
-| Method   | Path            | Description            | Auth |
-| -------- | --------------- | ---------------------- | ---- |
-| `GET`    | `/searches`     | List saved searches    | Yes  |
-| `GET`    | `/searches/:id` | Get saved search by ID | Yes  |
-| `POST`   | `/searches`     | Create saved search    | Yes  |
-| `PATCH`  | `/searches/:id` | Update saved search    | Yes  |
-| `DELETE` | `/searches/:id` | Delete saved search    | Yes  |
+| Method   | Path            | Description            | Auth | Key |
+| -------- | --------------- | ---------------------- | ---- | --- |
+| `GET`    | `/searches`     | List saved searches    | Yes  | Yes |
+| `GET`    | `/searches/:id` | Get saved search by ID | Yes  | Yes |
+| `POST`   | `/searches`     | Create saved search    | Yes  | Yes |
+| `PATCH`  | `/searches/:id` | Update saved search    | Yes  | Yes |
+| `DELETE` | `/searches/:id` | Delete saved search    | Yes  | Yes |
 
 ### Admin
+
+None of the admin or analytics endpoints accept API keys.
 
 | Method   | Path                             | Description           | Auth                       |
 | -------- | -------------------------------- | --------------------- | -------------------------- |
@@ -104,10 +110,10 @@ Request analytics, gated on the `system:analytics` capability. See
 
 ### System
 
-| Method | Path            | Description                        | Auth |
-| ------ | --------------- | ---------------------------------- | ---- |
-| `GET`  | `/health`       | Health check                       | No   |
-| `GET`  | `/config`       | Public app configuration           | No   |
-| `GET`  | `/data-sources` | Enabled data sources (for filters) | No   |
+| Method | Path            | Description                        | Auth | Key |
+| ------ | --------------- | ---------------------------------- | ---- | --- |
+| `GET`  | `/health`       | Health check                       | No   | Yes |
+| `GET`  | `/config`       | Public app configuration           | No   | Yes |
+| `GET`  | `/data-sources` | Enabled data sources (for filters) | No   | Yes |
 
 See `/api/docs` for the full schema and response formats.

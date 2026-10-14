@@ -1,5 +1,6 @@
 const dotenv = require('dotenv');
 const path = require('path');
+const cron = require('node-cron');
 
 // Tests load .env.test first (test/setup-env.js). dotenv only fills unset variables,
 // so loading .env as well would leak the developer's settings into every test.
@@ -108,6 +109,20 @@ const config = {
     }
   },
 
+  apiKeys: {
+    // Active (unrevoked, unexpired) keys per user
+    maxPerUser: parseIntOption(process.env.API_KEY_MAX_PER_USER, 3),
+    defaultExpiryDays: parseIntOption(process.env.API_KEY_DEFAULT_EXPIRY_DAYS, 365),
+    expiryWarningDays: parseIntOption(process.env.API_KEY_EXPIRY_WARNING_DAYS, 7),
+    // When expiry warnings are checked (cron format). Instance 0 only.
+    expiryCheckCron: process.env.API_KEY_EXPIRY_CHECK_CRON || '0 8 * * *',
+    // Per key, shared across instances when REDIS_URL is set
+    rateLimit: {
+      max: parseIntOption(process.env.API_KEY_RATE_LIMIT_MAX, 600),
+      timeWindow: parseIntOption(process.env.API_KEY_RATE_LIMIT_WINDOW, 60000)
+    }
+  },
+
   redis: {
     // Empty keeps rate-limit counters in process memory
     url: process.env.REDIS_URL || ''
@@ -209,13 +224,34 @@ if (config.analytics.enabled) {
 
 for (const [variable, limit] of [
   ['API_RATE_LIMIT', config.api.rateLimit],
-  ['AUTH_RATE_LIMIT', config.api.authRateLimit]
+  ['AUTH_RATE_LIMIT', config.api.authRateLimit],
+  ['API_KEY_RATE_LIMIT', config.apiKeys.rateLimit]
 ]) {
   if (limit.max < 1 || limit.timeWindow < 1000) {
     configProblems.push(
       `${variable}_MAX must be at least 1 and ${variable}_WINDOW at least 1000ms.`
     );
   }
+}
+
+const { maxPerUser: maxKeysPerUser, defaultExpiryDays, expiryWarningDays } = config.apiKeys;
+
+if (maxKeysPerUser < 1) {
+  configProblems.push('API_KEY_MAX_PER_USER must be at least 1.');
+}
+
+if (defaultExpiryDays < 1 || defaultExpiryDays > 3650) {
+  configProblems.push('API_KEY_DEFAULT_EXPIRY_DAYS must be between 1 and 3650.');
+}
+
+if (expiryWarningDays < 1) {
+  configProblems.push('API_KEY_EXPIRY_WARNING_DAYS must be at least 1.');
+}
+
+if (!cron.validate(config.apiKeys.expiryCheckCron)) {
+  configProblems.push(
+    `API_KEY_EXPIRY_CHECK_CRON must be a cron expression; got "${config.apiKeys.expiryCheckCron}".`
+  );
 }
 
 if (config.redis.url && !/^rediss?:\/\//.test(config.redis.url)) {

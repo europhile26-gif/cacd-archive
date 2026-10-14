@@ -38,6 +38,7 @@ async function savedSearchRoutes(fastify, _options) {
   fastify.get(
     '/searches',
     {
+      config: { apiKey: true },
       preHandler: [requireAuth, requireCapability('searches:view-own')],
       schema: {
         tags: ['Saved Searches'],
@@ -74,6 +75,7 @@ async function savedSearchRoutes(fastify, _options) {
   fastify.get(
     '/searches/:id',
     {
+      config: { apiKey: true },
       preHandler: [requireAuth, requireCapability('searches:view-own')],
       schema: {
         tags: ['Saved Searches'],
@@ -117,6 +119,7 @@ async function savedSearchRoutes(fastify, _options) {
   fastify.post(
     '/searches',
     {
+      config: { apiKey: true },
       preHandler: [requireAuth, requireCapability('searches:create')],
       schema: {
         tags: ['Saved Searches'],
@@ -174,6 +177,7 @@ async function savedSearchRoutes(fastify, _options) {
   fastify.patch(
     '/searches/:id',
     {
+      config: { apiKey: true },
       preHandler: [requireAuth, requireCapability('searches:edit-own')],
       schema: {
         tags: ['Saved Searches'],
@@ -241,6 +245,7 @@ async function savedSearchRoutes(fastify, _options) {
   fastify.delete(
     '/searches/:id',
     {
+      config: { apiKey: true },
       preHandler: [requireAuth, requireCapability('searches:delete-own')],
       schema: {
         tags: ['Saved Searches'],

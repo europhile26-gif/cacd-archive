@@ -16,9 +16,11 @@ const { scrapeAll } = require('../services/scraper-service');
 const { shouldScrape } = require('../services/scrape-history-service');
 const { getEnabledSources } = require('../services/data-source-service');
 const analyticsService = require('../services/analytics-service');
+const ApiKeyService = require('../services/api-key-service');
 
 let scheduledTask = null;
 let analyticsPurgeTask = null;
+let apiKeyExpiryTask = null;
 let isShuttingDown = false;
 let scrapingInProgress = false;
 
@@ -232,6 +234,17 @@ function startScheduler() {
     });
   }
 
+  apiKeyExpiryTask = cron.schedule(config.apiKeys.expiryCheckCron, async () => {
+    try {
+      await ApiKeyService.sendExpiryWarnings();
+    } catch (error) {
+      logger.error('Scheduled API key expiry check failed', {
+        error: error.message,
+        stack: error.stack
+      });
+    }
+  });
+
   logger.info('Scheduler started', {
     checkInterval: 'Every 1 minute',
     appInstance: config.appInstance
@@ -254,6 +267,11 @@ async function stopScheduler() {
   if (analyticsPurgeTask) {
     analyticsPurgeTask.stop();
     analyticsPurgeTask = null;
+  }
+
+  if (apiKeyExpiryTask) {
+    apiKeyExpiryTask.stop();
+    apiKeyExpiryTask = null;
   }
 
   // Wait for any in-progress scrape to complete

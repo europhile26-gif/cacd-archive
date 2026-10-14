@@ -97,6 +97,62 @@ Log a user out everywhere. Every access and refresh token issued to the account 
 | `-i, --id <id>`       | User ID     |
 | `-e, --email <email>` | User email  |
 
+### `users api-keys create`
+
+Create an API key that lets an agent call the API as this user. The key is printed once; only its hash is stored, so copy it straight into the agent's configuration. The user must be active, and may hold at most `API_KEY_MAX_PER_USER` active keys.
+
+```bash
+./bin/cacd users api-keys create -e user@example.com -l "Claude agent"
+./bin/cacd users api-keys create -i 5 -l "Nightly report" -x 90
+```
+
+| Option                 | Description                                                   |
+| ---------------------- | ------------------------------------------------------------- |
+| `-i, --id <id>`        | User ID                                                       |
+| `-e, --email <email>`  | User email                                                    |
+| `-l, --label <label>`  | What the key is for (required, up to 100 characters)          |
+| `-x, --expires <days>` | Days until it expires (default `API_KEY_DEFAULT_EXPIRY_DAYS`) |
+
+A key looks like `cacd_1a2b3c4d_<secret>`. The 8 characters after `cacd_` are its **key id**, which the other commands take and which is safe to share.
+
+### `users api-keys list`
+
+List keys with owner, label, created, last used (time and address), expiry and state (`active`, `expired` or `revoked`). Times are UTC.
+
+```bash
+./bin/cacd users api-keys list
+./bin/cacd users api-keys list -e user@example.com
+```
+
+### `users api-keys rotate`
+
+Issue a replacement key with the same owner and label, and revoke the old one at the same moment. Works on an expired key, so an agent that missed the expiry warning can be restored. The new key is printed once.
+
+```bash
+./bin/cacd users api-keys rotate -k 1a2b3c4d
+```
+
+| Option                 | Description                                                            |
+| ---------------------- | ---------------------------------------------------------------------- |
+| `-k, --key <keyId>`    | Key id                                                                 |
+| `-x, --expires <days>` | Days until the new key expires (default `API_KEY_DEFAULT_EXPIRY_DAYS`) |
+
+### `users api-keys revoke`
+
+Revoke one key. It stops working immediately. Running it again on a revoked key is harmless.
+
+```bash
+./bin/cacd users api-keys revoke -k 1a2b3c4d
+```
+
+### `users api-keys revoke-all`
+
+Revoke every key a user holds, e.g. when the machine running their agent may be compromised. Passwords and browser sessions are unaffected; use `users revoke-sessions` for those.
+
+```bash
+./bin/cacd users api-keys revoke-all -e user@example.com
+```
+
 ### `db summary`
 
 Show a summary of database contents: hearing counts by source, scrape history with success/failure counts, users, saved searches, and notifications.

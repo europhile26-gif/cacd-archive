@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **API keys, so an agent can act on a user's behalf.** `./bin/cacd users api-keys create|list|rotate|revoke|revoke-all` manages long-lived keys (migration `016_api_keys.sql`). A key is sent as `Authorization: Bearer cacd_…` and acts as its owner with the owner's capabilities — but only on an allowlist of routes: hearings, dates, config, data sources, health, the owner's saved searches, their profile and their alert setting. Admin, analytics, `/auth/*` and profile edits refuse keys with 403, even for an administrator, and new routes are closed to keys unless they opt in.
+  - Only a sha256 hash of each key is stored; the key is shown once.
+  - Keys expire (default 365 days, `API_KEY_DEFAULT_EXPIRY_DAYS`), with a warning emailed to `EMAIL_RECIPIENT_DATA_ERRORS` seven days before (`API_KEY_EXPIRY_WARNING_DAYS`, checked daily on instance 0 at `API_KEY_EXPIRY_CHECK_CRON`). `rotate` issues a replacement and revokes the old key in one step.
+  - At most three active keys per user (`API_KEY_MAX_PER_USER`).
+  - Each key has its own rate limit, 600 requests a minute by default (`API_KEY_RATE_LIMIT_MAX`, `API_KEY_RATE_LIMIT_WINDOW`); key requests never get the signed-in exemption.
+  - `list` shows when and from which address each key was last used.
+
 - **Rate limits shared across PM2 instances.** With the new `REDIS_URL` set, rate-limit counters live in Redis, so the limits hold across both production instances instead of each one allowing the full amount. Unset, counters stay in each process as before, and production warns at startup. If Redis goes down, requests are let through rather than refused; the outage is logged once, and recovery when it reconnects. Adds `ioredis`.
 
 ### Changed

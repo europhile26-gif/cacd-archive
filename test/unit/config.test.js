@@ -136,6 +136,29 @@ describe('config validation', () => {
       expect(config.notifications).toEqual({ maxPerWindow: 5, windowHours: 24 });
     });
 
+    test('API key options default to 3 keys, 365 days, a 7-day warning and 600 a minute', () => {
+      const config = requireConfig(REQUIRED);
+
+      expect(config.apiKeys).toMatchObject({
+        maxPerUser: 3,
+        defaultExpiryDays: 365,
+        expiryWarningDays: 7,
+        rateLimit: { max: 600, timeWindow: 60000 }
+      });
+    });
+
+    test('rejects an invalid API key expiry check schedule', () => {
+      expect(() => requireConfig({ ...REQUIRED, API_KEY_EXPIRY_CHECK_CRON: 'daily' })).toThrow(
+        'API_KEY_EXPIRY_CHECK_CRON'
+      );
+    });
+
+    test('rejects a zero API key cap', () => {
+      expect(() => requireConfig({ ...REQUIRED, API_KEY_MAX_PER_USER: '0' })).toThrow(
+        'API_KEY_MAX_PER_USER'
+      );
+    });
+
     test('REDIS_URL is optional', () => {
       delete process.env.REDIS_URL;
 

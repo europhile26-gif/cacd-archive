@@ -16,6 +16,7 @@ async function userRoutes(fastify, _options) {
   fastify.get(
     '/me',
     {
+      config: { apiKey: true },
       preHandler: [requireAuth, requireCapability('profile:view-own')],
       schema: {
         tags: ['Users'],
@@ -199,6 +200,7 @@ async function userRoutes(fastify, _options) {
   fastify.patch(
     '/me/notifications',
     {
+      config: { apiKey: true },
       preHandler: [requireAuth, requireCapability('notifications:manage-own')],
       schema: {
         tags: ['Users'],

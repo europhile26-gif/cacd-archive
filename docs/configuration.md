@@ -76,6 +76,19 @@ All configuration is via environment variables in `.env`. See `.env.example` for
 | `REDIS_URL`                     | —          | Redis for rate-limit counters shared across PM2 instances (e.g. `redis://127.0.0.1:6379`). Unset: per process  |
 | `TRUSTED_PROXIES`               | `loopback` | Reverse proxies allowed to set `X-Forwarded-For`                                                               |
 
+## API Keys
+
+Keys are managed with [`./bin/cacd users api-keys`](cli.md#users-api-keys-create). See [Security](security.md#7-api-keys) for what a key can reach.
+
+| Variable                      | Default     | Description                                                                   |
+| ----------------------------- | ----------- | ----------------------------------------------------------------------------- |
+| `API_KEY_MAX_PER_USER`        | `3`         | Most active (unrevoked, unexpired) keys one user may hold                     |
+| `API_KEY_DEFAULT_EXPIRY_DAYS` | `365`       | Lifetime of a new key in days (1–3650); `--expires` overrides it              |
+| `API_KEY_EXPIRY_WARNING_DAYS` | `7`         | Days before expiry that a warning is emailed to `EMAIL_RECIPIENT_DATA_ERRORS` |
+| `API_KEY_EXPIRY_CHECK_CRON`   | `0 8 * * *` | When the expiry check runs (instance 0 only)                                  |
+| `API_KEY_RATE_LIMIT_MAX`      | `600`       | Requests per window, per key                                                  |
+| `API_KEY_RATE_LIMIT_WINDOW`   | `60000`     | Window for the above, in ms (1 min)                                           |
+
 ## Request Analytics
 
 Server-side request logging. Nothing is stored in the browser — no cookies, no

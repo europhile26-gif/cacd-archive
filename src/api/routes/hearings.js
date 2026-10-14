@@ -52,6 +52,7 @@ async function hearingsRoutes(fastify, _options) {
   fastify.get(
     '/hearings',
     {
+      config: { apiKey: true },
       schema: {
         tags: ['Hearings'],
         description: 'Get list of hearings with filtering and pagination',
@@ -205,6 +206,7 @@ async function hearingsRoutes(fastify, _options) {
   fastify.get(
     '/hearings/:id',
     {
+      config: { apiKey: true },
       schema: {
         tags: ['Hearings'],
         description: 'Get single hearing by ID',
@@ -254,6 +256,7 @@ async function hearingsRoutes(fastify, _options) {
   fastify.get(
     '/dates',
     {
+      config: { apiKey: true },
       schema: {
         tags: ['Hearings'],
         description: 'Get list of available dates with hearing counts'

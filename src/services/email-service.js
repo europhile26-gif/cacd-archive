@@ -101,6 +101,12 @@ class EmailService {
       );
       this.templates.savedSearchMatches = handlebars.compile(savedSearchMatchesHtml);
 
+      const apiKeyExpiryHtml = await fs.readFile(
+        path.join(templatesDir, 'api-key-expiry.html'),
+        'utf8'
+      );
+      this.templates.apiKeyExpiry = handlebars.compile(apiKeyExpiryHtml);
+
       logger.debug('Email templates loaded successfully');
     } catch (error) {
       logger.error('Failed to load email templates', {
@@ -259,6 +265,69 @@ class EmailService {
     text += 'This is an automated alert from CACD Archive.\n';
     text += 'The .gov.uk site may have changed its HTML structure or naming conventions.\n';
 
+    return text;
+  }
+
+  /**
+   * Emails the operator that an API key is about to expire; returns null when nothing was sent.
+   */
+  async sendApiKeyExpiryWarning(apiKey) {
+    let info = null;
+
+    if (!this.initialized || !config.email.enabled || !this.transporter) {
+      logger.warn('API key expiry warning not sent - email is disabled or not initialised', {
+        publicId: apiKey.public_id
+      });
+    } else if (!config.email.dataErrorRecipient) {
+      logger.warn('API key expiry warning not sent - EMAIL_RECIPIENT_DATA_ERRORS is not set', {
+        publicId: apiKey.public_id
+      });
+    } else {
+      const templateData = {
+        environment: config.env,
+        label: apiKey.label,
+        publicId: apiKey.public_id,
+        ownerName: apiKey.user_name,
+        ownerEmail: apiKey.user_email,
+        expiresOn: apiKey.expires_at.toISOString().slice(0, 10),
+        expiresAt: `${apiKey.expires_at.toISOString().replace('T', ' ').slice(0, 16)} UTC`,
+        lastUsed: apiKey.last_used_at
+          ? `${apiKey.last_used_at.toISOString().replace('T', ' ').slice(0, 16)} UTC`
+          : 'never',
+        rotateCommand: `./bin/cacd users api-keys rotate --key ${apiKey.public_id}`
+      };
+
+      info = await this.transporter.sendMail({
+        from: config.email.from,
+        to: config.email.dataErrorRecipient,
+        subject: `[CACD Archive] API key "${apiKey.label}" expires ${templateData.expiresOn}`,
+        text: this.generatePlainTextApiKeyExpiry(templateData),
+        html: this.templates.apiKeyExpiry(templateData)
+      });
+
+      logger.info('API key expiry warning sent', {
+        messageId: info.messageId,
+        publicId: apiKey.public_id
+      });
+    }
+
+    return info;
+  }
+
+  /**
+   * Generate plain text version of the API key expiry warning
+   */
+  generatePlainTextApiKeyExpiry(data) {
+    let text = `CACD Archive - API key expires ${data.expiresOn}\n`;
+    text += '==============================================\n\n';
+    text += `An API key on ${data.environment} will stop working when it expires.\n`;
+    text += 'Rotate it and give the new key to the agent before then.\n\n';
+    text += `Label:     ${data.label}\n`;
+    text += `Key id:    ${data.publicId}\n`;
+    text += `Owner:     ${data.ownerName} <${data.ownerEmail}>\n`;
+    text += `Expires:   ${data.expiresAt}\n`;
+    text += `Last used: ${data.lastUsed}\n\n`;
+    text += `To rotate it, run on the server:\n  ${data.rotateCommand}\n`;
     return text;
   }
 
