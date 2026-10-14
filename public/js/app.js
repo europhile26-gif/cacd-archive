@@ -234,13 +234,17 @@
     }
 
     hearings.forEach((hearing) => {
+      const restriction = hearing.reportingRestriction
+        ? `<div class="reporting-restriction small text-danger mt-1"><i class="bi bi-exclamation-triangle-fill"></i> ${escapeHtml(hearing.reportingRestriction)}</div>`
+        : '';
+
       // Desktop table row
       const row = document.createElement('tr');
       row.innerHTML = `
         <td class="hearing-datetime">${formatDateTime(hearing.hearingDateTime)}</td>
         <td class="venue">${escapeHtml(hearing.venue)}</td>
         <td class="case-number">${escapeHtml(hearing.caseNumber)} ${sourceBadge(hearing)}</td>
-        <td class="case-details">${escapeHtml(hearing.caseDetails)}</td>
+        <td class="case-details">${escapeHtml(hearing.caseDetails)}${restriction}</td>
         <td class="hearing-type">${escapeHtml(hearing.hearingType)}</td>
         <td class="crown-court">${escapeHtml(hearing.crownCourt)}</td>
         <td class="judge">${escapeHtml(hearing.judge)}</td>
@@ -258,6 +262,7 @@
           </div>
           <p class="card-text text-muted small mb-2">${formatDate(hearing.hearingDateTime)}</p>
           ${hearing.caseDetails ? `<p class="card-text">${escapeHtml(hearing.caseDetails)}</p>` : ''}
+          ${restriction}
           <div class="row g-2 small text-muted">
             ${hearing.venue ? `<div class="col-6"><strong>Venue:</strong> ${escapeHtml(hearing.venue)}</div>` : ''}
             ${hearing.hearingType ? `<div class="col-6"><strong>Type:</strong> ${escapeHtml(hearing.hearingType)}</div>` : ''}

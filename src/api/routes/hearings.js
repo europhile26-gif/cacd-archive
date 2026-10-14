@@ -1,6 +1,52 @@
 const { query } = require('../../config/database');
 const { buildHearingSearchFilter } = require('../../utils/search-filter');
 
+const hearingSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'number' },
+    listDate: { type: 'string' },
+    caseNumber: { type: 'string' },
+    time: { type: 'string' },
+    hearingDateTime: { type: 'string' },
+    venue: { type: 'string' },
+    judge: { type: 'string' },
+    caseDetails: { type: 'string' },
+    hearingType: { type: 'string' },
+    additionalInformation: { type: 'string' },
+    crownCourt: { type: 'string' },
+    reportingRestriction: { type: ['string', 'null'] },
+    division: { type: 'string' },
+    dataSourceName: { type: 'string' },
+    sourceUrl: { type: 'string' },
+    scrapedAt: { type: 'string' }
+  }
+};
+
+/**
+ * Maps a hearings row (joined with its data source name) to the API shape.
+ */
+function formatHearing(row) {
+  return {
+    id: row.id,
+    listDate: row.list_date,
+    caseNumber: row.case_number,
+    time: row.time,
+    hearingDateTime: row.hearing_datetime,
+    venue: row.venue,
+    judge: row.judge,
+    caseDetails: row.case_details,
+    hearingType: row.hearing_type,
+    additionalInformation: row.additional_information,
+    crownCourt: row.crown_court,
+    reportingRestriction: row.reporting_restriction,
+    division: row.division,
+    dataSourceName: row.data_source_name,
+    sourceUrl: row.source_url,
+    scrapedAt: row.scraped_at
+  };
+}
+
 async function hearingsRoutes(fastify, _options) {
   // GET /api/v1/hearings
   fastify.get(
@@ -17,10 +63,10 @@ async function hearingsRoutes(fastify, _options) {
             date: { type: 'string', format: 'date' },
             dateFrom: { type: 'string', format: 'date' },
             dateTo: { type: 'string', format: 'date' },
-            caseNumber: { type: 'string' },
-            search: { type: 'string' },
-            division: { type: 'string' },
-            dataSource: { type: 'string' },
+            caseNumber: { type: 'string', maxLength: 64 },
+            search: { type: 'string', maxLength: 255 },
+            division: { type: 'string', maxLength: 64 },
+            dataSource: { type: 'string', maxLength: 255 },
             sortBy: {
               type: 'string',
               enum: ['hearing_datetime', 'case_number', 'created_at'],
@@ -36,26 +82,7 @@ async function hearingsRoutes(fastify, _options) {
               success: { type: 'boolean' },
               data: {
                 type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'number' },
-                    listDate: { type: 'string' },
-                    caseNumber: { type: 'string' },
-                    time: { type: 'string' },
-                    hearingDateTime: { type: 'string' },
-                    venue: { type: 'string' },
-                    judge: { type: 'string' },
-                    caseDetails: { type: 'string' },
-                    hearingType: { type: 'string' },
-                    additionalInformation: { type: 'string' },
-                    crownCourt: { type: 'string' },
-                    division: { type: 'string' },
-                    dataSourceName: { type: 'string' },
-                    sourceUrl: { type: 'string' },
-                    scrapedAt: { type: 'string' }
-                  }
-                }
+                items: hearingSchema
               },
               pagination: {
                 type: 'object',
@@ -162,28 +189,9 @@ async function hearingsRoutes(fastify, _options) {
 
       const hearings = await query(sql, params);
 
-      // Format response
-      const formattedHearings = hearings.map((h) => ({
-        id: h.id,
-        listDate: h.list_date,
-        caseNumber: h.case_number,
-        time: h.time,
-        hearingDateTime: h.hearing_datetime,
-        venue: h.venue,
-        judge: h.judge,
-        caseDetails: h.case_details,
-        hearingType: h.hearing_type,
-        additionalInformation: h.additional_information,
-        crownCourt: h.crown_court,
-        division: h.division,
-        dataSourceName: h.data_source_name,
-        sourceUrl: h.source_url,
-        scrapedAt: h.scraped_at
-      }));
-
       return {
         success: true,
-        data: formattedHearings,
+        data: hearings.map(formatHearing),
         pagination: {
           limit,
           offset,
@@ -206,11 +214,26 @@ async function hearingsRoutes(fastify, _options) {
             id: { type: 'integer' }
           },
           required: ['id']
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: hearingSchema
+            }
+          }
         }
       }
     },
     async (request, reply) => {
-      const hearings = await query('SELECT * FROM hearings WHERE id = ?', [request.params.id]);
+      const hearings = await query(
+        `SELECT h.*, ds.display_name AS data_source_name
+         FROM hearings h
+         JOIN data_sources ds ON ds.id = h.data_source_id
+         WHERE h.id = ?`,
+        [request.params.id]
+      );
 
       if (hearings.length === 0) {
         reply.code(404);
@@ -220,24 +243,9 @@ async function hearingsRoutes(fastify, _options) {
         };
       }
 
-      const h = hearings[0];
       return {
         success: true,
-        data: {
-          id: h.id,
-          listDate: h.list_date,
-          caseNumber: h.case_number,
-          time: h.time,
-          hearingDateTime: h.hearing_datetime,
-          venue: h.venue,
-          judge: h.judge,
-          caseDetails: h.case_details,
-          hearingType: h.hearing_type,
-          additionalInformation: h.additional_information,
-          division: h.division,
-          sourceUrl: h.source_url,
-          scrapedAt: h.scraped_at
-        }
+        data: formatHearing(hearings[0])
       };
     }
   );

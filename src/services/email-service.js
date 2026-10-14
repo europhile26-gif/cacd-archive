@@ -356,6 +356,9 @@ class EmailService {
         if (match.judge_names) {
           text += `  Judge: ${match.judge_names}\n`;
         }
+        if (match.reporting_restriction) {
+          text += `  Reporting restriction: ${match.reporting_restriction}\n`;
+        }
         text += '\n';
       });
     });

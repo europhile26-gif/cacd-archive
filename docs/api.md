@@ -104,9 +104,10 @@ Request analytics, gated on the `system:analytics` capability. See
 
 ### System
 
-| Method | Path      | Description              | Auth |
-| ------ | --------- | ------------------------ | ---- |
-| `GET`  | `/health` | Health check             | No   |
-| `GET`  | `/config` | Public app configuration | No   |
+| Method | Path            | Description                        | Auth |
+| ------ | --------------- | ---------------------------------- | ---- |
+| `GET`  | `/health`       | Health check                       | No   |
+| `GET`  | `/config`       | Public app configuration           | No   |
+| `GET`  | `/data-sources` | Enabled data sources (for filters) | No   |
 
 See `/api/docs` for the full schema and response formats.

@@ -212,7 +212,8 @@ class NotificationService {
         hearing_time: hearing.time || 'Not specified',
         court_room: hearing.venue || 'Not specified',
         hearing_type: hearing.hearing_type,
-        judge_names: hearing.judge
+        judge_names: hearing.judge,
+        reporting_restriction: hearing.reporting_restriction
       }));
 
       return formattedMatches;

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Reporting restrictions were stored but never shown.** Fixed-for-hearing entries carry a reporting restriction (e.g. "1992 Sexual Offences Act applies") in the database since v1.11.0, but the hearings API left the field out, so neither the website nor saved-search emails showed it. `GET /hearings` and `GET /hearings/:id` now return `reportingRestriction`; the hearings list shows it under the case details in red, and alert emails include it.
+- `GET /hearings/:id` returned fewer fields than the list (no crown court or data source). Both now share one response shape.
+- `GET /hearings` caps `search` at 255 characters and `caseNumber`, `division` and `dataSource` likewise, so a public request can't send an unbounded term into a six-column scan.
+
 ### Changed
 
 - **All configuration is read in `src/config/config.js`.** `JWT_ACCESS_EXPIRY`, `JWT_REFRESH_EXPIRY`, `JWT_SECRET`, the `SAVED_SEARCH_*` and `NOTIFICATION_*` limits, `SKIP_STARTUP_FILESYSTEM_CHECK` and `NODE_ENV` were read directly from `process.env` in services, models, routes and the CLI, where startup validation couldn't see them. They are now validated with everything else: a malformed token expiry, a saved-search minimum above its maximum, or a zero limit stops startup with the full list of problems. An ESLint rule now rejects `process.env` anywhere else under `src/`.
