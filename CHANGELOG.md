@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **Capabilities are now enforced on saved searches, profile, notification and password routes.** The `searches:*`, `profile:*` and `notifications:manage-own` capabilities have been seeded since roles were introduced, but these routes only checked that the caller was signed in. Both default roles already hold them, so nobody loses access; a custom role without them now does.
+- **The saved-search cap held only for one request at a time.** Creating a search counted the user's searches, then inserted — so concurrent requests could all pass the count and exceed `SAVED_SEARCH_MAX_PER_USER`. Creation now locks the user's row for the count and insert.
+
 - **Signed-in users were never actually exempt from rate limiting.** The documented exemption was a `skip` callback, an option `@fastify/rate-limit` doesn't have, so it was ignored. It now uses the plugin's `allowList` hook and works as documented.
 - **Stricter limit on credential routes.** Register, login, and forgot/reset/change password now allow 10 requests per 15 minutes per IP per route (`AUTH_RATE_LIMIT_MAX`, `AUTH_RATE_LIMIT_WINDOW`), down from the general 100. Signed-in sessions are not exempt here, so a stolen session can't be used to brute-force `change-password`.
 - **CORS fails closed in production.** With `CORS_ENABLED=true` (the default) and no `CORS_ALLOWED_ORIGINS`, every origin was reflected with credentials allowed — in production too. Production now only allows listed origins, and with none listed leaves CORS off with a startup warning. The site is same-origin and doesn't need it. `.env.example` no longer ships placeholder origins.
@@ -17,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Reporting restrictions were stored but never shown.** Fixed-for-hearing entries carry a reporting restriction (e.g. "1992 Sexual Offences Act applies") in the database since v1.11.0, but the hearings API left the field out, so neither the website nor saved-search emails showed it. `GET /hearings` and `GET /hearings/:id` now return `reportingRestriction`; the hearings list shows it under the case details in red, and alert emails include it.
+- Saved search responses return `enabled` and `future_only` as booleans rather than `1`/`0`, and no longer include `user_id`.
 - `GET /hearings/:id` returned fewer fields than the list (no crown court or data source). Both now share one response shape.
 - `GET /hearings` caps `search` at 255 characters and `caseNumber`, `division` and `dataSource` likewise, so a public request can't send an unbounded term into a six-column scan.
 

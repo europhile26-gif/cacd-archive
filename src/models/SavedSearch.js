@@ -95,25 +95,38 @@ class SavedSearch {
     // Validate search text
     const validatedText = this.validateSearchText(searchText);
 
-    // Check user hasn't exceeded limit
-    const count = await this.countByUser(userId);
-    if (count >= this.MAX_PER_USER) {
-      throw new Error(`Maximum ${this.MAX_PER_USER} saved searches allowed`);
+    // Locking the user row serialises concurrent creates, so the count can't go stale.
+    const connection = await db.getConnection();
+    let insertId;
+
+    try {
+      await connection.beginTransaction();
+      await connection.query('SELECT id FROM users WHERE id = ? FOR UPDATE', [userId]);
+
+      const [countRows] = await connection.query(
+        'SELECT COUNT(*) AS count FROM saved_searches WHERE user_id = ?',
+        [userId]
+      );
+      if (countRows[0].count >= this.MAX_PER_USER) {
+        throw new Error(`Maximum ${this.MAX_PER_USER} saved searches allowed`);
+      }
+
+      const [result] = await connection.query(
+        `INSERT INTO saved_searches (user_id, search_text, enabled, future_only)
+         VALUES (?, ?, ?, ?)`,
+        [userId, validatedText, enabled ? 1 : 0, futureOnly ? 1 : 0]
+      );
+      insertId = result.insertId;
+
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
     }
 
-    const sql = `
-      INSERT INTO saved_searches (user_id, search_text, enabled, future_only)
-      VALUES (?, ?, ?, ?)
-    `;
-
-    const result = await db.query(sql, [
-      userId,
-      validatedText,
-      enabled ? 1 : 0,
-      futureOnly ? 1 : 0
-    ]);
-
-    return await this.findById(result.insertId, userId);
+    return await this.findById(insertId, userId);
   }
 
   /**

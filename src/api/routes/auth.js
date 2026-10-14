@@ -6,7 +6,7 @@
 const AuthService = require('../../services/auth-service');
 const config = require('../../config/config');
 const logger = require('../../utils/logger');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireCapability } = require('../middleware/auth');
 
 /**
  * Sends a client-safe service error as-is; logs anything else and sends a generic 500.
@@ -421,7 +421,7 @@ async function authRoutes(fastify, _options) {
     '/change-password',
     {
       config: credentialRateLimit,
-      preHandler: requireAuth,
+      preHandler: [requireAuth, requireCapability('profile:change-password')],
       schema: {
         tags: ['Authentication'],
         description: 'Change password (requires authentication)',

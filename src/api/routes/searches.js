@@ -6,7 +6,24 @@
 const SavedSearch = require('../../models/SavedSearch');
 const config = require('../../config/config');
 const logger = require('../../utils/logger');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireCapability } = require('../middleware/auth');
+
+const savedSearchSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'integer' },
+    search_text: { type: 'string' },
+    enabled: { type: 'boolean' },
+    future_only: { type: 'boolean' },
+    created_at: { type: 'string', format: 'date-time' },
+    updated_at: { type: 'string', format: 'date-time' }
+  }
+};
+
+const singleSearchResponse = {
+  type: 'object',
+  properties: { search: savedSearchSchema }
+};
 
 /**
  * Register saved search routes
@@ -21,11 +38,17 @@ async function savedSearchRoutes(fastify, _options) {
   fastify.get(
     '/searches',
     {
-      preHandler: requireAuth,
+      preHandler: [requireAuth, requireCapability('searches:view-own')],
       schema: {
         tags: ['Saved Searches'],
         summary: 'List user saved searches',
-        description: 'Get all saved searches for the authenticated user'
+        description: 'Get all saved searches for the authenticated user',
+        response: {
+          200: {
+            type: 'object',
+            properties: { searches: { type: 'array', items: savedSearchSchema } }
+          }
+        }
       }
     },
     async (request, reply) => {
@@ -51,10 +74,11 @@ async function savedSearchRoutes(fastify, _options) {
   fastify.get(
     '/searches/:id',
     {
-      preHandler: requireAuth,
+      preHandler: [requireAuth, requireCapability('searches:view-own')],
       schema: {
         tags: ['Saved Searches'],
         summary: 'Get saved search by ID',
+        response: { 200: singleSearchResponse },
         description: 'Get a specific saved search by ID',
         params: {
           type: 'object',
@@ -93,10 +117,11 @@ async function savedSearchRoutes(fastify, _options) {
   fastify.post(
     '/searches',
     {
-      preHandler: requireAuth,
+      preHandler: [requireAuth, requireCapability('searches:create')],
       schema: {
         tags: ['Saved Searches'],
         summary: 'Create saved search',
+        response: { 201: singleSearchResponse },
         description: 'Create a new saved search for the authenticated user',
         body: {
           type: 'object',
@@ -149,10 +174,11 @@ async function savedSearchRoutes(fastify, _options) {
   fastify.patch(
     '/searches/:id',
     {
-      preHandler: requireAuth,
+      preHandler: [requireAuth, requireCapability('searches:edit-own')],
       schema: {
         tags: ['Saved Searches'],
         summary: 'Update saved search',
+        response: { 200: singleSearchResponse },
         description: 'Update search text or enabled status',
         params: {
           type: 'object',
@@ -215,7 +241,7 @@ async function savedSearchRoutes(fastify, _options) {
   fastify.delete(
     '/searches/:id',
     {
-      preHandler: requireAuth,
+      preHandler: [requireAuth, requireCapability('searches:delete-own')],
       schema: {
         tags: ['Saved Searches'],
         summary: 'Delete saved search',

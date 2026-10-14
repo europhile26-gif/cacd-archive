@@ -16,7 +16,7 @@ async function userRoutes(fastify, _options) {
   fastify.get(
     '/me',
     {
-      preHandler: requireAuth,
+      preHandler: [requireAuth, requireCapability('profile:view-own')],
       schema: {
         tags: ['Users'],
         description: 'Get current user profile',
@@ -199,7 +199,7 @@ async function userRoutes(fastify, _options) {
   fastify.patch(
     '/me/notifications',
     {
-      preHandler: requireAuth,
+      preHandler: [requireAuth, requireCapability('notifications:manage-own')],
       schema: {
         tags: ['Users'],
         description: 'Update notification preferences',

@@ -246,7 +246,7 @@ function displaySavedSearches(searches) {
           </div>
         </div>
         <div class="btn-group btn-group-sm" role="group">
-          <button class="btn btn-outline-secondary" data-search-action="toggle" data-search-id="${search.id}" data-enabled="${search.enabled}">
+          <button class="btn btn-outline-secondary" data-search-action="toggle" data-search-id="${search.id}" data-enabled="${search.enabled ? '1' : '0'}">
             <i class="bi bi-${search.enabled ? 'pause' : 'play'}-fill"></i>
           </button>
           <button class="btn btn-outline-primary" data-search-action="edit" data-search-id="${search.id}">
