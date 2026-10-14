@@ -1,8 +1,11 @@
 const dotenv = require('dotenv');
 const path = require('path');
 
-// Load .env file
-dotenv.config({ path: path.join(__dirname, '../../.env') });
+// Tests load .env.test first (test/setup-env.js). dotenv only fills unset variables,
+// so loading .env as well would leak the developer's settings into every test.
+if (process.env.NODE_ENV !== 'test') {
+  dotenv.config({ path: path.join(__dirname, '../../.env') });
+}
 
 /**
  * Parses an integer env var, falling back only when unset or unparseable.
