@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`docs/security-audit.md` replaced with the October 2026 API security review**: method, what held up, all twenty findings with severity and the release that fixed each, accepted risks and what remains open. The December 2025 audit is in git history.
+
 ### Security
 
 - **Admin safety rails.** An administrator can no longer change their own account status through `PATCH /admin/users/:id` (the deactivate route already refused this; the edit route didn't), assign roles to themselves, or remove the administrator role from the last active administrator.

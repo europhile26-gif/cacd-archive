@@ -1,256 +1,98 @@
-# Security Audit Report
-
-## Date: 2025-12-17
-
-## Summary
-
-Overall security posture is **GOOD** with some recommended improvements.
-
----
-
-## ✅ Current Security Measures (Working Well)
-
-### 1. SQL Injection Protection - **EXCELLENT**
-
-- ✅ All database queries use parameterized queries (prepared statements)
-- ✅ User input is never directly concatenated into SQL strings
-- ✅ `sortBy` and `sortOrder` are validated via Fastify schema with enum constraints
-- ✅ Example: `sql += ' AND list_date = ?'; params.push(date);`
-
-**Verified in:**
-
-- `src/api/routes/hearings.js` - All queries properly parameterized
-- `src/services/sync-service.js` - All queries properly parameterized
-- `src/services/scrape-history-service.js` - All queries properly parameterized
-
-### 2. HTTP Security Headers - **EXCELLENT**
-
-- ✅ Content Security Policy (CSP) configured
-- ✅ HSTS with 1-year max-age
-- ✅ X-Frame-Options
-- ✅ X-Content-Type-Options
-- ✅ Trust proxy enabled for correct IP detection
-
-**Configured in:** `src/api/server.js`
-
-### 3. Rate Limiting - **GOOD**
-
-- ✅ API rate limiting enabled (100 requests per 15 minutes)
-- ✅ Prevents brute force and DoS attacks
-
-### 4. Input Validation - **GOOD**
-
-- ✅ Fastify JSON schema validation on all API endpoints
-- ✅ Type checking, format validation, enums, min/max constraints
-- ✅ Invalid input is rejected before processing
-
-### 5. CORS Configuration - **GOOD**
-
-- ✅ Configurable CORS with environment-based restrictions
-- ✅ Can be disabled for same-origin-only deployments
-
----
-
-## ⚠️ Security Issues Found
-
-### 1. XSS Vulnerability in Frontend - **MEDIUM RISK**
-
-**Issue:** Using `innerHTML` with unsanitized API data in `public/js/app.js`
-
-**Vulnerable Code:**
-
-```javascript
-row.innerHTML = `
-  <td class="hearing-datetime">${formatDateTime(hearing.hearingDateTime)}</td>
-  <td class="venue">${hearing.venue || '-'}</td>
-  <td class="case-number">${hearing.caseNumber}</td>
-  <td class="case-details">${hearing.caseDetails || '-'}</td>
-  <td class="hearing-type">${hearing.hearingType || '-'}</td>
-  <td class="judge">${hearing.judge || '-'}</td>
-`;
-```
-
-**Risk:**
-If malicious content (e.g., `<script>alert('XSS')</script>`) is scraped from the gov.uk site or injected into the database, it could be executed in users' browsers.
-
-**Recommendation:**
-
-1. Create a sanitization helper function
-2. Escape HTML entities before inserting into DOM
-3. Consider using `textContent` for text-only fields
-
----
-
-## 🔒 Recommended Security Improvements
-
-### Priority 1: Fix XSS Vulnerability
-
-**Action:** Add HTML sanitization to frontend
-
-**Implementation:**
-
-```javascript
-// Add helper function
-function escapeHtml(text) {
-  if (!text) return '-';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// Use in rendering
-row.innerHTML = `
-  <td class="hearing-datetime">${formatDateTime(hearing.hearingDateTime)}</td>
-  <td class="venue">${escapeHtml(hearing.venue)}</td>
-  <td class="case-number">${escapeHtml(hearing.caseNumber)}</td>
-  <td class="case-details">${escapeHtml(hearing.caseDetails)}</td>
-  <td class="hearing-type">${escapeHtml(hearing.hearingType)}</td>
-  <td class="judge">${escapeHtml(hearing.judge)}</td>
-`;
-```
-
-### Priority 2: Database Input Validation
-
-**Action:** Add input validation in sync-service before database insertion
-
-**Rationale:** Defense in depth - validate scraped data before storing
-
-**Implementation:**
-
-```javascript
-// Validate and sanitize scraped data
-function sanitizeScrapedData(record) {
-  return {
-    ...record,
-    caseNumber: String(record.caseNumber || '').substring(0, 50),
-    venue: String(record.venue || '').substring(0, 255),
-    caseDetails: String(record.caseDetails || '').substring(0, 65535),
-    hearingType: String(record.hearingType || '').substring(0, 65535),
-    judge: String(record.judge || '').substring(0, 65535)
-  };
-}
-```
-
-### Priority 3: Add Security Response Headers
-
-**Action:** Consider adding additional security headers
-
-**Headers to consider:**
-
-- `Referrer-Policy: strict-origin-when-cross-origin`
-- `Permissions-Policy` to restrict browser features
-
-### Priority 4: Environment Variable Validation
-
-**Action:** Add validation for critical environment variables on startup
-
-**Implementation:**
-
-```javascript
-function validateEnv() {
-  const required = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD'];
-  const missing = required.filter((key) => !process.env[key]);
-  if (missing.length) {
-    throw new Error(`Missing required env vars: ${missing.join(', ')}`);
-  }
-}
-```
-
-### Priority 5: Audit Logging
-
-**Action:** Add security event logging
-
-**Events to log:**
-
-- Failed authentication attempts (if auth is added)
-- Rate limit violations
-- Unusual query patterns
-- Database errors that might indicate injection attempts
-
-### Priority 6: Dependency Security
-
-**Action:** Regular security updates
-
-**Recommendations:**
-
-```bash
-# Run regularly
-npm audit
-npm audit fix
-
-# Consider adding to CI/CD
-npm audit --audit-level=moderate
-```
-
----
-
-## 📋 Security Checklist for Production
-
-- [x] SQL injection protection (parameterized queries)
-- [x] HTTP security headers (Helmet)
-- [x] Rate limiting
-- [x] Input validation (Fastify schemas)
-- [x] CORS configuration
-- [x] HTTPS enabled (ensure in production)
-- [x] Trust proxy configured
-- [ ] **XSS protection (needs fixing)**
-- [ ] HTML sanitization in frontend
-- [ ] Input length validation in scraper
-- [ ] Environment variable validation
-- [ ] Security audit logging
-- [ ] Regular dependency updates
-- [ ] Database backups configured
-- [ ] Error messages don't leak sensitive info
-
----
-
-## 🎯 Immediate Actions Required
-
-1. **Fix XSS vulnerability** - Add HTML escaping to frontend rendering
-2. **Add input validation** - Validate scraped data before database insertion
-3. **Test with malicious input** - Verify XSS protection works
-4. **Document security practices** - Add to README
-
----
-
-## Additional Recommendations
-
-### 1. Content Security Policy Enhancement
-
-Current CSP allows `unsafe-inline` for scripts/styles. Consider:
-
-- Moving inline scripts to separate files
-- Using nonces or hashes for inline scripts
-- Removing `unsafe-inline` for stronger protection
-
-### 2. Database Security
-
-- ✅ Using connection pooling
-- ✅ Limited connection pool size
-- Consider: Read-only database user for API queries
-- Consider: Separate user for scraping/writing
-
-### 3. Error Handling
-
-Review error messages to ensure they don't leak:
-
-- Database structure details
-- File paths
-- Stack traces in production
-
-### 4. Monitoring
-
-Consider adding:
-
-- Failed request monitoring
-- Unusual traffic pattern detection
-- Database query performance monitoring
-
----
-
-## Conclusion
-
-The application has a **solid security foundation** with proper SQL injection protection, HTTP security headers, and input validation. The main concern is the XSS vulnerability in the frontend, which should be addressed before public deployment.
-
-**Risk Level:** LOW-MEDIUM (after fixing XSS: LOW)
-**Production Ready:** Yes, after implementing Priority 1 fix
+# Security Audit
+
+**Date:** 2026-10-14
+**Version reviewed:** v1.20.1
+**Scope:** every route under `src/api/routes/`, the auth middleware, `auth-service.js`, the
+`User` and `SavedSearch` models, and server setup (error handling, CORS, rate limiting,
+response serialisation).
+
+Reviewed ahead of adding API keys for agent access: a long-lived credential held by a
+non-browser client loses the protection the browser context gives today (`SameSite=strict`
+cookies, 15-minute access tokens), so the API it reaches needed checking first.
+
+The previous audit (2025-12-17) is in git history.
+
+## Method
+
+Each route was checked for:
+
+| Check           | Question                                                                    |
+| --------------- | --------------------------------------------------------------------------- |
+| Authentication  | Correct pre-handler? Are public routes meant to be public?                  |
+| Authorisation   | Role, capability or ownership — and is it the right one?                    |
+| Input           | Is there a body/query/params schema, and does it reject unlisted fields?    |
+| Mass assignment | Do update routes accept only the fields they intend to?                     |
+| Output          | Is there a response schema? (Fastify only serialises the properties listed) |
+| Errors          | Is internal detail kept out of responses, and are failures logged?          |
+| Enumeration     | Do registration, login and password reset leak which accounts exist?        |
+| Abuse           | Are unauthenticated and credential routes rate limited?                     |
+
+## What held up
+
+- **SQL injection:** every query is parameterised. Sort columns and orders are mapped through
+  allowlists, `IN (...)` lists are built from placeholders, and `LIKE` wildcards in search
+  terms are escaped.
+- **Ownership:** saved searches are scoped by `user_id` on every read, update and delete.
+  Another user's search returns 404, indistinguishable from one that doesn't exist.
+- **Admin routes:** all gated on a specific capability.
+- **Cookies:** `httpOnly`, `SameSite=strict`, and `secure` in production.
+- **Frontend routes:** serve fixed filenames only; no path is built from request input.
+- **Output escaping:** values rendered by the frontend go through `escapeHtml`, and email
+  templates use Handlebars' escaping.
+
+## Findings
+
+Severity reflects impact on this deployment. "Fixed in" is the release carrying the fix.
+
+### High
+
+| #   | Finding                                                                                                                                                                                                                               | Fixed in |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| F1  | `GET /users/me` could return password hashes. A class-wide flag used during credential lookups leaked into concurrent requests, and stayed on permanently if a lookup failed; the route's response schema let any property through.   | v1.20.2  |
+| F2  | Route error logging was a no-op (`logger: false` silences Fastify's logger), and the global error handler was registered too late to apply to API routes — so unhandled errors were unlogged and returned raw messages, SQL included. | v1.20.2  |
+| F3  | The forgot-password handler passed the reset link to a logger. Harmless only because logging was broken (F2).                                                                                                                         | v1.20.2  |
+| F4  | `PATCH /users/me` accepted `email`, letting a user change their address with no verification.                                                                                                                                         | v1.20.2  |
+| F5  | Registration, profile and saved-search routes returned internal error messages to clients.                                                                                                                                            | v1.20.2  |
+| F6  | `verifyToken` swallowed every error, and JWT verification didn't pin the signing algorithm.                                                                                                                                           | v1.20.2  |
+
+### Medium
+
+| #   | Finding                                                                                                                                                     | Fixed in |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| F7  | CORS reflected any origin with credentials when no allowed origins were configured, including in production.                                                | v1.21.0  |
+| F8  | Credential routes shared the general rate limit. Separately, the documented exemption for signed-in users was never applied (`skip` isn't a plugin option). | v1.21.0  |
+| F9  | No session revocation: password changes left other sessions, and any stolen refresh token, valid for up to 30 days.                                         | v1.21.0  |
+| F10 | Password reset tokens are stored in plaintext, and issuing one doesn't invalidate earlier ones.                                                             | Open     |
+| F11 | Seeded `searches:*`, `profile:*` and `notifications:*` capabilities were never checked.                                                                     | v1.21.0  |
+| F12 | Response schemas without properties serialised user objects as `{}`; several routes had no response schema.                                                 | v1.21.0  |
+| F13 | Thirteen `process.env` reads outside `config.js` bypassed startup validation.                                                                               | v1.21.0  |
+
+### Low
+
+| #   | Finding                                                                                                               | Fixed in |
+| --- | --------------------------------------------------------------------------------------------------------------------- | -------- |
+| F14 | An administrator could change their own status via the edit route, assign themselves roles, or remove the last admin. | v1.21.0  |
+| F15 | Unbounded search and filter lengths on the public hearings endpoint.                                                  | v1.21.0  |
+| F16 | Login response time distinguishes registered from unregistered addresses.                                             | Accepted |
+| F17 | Concurrent saved-search creates could exceed the per-user cap.                                                        | v1.21.0  |
+| F18 | Repeated "scrape now" requests started overlapping scrapes.                                                           | v1.21.0  |
+| F19 | `/health` disclosed exact version and uptime publicly; Swagger UI is public.                                          | v1.21.0  |
+| F20 | Passwords over 72 bytes were silently truncated by bcrypt.                                                            | v1.21.0  |
+
+## Accepted risks
+
+- **F16 — login timing.** Registration already answers "Email already registered", so closing
+  the timing difference alone would hide nothing. Revisit if public registration is turned off
+  and enumeration through it closes.
+- **F19 — public API documentation.** Swagger UI at `/api/docs` documents a public API and is
+  useful to agents and integrators. The version number is no longer in `/health`, but the
+  Swagger spec still carries it.
+- **Rate limits and the scrape guard are per process.** Under PM2 cluster mode each instance
+  keeps its own counters and its own in-progress flag. Moving rate limit counters to Redis is
+  planned alongside API keys.
+
+## Open
+
+- **F10 — password reset.** Reset emails have never been sent: the endpoint creates a token and
+  stops. Hashing tokens at rest and invalidating earlier ones belongs with implementing the
+  email. Until then, administrators reset passwords with `./bin/cacd users reset-password`.
