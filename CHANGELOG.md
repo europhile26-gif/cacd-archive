@@ -7,22 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+## [1.21.0] - 2026-10-14
 
-- **`docs/security-audit.md` replaced with the October 2026 API security review**: method, what held up, all twenty findings with severity and the release that fixed each, accepted risks and what remains open. The December 2025 audit is in git history.
+Second release from the October 2026 API security review, carrying the medium and low findings. See `docs/security-audit.md` for the full list.
+
+**Upgrading:** run `npm run migrate` (applies `015_user_token_version.sql`). **Everyone will need to log in once** afterwards. In production, CORS now stays off unless `CORS_ALLOWED_ORIGINS` is set — the site is same-origin, so this needs no action unless something else calls the API from a browser. `AUTH_RATE_LIMIT_MAX` and `AUTH_RATE_LIMIT_WINDOW` are new and optional.
 
 ### Security
 
 - **Admin safety rails.** An administrator can no longer change their own account status through `PATCH /admin/users/:id` (the deactivate route already refused this; the edit route didn't), assign roles to themselves, or remove the administrator role from the last active administrator.
-
 - **Sessions can now be revoked.** Logging out only cleared cookies, and a password change left every other session working: a stolen refresh token stayed valid for up to 30 days. Tokens now carry the user's session generation (`users.token_version`, migration `015_user_token_version.sql`) and are rejected once it moves on. Changing or resetting a password — through the site or `./bin/cacd users reset-password` — logs out every other session; the session that made the change is issued fresh tokens. New `./bin/cacd users revoke-sessions` logs a user out everywhere without touching their password. **Everyone will need to log in once after upgrading**, as earlier tokens carry no generation.
-
 - **Capabilities are now enforced on saved searches, profile, notification and password routes.** The `searches:*`, `profile:*` and `notifications:manage-own` capabilities have been seeded since roles were introduced, but these routes only checked that the caller was signed in. Both default roles already hold them, so nobody loses access; a custom role without them now does.
 - **The saved-search cap held only for one request at a time.** Creating a search counted the user's searches, then inserted — so concurrent requests could all pass the count and exceed `SAVED_SEARCH_MAX_PER_USER`. Creation now locks the user's row for the count and insert.
-
 - **Signed-in users were never actually exempt from rate limiting.** The documented exemption was a `skip` callback, an option `@fastify/rate-limit` doesn't have, so it was ignored. It now uses the plugin's `allowList` hook and works as documented.
 - **Stricter limit on credential routes.** Register, login, and forgot/reset/change password now allow 10 requests per 15 minutes per IP per route (`AUTH_RATE_LIMIT_MAX`, `AUTH_RATE_LIMIT_WINDOW`), down from the general 100. Signed-in sessions are not exempt here, so a stolen session can't be used to brute-force `change-password`.
 - **CORS fails closed in production.** With `CORS_ENABLED=true` (the default) and no `CORS_ALLOWED_ORIGINS`, every origin was reflected with credentials allowed — in production too. Production now only allows listed origins, and with none listed leaves CORS off with a startup warning. The site is same-origin and doesn't need it. `.env.example` no longer ships placeholder origins.
+- **Passwords over 72 bytes are rejected.** bcrypt ignores everything after the 72nd byte, so a long passphrase was silently only as strong as its first 72 bytes and any string sharing that prefix would log in. Registration, reset and change-password now refuse such passwords with a clear message, and password fields are capped at 128 characters.
 - **`/health` no longer tells the internet the exact version and uptime.** Both are still reported to requests from the server itself, so `curl localhost:3000/api/v1/health` during an upgrade works as before.
 
 ### Fixed
@@ -38,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **All configuration is read in `src/config/config.js`.** `JWT_ACCESS_EXPIRY`, `JWT_REFRESH_EXPIRY`, `JWT_SECRET`, the `SAVED_SEARCH_*` and `NOTIFICATION_*` limits, `SKIP_STARTUP_FILESYSTEM_CHECK` and `NODE_ENV` were read directly from `process.env` in services, models, routes and the CLI, where startup validation couldn't see them. They are now validated with everything else: a malformed token expiry, a saved-search minimum above its maximum, or a zero limit stops startup with the full list of problems. An ESLint rule now rejects `process.env` anywhere else under `src/`.
+- **Tests no longer read the developer `.env`.** `config.js` skips it when `NODE_ENV=test`, each test file starts from a clean copy of the environment, and test files run one at a time since they share one database. A dev `.env` with analytics enabled had left timers running that stopped Jest from exiting.
+- **`docs/security-audit.md` replaced with the October 2026 API security review**: method, what held up, all twenty findings with severity and the release that fixed each, accepted risks and what remains open. The December 2025 audit is in git history.
 
 ## [1.20.2] - 2026-10-14
 
