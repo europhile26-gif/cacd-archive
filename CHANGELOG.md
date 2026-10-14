@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **One credential check per request.** `requireAuth`, `optionalAuth` and the rate-limit exemption now share a single resolver, run once per request, in preparation for API keys. The exemption from the general rate limit now requires the session to be current and the account active: a revoked or deactivated session's token used to exempt its holder until it expired (up to 15 minutes).
+
 ## [1.21.0] - 2026-10-14
 
 Second release from the October 2026 API security review, carrying the medium and low findings. See `docs/security-audit.md` for the full list.

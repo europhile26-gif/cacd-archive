@@ -1,6 +1,6 @@
 /**
  * Tests the general and credential-route rate limits, the signed-in exemption,
- * health endpoint disclosure and CORS resolution.
+ * shared credential resolution, health endpoint disclosure and CORS resolution.
  */
 process.env.API_RATE_LIMIT_MAX = '3';
 process.env.AUTH_RATE_LIMIT_MAX = '2';
@@ -22,6 +22,7 @@ afterAll(async () => {
 
 describe('rate limits', () => {
   let server;
+  let user;
   let cookies;
 
   beforeAll(async () => {
@@ -29,13 +30,22 @@ describe('rate limits', () => {
     await server.ready();
 
     await query('DELETE FROM users WHERE email = ?', [TEST_USER_EMAIL]);
-    const user = await User.create({
+    user = await User.create({
       email: TEST_USER_EMAIL,
       password_hash: 'not-a-real-hash',
       name: 'Rate Limit Test',
       status_id: ACTIVE_STATUS_ID
     });
+    await query(
+      `INSERT INTO user_roles (user_id, role_id)
+       SELECT ?, id FROM roles WHERE slug = 'user'`,
+      [user.id]
+    );
     cookies = { accessToken: AuthService.generateAccessToken(user) };
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   afterAll(async () => {
@@ -74,6 +84,35 @@ describe('rate limits', () => {
     });
 
     expect(statusCodes).toEqual([200, 200, 200, 200, 200]);
+  });
+
+  test('a revoked session is not exempt from the general limit', async () => {
+    const revokedCookies = cookies;
+    await User.revokeSessions(user.id);
+    cookies = { accessToken: AuthService.generateAccessToken(await User.findById(user.id)) };
+
+    const statusCodes = await repeat(4, {
+      method: 'GET',
+      url: '/api/v1/dates',
+      remoteAddress: '198.51.100.5',
+      cookies: revokedCookies
+    });
+
+    expect(statusCodes).toEqual([200, 200, 200, 429]);
+  });
+
+  test('a signed-in request loads its user once for the rate limit and the route', async () => {
+    const findById = jest.spyOn(User, 'findById');
+
+    const response = await server.inject({
+      method: 'GET',
+      url: '/api/v1/users/me',
+      remoteAddress: '198.51.100.6',
+      cookies
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(findById).toHaveBeenCalledTimes(1);
   });
 
   test('login is limited at AUTH_RATE_LIMIT_MAX', async () => {

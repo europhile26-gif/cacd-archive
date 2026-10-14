@@ -9,7 +9,7 @@ const fastifyCookie = require('@fastify/cookie');
 const path = require('path');
 const config = require('../config/config');
 const logger = require('../utils/logger');
-const AuthService = require('../services/auth-service');
+const { resolveCredentials, CREDENTIALS_VALID } = require('./middleware/auth');
 const analyticsService = require('../services/analytics-service');
 const geoipService = require('../services/geoip-service');
 const { version } = require('../../package.json');
@@ -121,23 +121,15 @@ function resolveCorsOptions() {
 /**
  * Exempts signed-in sessions from the general API rate limit, except on credential routes.
  */
-function isRateLimitExempt(request) {
+async function isRateLimitExempt(request) {
   let exempt = false;
 
   if (!request.routeOptions.config?.rateLimit) {
-    const authHeader = request.headers.authorization;
-    const token =
-      authHeader && authHeader.startsWith('Bearer ')
-        ? authHeader.substring(7)
-        : request.cookies?.accessToken;
-
-    if (token) {
-      try {
-        const payload = AuthService.verifyToken(token);
-        exempt = Boolean(payload && payload.type === 'access');
-      } catch (error) {
-        logger.error('Rate limit token check failed', { error: error.message });
-      }
+    try {
+      const { outcome } = await resolveCredentials(request);
+      exempt = outcome === CREDENTIALS_VALID;
+    } catch (error) {
+      logger.error('Rate limit credentials check failed', { error: error.message });
     }
   }
 

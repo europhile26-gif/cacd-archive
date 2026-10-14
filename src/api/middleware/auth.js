@@ -1,6 +1,6 @@
 /**
  * Authentication Middleware
- * Fastify middleware for JWT authentication and authorization
+ * Fastify middleware for authentication and authorization
  */
 
 const AuthService = require('../../services/auth-service');
@@ -8,62 +8,93 @@ const PermissionService = require('../../services/permission-service');
 const User = require('../../models/User');
 const logger = require('../../utils/logger');
 
+// Outcomes of resolving a request's credentials
+const CREDENTIALS_MISSING = 'missing';
+const CREDENTIALS_INVALID = 'invalid';
+const CREDENTIALS_INACTIVE = 'inactive';
+const CREDENTIALS_VALID = 'valid';
+
+// One resolution per request, shared by the rate limiter and the auth pre-handlers
+const resolvedCredentials = new WeakMap();
+
 /**
- * Require authentication - Verify user is logged in
- * Extracts JWT from Authorization header or cookies
- * Attaches user object to request
+ * Reads the access token from the Authorization header, falling back to the cookie.
+ */
+function extractToken(request) {
+  const authHeader = request.headers.authorization;
+  let token = null;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7);
+  } else if (request.cookies && request.cookies.accessToken) {
+    token = request.cookies.accessToken;
+  }
+
+  return token;
+}
+
+/**
+ * Verifies the request's access token and loads its user.
+ */
+async function lookUpCredentials(request) {
+  const token = extractToken(request);
+  const credentials = { outcome: CREDENTIALS_MISSING, user: null, authMethod: null };
+
+  if (token) {
+    const payload = AuthService.verifyToken(token);
+    const user = payload && payload.type === 'access' ? await User.findById(payload.id) : null;
+
+    if (!user || !AuthService.isTokenCurrent(payload, user)) {
+      credentials.outcome = CREDENTIALS_INVALID;
+    } else {
+      credentials.outcome = user.status.is_active ? CREDENTIALS_VALID : CREDENTIALS_INACTIVE;
+      credentials.user = user;
+      credentials.authMethod = 'jwt';
+    }
+  }
+
+  return credentials;
+}
+
+/**
+ * Resolves the request's credentials to { outcome, user, authMethod }, once per request.
+ */
+function resolveCredentials(request) {
+  if (!resolvedCredentials.has(request)) {
+    resolvedCredentials.set(request, lookUpCredentials(request));
+  }
+
+  return resolvedCredentials.get(request);
+}
+
+/**
+ * Rejects the request unless it carries valid credentials for an active account.
  */
 async function requireAuth(request, reply) {
   try {
-    let token = null;
+    const { outcome, user } = await resolveCredentials(request);
 
-    // Try to get token from Authorization header
-    const authHeader = request.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.substring(7);
-    }
-
-    // Fallback to cookie
-    if (!token && request.cookies && request.cookies.accessToken) {
-      token = request.cookies.accessToken;
-    }
-
-    if (!token) {
+    if (outcome === CREDENTIALS_MISSING) {
       return reply.code(401).send({
         error: 'Unauthorized',
         message: 'No authentication token provided'
       });
     }
 
-    // Verify token
-    const payload = AuthService.verifyToken(token);
-
-    if (!payload || payload.type !== 'access') {
+    if (outcome === CREDENTIALS_INVALID) {
       return reply.code(401).send({
         error: 'Unauthorized',
         message: 'Invalid or expired token'
       });
     }
 
-    // Get user from database
-    const user = await User.findById(payload.id);
-
-    if (!user || !AuthService.isTokenCurrent(payload, user)) {
-      return reply.code(401).send({
-        error: 'Unauthorized',
-        message: 'Invalid or expired token'
-      });
-    }
-
-    // Check if account is active
-    if (!user.status.is_active) {
+    if (outcome === CREDENTIALS_INACTIVE) {
       return reply.code(403).send({
         error: 'Forbidden',
         message: `Account is ${user.status.slug}. Please contact support.`
       });
     }
 
-    // Attach user to request
     request.user = user;
   } catch (error) {
     logger.error('Authentication error', { error: error.message });
@@ -212,43 +243,13 @@ async function requireAccountActive(request, reply) {
 }
 
 /**
- * Optional authentication
- * Extracts user if token present, but doesn't fail if not
- * Useful for endpoints that behave differently based on auth state
+ * Attaches the user when the request carries valid credentials, and continues as a guest otherwise.
  */
 async function optionalAuth(request, _reply) {
   try {
-    let token = null;
+    const { outcome, user } = await resolveCredentials(request);
 
-    // Try to get token from Authorization header
-    const authHeader = request.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.substring(7);
-    }
-
-    // Fallback to cookie
-    if (!token && request.cookies && request.cookies.accessToken) {
-      token = request.cookies.accessToken;
-    }
-
-    if (!token) {
-      // No token, continue without user
-      return;
-    }
-
-    // Verify token
-    const payload = AuthService.verifyToken(token);
-
-    if (!payload || payload.type !== 'access') {
-      // Invalid token, continue without user
-      return;
-    }
-
-    // Get user from database
-    const user = await User.findById(payload.id);
-
-    if (user && user.status.is_active && AuthService.isTokenCurrent(payload, user)) {
-      // Attach user to request
+    if (outcome === CREDENTIALS_VALID) {
       request.user = user;
     }
   } catch (error) {
@@ -258,6 +259,8 @@ async function optionalAuth(request, _reply) {
 }
 
 module.exports = {
+  CREDENTIALS_VALID,
+  resolveCredentials,
   requireAuth,
   requireRole,
   requireAnyRole,
