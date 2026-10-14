@@ -290,10 +290,35 @@ function getSchedulerStatus() {
   };
 }
 
+/**
+ * Start a manual scrape in the background unless one is already running in this process
+ * @param {Object} source - Data source row
+ * @returns {boolean} False if a scrape was already in progress
+ */
+function startManualScrape(source) {
+  let started = false;
+
+  if (!scrapingInProgress) {
+    scrapingInProgress = true;
+    started = true;
+
+    scrapeAll('manual', source)
+      .catch((error) => {
+        logger.error('Manual scrape failed', { dataSourceId: source.id, error: error.message });
+      })
+      .finally(() => {
+        scrapingInProgress = false;
+      });
+  }
+
+  return started;
+}
+
 module.exports = {
   startScheduler,
   stopScheduler,
   performStartupScrape,
   performScheduledScrape,
+  startManualScrape,
   getSchedulerStatus
 };

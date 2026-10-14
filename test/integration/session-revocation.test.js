@@ -50,6 +50,20 @@ describe('session revocation', () => {
     return server.inject({ method: 'GET', url: '/api/v1/users/me', cookies: { accessToken } });
   }
 
+  test('login returns the profile without internal fields', async () => {
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: { email: TEST_USER_EMAIL, password: ORIGINAL_PASSWORD }
+    });
+    const body = response.json();
+
+    expect(response.statusCode).toBe(200);
+    expect(body.user).toMatchObject({ id: user.id, email: TEST_USER_EMAIL });
+    expect(body.user).not.toHaveProperty('password_hash');
+    expect(body.user).not.toHaveProperty('token_version');
+  });
+
   test('a current token is accepted', async () => {
     const response = await getProfile(AuthService.generateAccessToken(user));
 

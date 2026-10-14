@@ -550,7 +550,7 @@ async function showUserModal(userId) {
     // Populate form
     document.getElementById('userName').value = user.name;
     document.getElementById('userEmail').value = user.email;
-    document.getElementById('userStatus').value = user.status_id;
+    document.getElementById('userStatus').value = user.status.id;
     document.getElementById('memberSince').textContent = formatDate(user.created_at);
 
     // Display roles

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **Admin safety rails.** An administrator can no longer change their own account status through `PATCH /admin/users/:id` (the deactivate route already refused this; the edit route didn't), assign roles to themselves, or remove the administrator role from the last active administrator.
+
 - **Sessions can now be revoked.** Logging out only cleared cookies, and a password change left every other session working: a stolen refresh token stayed valid for up to 30 days. Tokens now carry the user's session generation (`users.token_version`, migration `015_user_token_version.sql`) and are rejected once it moves on. Changing or resetting a password — through the site or `./bin/cacd users reset-password` — logs out every other session; the session that made the change is issued fresh tokens. New `./bin/cacd users revoke-sessions` logs a user out everywhere without touching their password. **Everyone will need to log in once after upgrading**, as earlier tokens carry no generation.
 
 - **Capabilities are now enforced on saved searches, profile, notification and password routes.** The `searches:*`, `profile:*` and `notifications:manage-own` capabilities have been seeded since roles were introduced, but these routes only checked that the caller was signed in. Both default roles already hold them, so nobody loses access; a custom role without them now does.
@@ -22,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Reporting restrictions were stored but never shown.** Fixed-for-hearing entries carry a reporting restriction (e.g. "1992 Sexual Offences Act applies") in the database since v1.11.0, but the hearings API left the field out, so neither the website nor saved-search emails showed it. `GET /hearings` and `GET /hearings/:id` now return `reportingRestriction`; the hearings list shows it under the case details in red, and alert emails include it.
+- **Manual scrapes no longer overlap.** "Scrape now" started a new scrape on every click, alongside any scheduled run. It now shares the scheduler's in-progress flag and returns 409 while a scrape is running in that process.
+- The admin "edit user" dialog never pre-selected the user's current status; it read a `status_id` field the API has never returned.
+- Login, admin user details, user lists and approve/activate/deactivate responses returned `user: {}` (or every property unfiltered) because their response schemas listed no fields. They now share one user schema.
 - Saved search responses return `enabled` and `future_only` as booleans rather than `1`/`0`, and no longer include `user_id`.
 - `GET /hearings/:id` returned fewer fields than the list (no crown court or data source). Both now share one response shape.
 - `GET /hearings` caps `search` at 255 characters and `caseNumber`, `division` and `dataSource` likewise, so a public request can't send an unbounded term into a six-column scan.

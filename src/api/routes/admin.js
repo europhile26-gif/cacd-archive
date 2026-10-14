@@ -12,6 +12,33 @@ const { getMigrationStatus } = require('../../db/migrator');
 const config = require('../../config/config');
 const logger = require('../../utils/logger');
 const { version } = require('../../../package.json');
+const { userSchema } = require('../schemas/user-schemas');
+
+const ADMINISTRATOR_ROLE_SLUG = 'administrator';
+
+const userActionResponse = {
+  type: 'object',
+  properties: {
+    success: { type: 'boolean' },
+    user: userSchema
+  }
+};
+
+/**
+ * Counts active, undeleted users holding the administrator role.
+ */
+async function countActiveAdministrators() {
+  const rows = await query(
+    `SELECT COUNT(DISTINCT u.id) AS count
+     FROM users u
+     JOIN user_roles ur ON ur.user_id = u.id
+     JOIN roles r ON r.id = ur.role_id
+     JOIN account_statuses s ON s.id = u.status_id
+     WHERE r.slug = ? AND s.is_active = 1 AND u.deleted_at IS NULL`,
+    [ADMINISTRATOR_ROLE_SLUG]
+  );
+  return rows[0].count;
+}
 
 async function adminRoutes(fastify, _options) {
   /**
@@ -119,7 +146,7 @@ async function adminRoutes(fastify, _options) {
           200: {
             type: 'object',
             properties: {
-              users: { type: 'array' },
+              users: { type: 'array', items: userSchema },
               total: { type: 'integer' },
               limit: { type: 'integer' },
               offset: { type: 'integer' }
@@ -176,15 +203,7 @@ async function adminRoutes(fastify, _options) {
             notes: { type: 'string' }
           }
         },
-        response: {
-          200: {
-            type: 'object',
-            properties: {
-              success: { type: 'boolean' },
-              user: { type: 'object' }
-            }
-          }
-        }
+        response: { 200: userActionResponse }
       }
     },
     async (request, reply) => {
@@ -237,15 +256,7 @@ async function adminRoutes(fastify, _options) {
             notes: { type: 'string' }
           }
         },
-        response: {
-          200: {
-            type: 'object',
-            properties: {
-              success: { type: 'boolean' },
-              user: { type: 'object' }
-            }
-          }
-        }
+        response: { 200: userActionResponse }
       }
     },
     async (request, reply) => {
@@ -305,15 +316,7 @@ async function adminRoutes(fastify, _options) {
             notes: { type: 'string' }
           }
         },
-        response: {
-          200: {
-            type: 'object',
-            properties: {
-              success: { type: 'boolean' },
-              user: { type: 'object' }
-            }
-          }
-        }
+        response: { 200: userActionResponse }
       }
     },
     async (request, reply) => {
@@ -441,6 +444,13 @@ async function adminRoutes(fastify, _options) {
         const { id } = request.params;
         const { roleId } = request.body;
 
+        if (id === request.user.id) {
+          return reply.code(400).send({
+            error: 'Bad Request',
+            message: 'Cannot change your own roles'
+          });
+        }
+
         // Verify role exists
         const role = await Role.findById(roleId);
         if (!role) {
@@ -501,6 +511,20 @@ async function adminRoutes(fastify, _options) {
     async (request, reply) => {
       try {
         const { id, roleId } = request.params;
+
+        const role = await Role.findById(roleId);
+        if (role && role.slug === ADMINISTRATOR_ROLE_SLUG) {
+          const targetRoles = await User.getRoles(id);
+          const targetIsAdministrator = targetRoles.some(
+            (targetRole) => targetRole.slug === ADMINISTRATOR_ROLE_SLUG
+          );
+          if (targetIsAdministrator && (await countActiveAdministrators()) <= 1) {
+            return reply.code(400).send({
+              error: 'Bad Request',
+              message: 'Cannot remove the last active administrator'
+            });
+          }
+        }
 
         await User.removeRole(id, roleId);
 
@@ -719,11 +743,14 @@ async function adminRoutes(fastify, _options) {
           triggeredBy: request.user.id
         });
 
-        // Run scrape in the background so the request returns immediately
-        const { scrapeAll } = require('../../services/scraper-service');
-        scrapeAll('manual', source).catch((error) => {
-          logger.error('Manual scrape failed', { dataSourceId: id, error: error.message });
-        });
+        // Runs in the background so the request returns immediately
+        const { startManualScrape } = require('../../scrapers/scheduler');
+        if (!startManualScrape(source)) {
+          return reply.code(409).send({
+            error: 'Conflict',
+            message: 'A scrape is already running. Try again when it has finished.'
+          });
+        }
 
         return reply.send({
           success: true,
@@ -758,6 +785,9 @@ async function adminRoutes(fastify, _options) {
           properties: {
             id: { type: 'integer' }
           }
+        },
+        response: {
+          200: { type: 'object', properties: { user: userSchema } }
         }
       }
     },
@@ -817,13 +847,21 @@ async function adminRoutes(fastify, _options) {
             email: { type: 'string', format: 'email' },
             status_id: { type: 'integer' }
           }
-        }
+        },
+        response: { 200: userActionResponse }
       }
     },
     async (request, reply) => {
       try {
         const { id } = request.params;
         const updates = request.body;
+
+        if (updates.status_id && id === request.user.id) {
+          return reply.code(400).send({
+            error: 'Bad Request',
+            message: 'Cannot change your own account status'
+          });
+        }
 
         // If status is being changed, use changeStatus for audit trail
         if (updates.status_id) {

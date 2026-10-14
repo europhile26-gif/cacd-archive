@@ -8,6 +8,7 @@ const config = require('../../config/config');
 const logger = require('../../utils/logger');
 const User = require('../../models/User');
 const { requireAuth, requireCapability } = require('../middleware/auth');
+const { userSchema } = require('../schemas/user-schemas');
 
 /**
  * Sends a client-safe service error as-is; logs anything else and sends a generic 500.
@@ -164,7 +165,7 @@ async function authRoutes(fastify, _options) {
             type: 'object',
             properties: {
               success: { type: 'boolean' },
-              user: { type: 'object' },
+              user: userSchema,
               accessToken: { type: 'string' },
               refreshToken: { type: 'string' }
             }
