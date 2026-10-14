@@ -7,14 +7,14 @@ const hearingSchema = {
     id: { type: 'number' },
     listDate: { type: 'string' },
     caseNumber: { type: 'string' },
-    time: { type: 'string' },
-    hearingDateTime: { type: 'string' },
-    venue: { type: 'string' },
-    judge: { type: 'string' },
-    caseDetails: { type: 'string' },
-    hearingType: { type: 'string' },
-    additionalInformation: { type: 'string' },
-    crownCourt: { type: 'string' },
+    time: { type: ['string', 'null'] },
+    hearingDateTime: { type: ['string', 'null'] },
+    venue: { type: ['string', 'null'] },
+    judge: { type: ['string', 'null'] },
+    caseDetails: { type: ['string', 'null'] },
+    hearingType: { type: ['string', 'null'] },
+    additionalInformation: { type: ['string', 'null'] },
+    crownCourt: { type: ['string', 'null'] },
     reportingRestriction: { type: ['string', 'null'] },
     division: { type: 'string' },
     dataSourceName: { type: 'string' },
@@ -259,7 +259,26 @@ async function hearingsRoutes(fastify, _options) {
       config: { apiKey: true },
       schema: {
         tags: ['Hearings'],
-        description: 'Get list of available dates with hearing counts'
+        description: 'Get the 100 most recent list date and division pairs with hearing counts',
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    date: { type: 'string', format: 'date' },
+                    division: { type: 'string' },
+                    count: { type: 'integer' }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     async (_request, _reply) => {

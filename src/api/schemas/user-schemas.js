@@ -28,6 +28,7 @@ const userSchema = {
         is_active: { type: 'boolean' }
       }
     },
+    email_notifications_enabled: { type: 'boolean' },
     created_at: { type: 'string', format: 'date-time' },
     updated_at: { type: 'string', format: 'date-time' },
     roles: { type: 'array', items: roleSchema },

@@ -95,6 +95,18 @@ describe('API keys', () => {
       expect(listed.json().searches.map((search) => search.search_text)).toEqual(['Smith']);
     });
 
+    test('a key can see and change whether alert emails are on', async () => {
+      const key = await issueKey();
+
+      const turnedOff = await requestWithKey(key, 'PATCH', '/api/v1/users/me/notifications', {
+        email_notifications_enabled: false
+      });
+      const profile = await requestWithKey(key, 'GET', '/api/v1/users/me');
+
+      expect(turnedOff.json()).toEqual({ success: true, email_notifications_enabled: false });
+      expect(profile.json().user.email_notifications_enabled).toBe(false);
+    });
+
     test('use is recorded against the key', async () => {
       const key = await issueKey();
       const publicId = key.split('_')[1];

@@ -34,7 +34,26 @@ module.exports = async function (fastify) {
       config: { apiKey: true },
       schema: {
         description: 'Get list of enabled data sources',
-        tags: ['System']
+        tags: ['System'],
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              sources: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'integer' },
+                    slug: { type: 'string' },
+                    display_name: { type: 'string' },
+                    show_by_default: { type: 'boolean' }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     async () => {

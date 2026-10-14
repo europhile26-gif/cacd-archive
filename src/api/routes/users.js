@@ -204,7 +204,16 @@ async function userRoutes(fastify, _options) {
       preHandler: [requireAuth, requireCapability('notifications:manage-own')],
       schema: {
         tags: ['Users'],
-        description: 'Update notification preferences',
+        description: 'Turn saved-search alert emails on or off',
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              email_notifications_enabled: { type: 'boolean' }
+            }
+          }
+        },
         body: {
           type: 'object',
           required: ['email_notifications_enabled'],

@@ -251,6 +251,7 @@ async function savedSearchRoutes(fastify, _options) {
         tags: ['Saved Searches'],
         summary: 'Delete saved search',
         description: 'Delete a saved search',
+        response: { 204: { type: 'null', description: 'Deleted' } },
         params: {
           type: 'object',
           required: ['id'],

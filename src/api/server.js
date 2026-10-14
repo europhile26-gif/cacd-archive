@@ -10,6 +10,7 @@ const path = require('path');
 const config = require('../config/config');
 const logger = require('../utils/logger');
 const {
+  requireAuth,
   resolveCredentials,
   restrictApiKeyRoutes,
   CREDENTIALS_VALID,
@@ -203,6 +204,28 @@ async function resolveRateLimitOptions(server) {
 }
 
 /**
+ * Adds each route's accepted credentials to its OpenAPI operation.
+ */
+function documentRouteSecurity({ schema, url, route }) {
+  const transformed = { ...schema };
+  const acceptsApiKey = Boolean(route.config?.apiKey);
+  const requiresAuth = [].concat(route.preHandler || []).includes(requireAuth);
+
+  if (requiresAuth) {
+    transformed.security = [{ session: [] }, { sessionCookie: [] }];
+    if (acceptsApiKey) {
+      transformed.security.push({ apiKey: [] });
+    }
+  }
+
+  if (acceptsApiKey) {
+    transformed.description = `${transformed.description || ''} Accepts API keys.`.trim();
+  }
+
+  return { schema: transformed, url };
+}
+
+/**
  * Logs server errors and replies without exposing their messages to the client.
  */
 function handleError(error, request, reply) {
@@ -273,15 +296,27 @@ async function createServer() {
 
   // Swagger documentation
   await server.register(fastifySwagger, {
-    swagger: {
+    openapi: {
+      openapi: '3.1.0',
       info: {
         title: 'CACD Archive API',
-        description: 'Court of Appeal Criminal Division Daily Cause List Archive',
+        description:
+          'Court of Appeal Criminal Division Daily Cause List Archive. Agents authenticate ' +
+          'with an API key (Authorization: Bearer cacd_...) on operations marked ' +
+          '"Accepts API keys"; see docs/agents/ in the repository.',
         version
       },
-      schemes: ['http', 'https'],
-      consumes: ['application/json'],
-      produces: ['application/json'],
+      components: {
+        securitySchemes: {
+          apiKey: {
+            type: 'http',
+            scheme: 'bearer',
+            description: 'API key issued with ./bin/cacd users api-keys create (cacd_...)'
+          },
+          session: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+          sessionCookie: { type: 'apiKey', in: 'cookie', name: 'accessToken' }
+        }
+      },
       tags: [
         { name: 'Hearings', description: 'Hearing data and dates' },
         { name: 'Saved Searches', description: 'User saved search management' },
@@ -291,7 +326,8 @@ async function createServer() {
         { name: 'Analytics', description: 'Request analytics (system:analytics capability)' },
         { name: 'System', description: 'Health check and configuration' }
       ]
-    }
+    },
+    transform: documentRouteSecurity
   });
 
   await server.register(fastifySwaggerUI, {

@@ -312,6 +312,7 @@ class User {
         slug: row.status_slug,
         is_active: Boolean(row.status_is_active)
       },
+      email_notifications_enabled: Boolean(row.email_notifications_enabled),
       token_version: row.token_version,
       created_at: row.created_at,
       updated_at: row.updated_at
