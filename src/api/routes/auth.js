@@ -82,7 +82,7 @@ async function authRoutes(fastify, _options) {
           required: ['email', 'password', 'name'],
           properties: {
             email: { type: 'string', format: 'email' },
-            password: { type: 'string', minLength: 12 },
+            password: { type: 'string', minLength: 12, maxLength: 128 },
             name: { type: 'string', minLength: 1 }
           }
         },
@@ -156,7 +156,7 @@ async function authRoutes(fastify, _options) {
           required: ['email', 'password'],
           properties: {
             email: { type: 'string', format: 'email' },
-            password: { type: 'string' },
+            password: { type: 'string', maxLength: 128 },
             rememberMe: { type: 'boolean', default: false }
           }
         },
@@ -379,7 +379,7 @@ async function authRoutes(fastify, _options) {
           required: ['token', 'password'],
           properties: {
             token: { type: 'string' },
-            password: { type: 'string', minLength: 12 }
+            password: { type: 'string', minLength: 12, maxLength: 128 }
           }
         },
         response: {
@@ -426,8 +426,8 @@ async function authRoutes(fastify, _options) {
           additionalProperties: false,
           required: ['currentPassword', 'newPassword'],
           properties: {
-            currentPassword: { type: 'string' },
-            newPassword: { type: 'string', minLength: 12 }
+            currentPassword: { type: 'string', maxLength: 128 },
+            newPassword: { type: 'string', minLength: 12, maxLength: 128 }
           }
         },
         response: {

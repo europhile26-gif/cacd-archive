@@ -14,6 +14,8 @@ const config = require('../config/config');
 const SALT_ROUNDS = 12;
 const RESET_TOKEN_EXPIRY = 60 * 60 * 1000; // 1 hour in milliseconds
 const JWT_ALGORITHM = 'HS256';
+// bcrypt ignores everything after the first 72 bytes of a password
+const BCRYPT_MAX_PASSWORD_BYTES = 72;
 
 // jsonwebtoken errors that just mean "this token is not valid", as opposed to a fault
 const EXPECTED_TOKEN_ERRORS = ['TokenExpiredError', 'JsonWebTokenError', 'NotBeforeError'];
@@ -73,6 +75,10 @@ class AuthService {
 
     if (!/[^A-Za-z0-9]/.test(password)) {
       errors.push('Password must contain at least one special character');
+    }
+
+    if (password && Buffer.byteLength(password, 'utf8') > BCRYPT_MAX_PASSWORD_BYTES) {
+      errors.push(`Password must be at most ${BCRYPT_MAX_PASSWORD_BYTES} bytes long`);
     }
 
     return {
