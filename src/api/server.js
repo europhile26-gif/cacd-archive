@@ -97,6 +97,54 @@ async function registerAnalytics(server) {
 }
 
 /**
+ * Resolves CORS options; production only ever allows explicitly listed origins.
+ */
+function resolveCorsOptions() {
+  const { enabled, origins } = config.api.cors;
+  let corsOptions = false;
+
+  if (enabled && origins.length > 0) {
+    corsOptions = { origin: origins, credentials: true };
+  } else if (enabled && config.env !== 'production') {
+    // Reflects any origin, which is only acceptable for local development.
+    corsOptions = { origin: true, credentials: true };
+  } else if (enabled) {
+    logger.warn(
+      'CORS_ENABLED=true but CORS_ALLOWED_ORIGINS is empty; cross-origin requests are disabled. ' +
+        'The site itself is same-origin and needs no CORS.'
+    );
+  }
+
+  return corsOptions;
+}
+
+/**
+ * Exempts signed-in sessions from the general API rate limit, except on credential routes.
+ */
+function isRateLimitExempt(request) {
+  let exempt = false;
+
+  if (!request.routeOptions.config?.rateLimit) {
+    const authHeader = request.headers.authorization;
+    const token =
+      authHeader && authHeader.startsWith('Bearer ')
+        ? authHeader.substring(7)
+        : request.cookies?.accessToken;
+
+    if (token) {
+      try {
+        const payload = AuthService.verifyToken(token);
+        exempt = Boolean(payload && payload.type === 'access');
+      } catch (error) {
+        logger.error('Rate limit token check failed', { error: error.message });
+      }
+    }
+  }
+
+  return exempt;
+}
+
+/**
  * Logs server errors and replies without exposing their messages to the client.
  */
 function handleError(error, request, reply) {
@@ -159,16 +207,7 @@ async function createServer() {
     }
   });
 
-  // CORS - configure based on environment
-  const corsOptions = config.api.cors.enabled
-    ? {
-        origin:
-          config.env === 'production' && config.api.cors.origins.length > 0
-            ? config.api.cors.origins
-            : true,
-        credentials: true
-      }
-    : false;
+  const corsOptions = resolveCorsOptions();
 
   if (corsOptions !== false) {
     await server.register(fastifyCors, corsOptions);
@@ -210,41 +249,11 @@ async function createServer() {
   // Apply rate limiting only to API routes
   await server.register(
     async (apiServer) => {
-      // Rate limiting for API routes - skip for authenticated users
+      // allowList is the plugin's exemption hook; it has no 'skip' option.
       await apiServer.register(fastifyRateLimit, {
         max: config.api.rateLimit.max,
         timeWindow: config.api.rateLimit.timeWindow,
-        skip: (request) => {
-          // Skip rate limiting for authenticated users
-          try {
-            let token = null;
-
-            // Try Authorization header
-            const authHeader = request.headers.authorization;
-            if (authHeader && authHeader.startsWith('Bearer ')) {
-              token = authHeader.substring(7);
-            }
-
-            // Fallback to cookie
-            if (!token && request.cookies?.accessToken) {
-              token = request.cookies.accessToken;
-            }
-
-            if (!token) {
-              return false; // No token, apply rate limiting
-            }
-
-            // Verify token
-            const payload = AuthService.verifyToken(token);
-
-            // Valid access token - skip rate limiting
-            return payload && payload.type === 'access';
-          } catch (error) {
-            logger.error('Rate limit token check failed', { error: error.message });
-            // Token invalid/expired - apply rate limiting
-            return false;
-          }
-        }
+        allowList: isRateLimitExempt
       });
 
       // Register API routes
@@ -293,4 +302,4 @@ async function createServer() {
   return server;
 }
 
-module.exports = { createServer };
+module.exports = { createServer, resolveCorsOptions };

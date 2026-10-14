@@ -29,16 +29,16 @@ The application uses `@fastify/helmet` to set secure HTTP headers:
 
 API endpoints are protected with rate limiting:
 
-- **Default**: 100 requests per 15 minutes per IP
-- **Configurable** via `API_RATE_LIMIT_MAX` and `API_RATE_LIMIT_WINDOW`
-- Prevents brute force attacks and API abuse
+- **Default**: 100 requests per 15 minutes per IP, configurable via `API_RATE_LIMIT_MAX` and `API_RATE_LIMIT_WINDOW`. Signed-in users are exempt.
+- **Credential routes** (register, login, forgot/reset/change password): 10 requests per 15 minutes per IP per route, via `AUTH_RATE_LIMIT_MAX` and `AUTH_RATE_LIMIT_WINDOW`. No exemption for signed-in users, so a stolen session cannot brute-force `change-password`.
+- Counters are per process: under PM2 cluster mode each instance counts separately.
 
 ### 3. CORS Configuration
 
 Cross-Origin Resource Sharing is configurable per environment:
 
 - **Development**: CORS enabled for all origins
-- **Production**: Configure specific allowed origins via `CORS_ALLOWED_ORIGINS`
+- **Production**: Only origins listed in `CORS_ALLOWED_ORIGINS` are allowed. With none listed, CORS stays off (with a startup warning) — the site is same-origin and does not need it
 - **Disable**: Set `CORS_ENABLED=false` for same-origin only
 
 ### 4. Database Security

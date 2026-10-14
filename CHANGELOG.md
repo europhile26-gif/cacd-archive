@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Signed-in users were never actually exempt from rate limiting.** The documented exemption was a `skip` callback, an option `@fastify/rate-limit` doesn't have, so it was ignored. It now uses the plugin's `allowList` hook and works as documented.
+- **Stricter limit on credential routes.** Register, login, and forgot/reset/change password now allow 10 requests per 15 minutes per IP per route (`AUTH_RATE_LIMIT_MAX`, `AUTH_RATE_LIMIT_WINDOW`), down from the general 100. Signed-in sessions are not exempt here, so a stolen session can't be used to brute-force `change-password`.
+- **CORS fails closed in production.** With `CORS_ENABLED=true` (the default) and no `CORS_ALLOWED_ORIGINS`, every origin was reflected with credentials allowed — in production too. Production now only allows listed origins, and with none listed leaves CORS off with a startup warning. The site is same-origin and doesn't need it. `.env.example` no longer ships placeholder origins.
+- **`/health` no longer tells the internet the exact version and uptime.** Both are still reported to requests from the server itself, so `curl localhost:3000/api/v1/health` during an upgrade works as before.
+
 ### Fixed
 
 - **Reporting restrictions were stored but never shown.** Fixed-for-hearing entries carry a reporting restriction (e.g. "1992 Sexual Offences Act applies") in the database since v1.11.0, but the hearings API left the field out, so neither the website nor saved-search emails showed it. `GET /hearings` and `GET /hearings/:id` now return `reportingRestriction`; the hearings list shows it under the case details in red, and alert emails include it.

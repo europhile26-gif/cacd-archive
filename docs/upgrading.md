@@ -42,7 +42,7 @@ In fork mode (single instance), there will be a brief interruption during restar
 # From package.json
 node -p "require('./package.json').version"
 
-# From the health endpoint
+# From the health endpoint (version is only reported to requests from the server itself)
 curl -s http://localhost:3000/api/v1/health | jq .version
 
 # From PM2

@@ -26,6 +26,15 @@ function sendServiceError(reply, error, context) {
   });
 }
 
+// Route-level config gives these routes their own counter and excludes them from the
+// signed-in exemption (see isRateLimitExempt in server.js).
+const credentialRateLimit = {
+  rateLimit: {
+    max: config.api.authRateLimit.max,
+    timeWindow: config.api.authRateLimit.timeWindow
+  }
+};
+
 async function authRoutes(fastify, _options) {
   /**
    * POST /api/v1/auth/register
@@ -34,6 +43,7 @@ async function authRoutes(fastify, _options) {
   fastify.post(
     '/register',
     {
+      config: credentialRateLimit,
       schema: {
         tags: ['Authentication'],
         description: 'Register a new user account',
@@ -107,6 +117,7 @@ async function authRoutes(fastify, _options) {
   fastify.post(
     '/login',
     {
+      config: credentialRateLimit,
       schema: {
         tags: ['Authentication'],
         description: 'Login with email and password',
@@ -304,6 +315,7 @@ async function authRoutes(fastify, _options) {
   fastify.post(
     '/forgot-password',
     {
+      config: credentialRateLimit,
       schema: {
         tags: ['Authentication'],
         description: 'Request password reset email',
@@ -361,6 +373,7 @@ async function authRoutes(fastify, _options) {
   fastify.post(
     '/reset-password',
     {
+      config: credentialRateLimit,
       schema: {
         tags: ['Authentication'],
         description: 'Reset password with token',
@@ -407,6 +420,7 @@ async function authRoutes(fastify, _options) {
   fastify.post(
     '/change-password',
     {
+      config: credentialRateLimit,
       preHandler: requireAuth,
       schema: {
         tags: ['Authentication'],

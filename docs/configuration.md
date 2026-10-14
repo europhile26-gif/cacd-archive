@@ -66,12 +66,14 @@ All configuration is via environment variables in `.env`. See `.env.example` for
 
 ## Security
 
-| Variable                        | Default    | Description                                          |
-| ------------------------------- | ---------- | ---------------------------------------------------- |
-| `SKIP_STARTUP_FILESYSTEM_CHECK` | `false`    | Skip `.env` permission check (useful on Windows)     |
-| `API_RATE_LIMIT_MAX`            | `100`      | Max requests per rate limit window (unauthenticated) |
-| `API_RATE_LIMIT_WINDOW`         | `900000`   | Rate limit window in ms (15 min)                     |
-| `TRUSTED_PROXIES`               | `loopback` | Reverse proxies allowed to set `X-Forwarded-For`     |
+| Variable                        | Default    | Description                                                                                                    |
+| ------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------- |
+| `SKIP_STARTUP_FILESYSTEM_CHECK` | `false`    | Skip `.env` permission check (useful on Windows)                                                               |
+| `API_RATE_LIMIT_MAX`            | `100`      | Max requests per rate limit window (unauthenticated)                                                           |
+| `API_RATE_LIMIT_WINDOW`         | `900000`   | Rate limit window in ms (15 min)                                                                               |
+| `AUTH_RATE_LIMIT_MAX`           | `10`       | Max requests per window to each login, registration and password route, per IP. Applies to signed-in users too |
+| `AUTH_RATE_LIMIT_WINDOW`        | `900000`   | Window for the above, in ms                                                                                    |
+| `TRUSTED_PROXIES`               | `loopback` | Reverse proxies allowed to set `X-Forwarded-For`                                                               |
 
 ## Request Analytics
 

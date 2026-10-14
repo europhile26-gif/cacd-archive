@@ -13,7 +13,7 @@ Most endpoints are public. Authenticated endpoints require a JWT access token, s
 - `Authorization: Bearer <token>` header
 - `accessToken` HTTP-only cookie (set automatically on login)
 
-Authenticated users bypass API rate limiting.
+Signed-in users are exempt from the general API rate limit. Login, registration and password routes have a stricter per-IP limit that applies to everyone. See [Security](security.md#2-rate-limiting).
 
 ## Example Requests
 

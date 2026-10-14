@@ -91,12 +91,17 @@ const config = {
     // cannot forge a client IP. Named presets ('loopback', 'uniquelocal') are accepted.
     trustedProxies: process.env.TRUSTED_PROXIES || 'loopback',
     rateLimit: {
-      max: parseInt(process.env.API_RATE_LIMIT_MAX, 10) || 100,
-      timeWindow: parseInt(process.env.API_RATE_LIMIT_WINDOW, 10) || 900000
+      max: parseIntOption(process.env.API_RATE_LIMIT_MAX, 100),
+      timeWindow: parseIntOption(process.env.API_RATE_LIMIT_WINDOW, 900000)
+    },
+    // Login, registration and password routes: per IP, never bypassed by a session
+    authRateLimit: {
+      max: parseIntOption(process.env.AUTH_RATE_LIMIT_MAX, 10),
+      timeWindow: parseIntOption(process.env.AUTH_RATE_LIMIT_WINDOW, 900000)
     },
     cors: {
       enabled: process.env.CORS_ENABLED !== 'false', // Default true for development
-      origins: process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',') : []
+      origins: splitList(process.env.CORS_ALLOWED_ORIGINS, '')
     }
   },
 
@@ -191,6 +196,17 @@ if (config.analytics.enabled) {
 
   if (config.analytics.flushBatchSize < 1) {
     configProblems.push('ANALYTICS_FLUSH_BATCH_SIZE must be at least 1.');
+  }
+}
+
+for (const [variable, limit] of [
+  ['API_RATE_LIMIT', config.api.rateLimit],
+  ['AUTH_RATE_LIMIT', config.api.authRateLimit]
+]) {
+  if (limit.max < 1 || limit.timeWindow < 1000) {
+    configProblems.push(
+      `${variable}_MAX must be at least 1 and ${variable}_WINDOW at least 1000ms.`
+    );
   }
 }
 
