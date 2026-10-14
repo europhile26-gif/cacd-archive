@@ -177,5 +177,68 @@ describe('fhl-table-parser', () => {
       expect(records[0].listDate).toBe('2026-03-10');
       expect(records[1].listDate).toBe('2026-03-24');
     });
+
+    test('parses the split CAO REF / CODE layout', async () => {
+      const html = `
+        <div class="govspeak"><table>
+          <thead>
+            <tr>
+              <th scope="col">DEF SURNAME</th>
+              <th scope="col">FORENAMES</th>
+              <th scope="col">CAO REF</th>
+              <th scope="col">CODE</th>
+              <th scope="col">DATE</th>
+              <th scope="col">COURT</th>
+              <th scope="col">START</th>
+              <th scope="col">RESTRICT</th>
+              <th scope="col">CROWN COURT</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>R v TGR</td>
+              <td>&nbsp;</td>
+              <td>202600392</td>
+              <td>B4</td>
+              <td>30 October 2026</td>
+              <td>7</td>
+              <td>10am</td>
+              <td>S.71 Criminal Justice Act 2003 applies</td>
+              <td>IPSWICH</td>
+            </tr>
+            <tr>
+              <td>ALFROH</td>
+              <td>BILAL</td>
+              <td>202601593</td>
+              <td>B3</td>
+              <td>21 October 2026</td>
+              <td>7</td>
+              <td>10:30am</td>
+              <td>1992 Sexual Offences Act applies</td>
+              <td>MINSHULL ST MANCHESTER</td>
+            </tr>
+          </tbody>
+        </table></div>
+      `;
+
+      const records = await parseFHLTable(html, 'http://test.example.com');
+
+      expect(records).toHaveLength(2);
+      expect(records[0]).toMatchObject({
+        listDate: '2026-10-30',
+        'case number': '202600392 B4',
+        time: '10am',
+        hearingDateTime: '2026-10-30T10:00:00.000Z',
+        venue: 'RCJ - Court 7',
+        'case details': 'R v TGR',
+        'crown court': 'IPSWICH',
+        'reporting restriction': 'S.71 Criminal Justice Act 2003 applies'
+      });
+      expect(records[1]).toMatchObject({
+        'case number': '202601593 B3',
+        'case details': 'ALFROH, BILAL',
+        hearingDateTime: '2026-10-21T09:30:00.000Z'
+      });
+    });
   });
 });

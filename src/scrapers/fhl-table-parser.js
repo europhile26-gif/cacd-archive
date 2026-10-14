@@ -10,28 +10,31 @@ const COURT_TIMEZONE = 'Europe/London';
  * Parses the "Court of Appeal cases fixed for hearing (Criminal Division)"
  * HTML table from GOV.UK.
  *
- * FHL columns: Surname, Forenames, CAO Reference number, Hearing Date,
- *              Court, Time, Reporting Restriction, Crown Court
- *
- * Mapping to hearings schema:
- *   Surname + Forenames  → case_details
- *   CAO Reference number → case_number
- *   Hearing Date         → list_date + hearingDateTime
- *   Court                → venue
- *   Time                 → time
- *   Reporting Restriction→ reporting_restriction
- *   Crown Court          → crown_court
+ * Two header layouts are accepted (original / October 2026):
+ *   Surname / Def Surname + Forenames      → case_details
+ *   CAO Reference number / CAO Ref + Code  → case_number ("202600392 B4")
+ *   Hearing Date / Date                    → list_date + hearingDateTime
+ *   Court                                  → venue
+ *   Time / Start                           → time
+ *   Reporting Restriction / Restrict       → reporting_restriction
+ *   Crown Court                            → crown_court
  */
 
 // Column name mappings — FHL header text (lowercased) to our internal field names
 const COLUMN_MAP = {
   surname: 'surname',
+  'def surname': 'surname',
   forenames: 'forenames',
   'cao reference number': 'case number',
+  'cao ref': 'case number',
+  code: 'case code',
   'hearing date': 'hearing date',
+  date: 'hearing date',
   court: 'venue',
   time: 'time',
+  start: 'time',
   'reporting restriction': 'reporting restriction',
+  restrict: 'reporting restriction',
   'crown court': 'crown court'
 };
 
@@ -184,7 +187,10 @@ function parseFHLRow(cells, columnIndices, rowNumber) {
       : '';
   };
 
-  const caseNumber = getCellText('case number');
+  // The split layout carries the list code in its own column; rejoin to match stored case numbers
+  const caseReference = getCellText('case number');
+  const caseCode = getCellText('case code');
+  const caseNumber = caseReference && caseCode ? `${caseReference} ${caseCode}` : caseReference;
   const time = getCellText('time');
   const hearingDateStr = getCellText('hearing date');
 

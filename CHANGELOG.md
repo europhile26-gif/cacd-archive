@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.1] - 2026-10-14
+
+### Fixed
+
+- **Fixed-for-hearing scrape broke when GOV.UK changed the table layout.** From 14 October 2026 every scheduled run failed with `Critical FHL columns missing: case number, time, hearing date`. Columns were renamed — Surname → DEF SURNAME, Hearing Date → DATE, Time → START, Reporting Restriction → RESTRICT — and the CAO reference was split in two: `202600392 B4` became a CAO REF column (`202600392`) and a new CODE column (`B4`).
+  - The parser accepts both the original and the new header names, so a revert on GOV.UK's side doesn't break it again.
+  - CAO REF and CODE are rejoined as `202600392 B4`. The case number is part of the sync conflict key `(list_date, case_number, time)`, so storing the bare reference would have duplicated every hearing already in the archive instead of matching it.
+  - Verified against the live page: all 92 rows parse, none skipped, every case number in the expected format.
+
 ### Security
 
 - **`npm audit fix` — production dependencies audit clean.** In-range updates to handlebars 4.7.10 (critical: three JavaScript injection advisories in template compilation), nodemailer 10.1.1 (high: address-parser denial of service and malformed envelope recipients), fastify 5.12.7 (moderate: denial of service on HTTP/2 trailer responses), plus transitive fast-uri and brace-expansion. No API changes.
