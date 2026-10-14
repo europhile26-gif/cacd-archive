@@ -22,6 +22,20 @@ module.exports = [
     }
   },
   {
+    files: ['src/**/*.js'],
+    ignores: ['src/config/config.js'],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'process',
+          property: 'env',
+          message: 'Read configuration from src/config/config.js, not process.env.'
+        }
+      ]
+    }
+  },
+  {
     ignores: ['node_modules/', 'dist/', 'logs/', '*.log', 'coverage/', 'package-lock.json']
   }
 ];

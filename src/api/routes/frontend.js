@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs').promises;
+const config = require('../../config/config');
 const { requireAuth, requireRole, requireCapability } = require('../middleware/auth');
 
 /**
@@ -7,7 +8,7 @@ const { requireAuth, requireRole, requireCapability } = require('../middleware/a
  */
 async function frontendRoutes(fastify, _options) {
   const publicDir =
-    process.env.NODE_ENV === 'production'
+    config.env === 'production'
       ? path.join(__dirname, '../../../dist')
       : path.join(__dirname, '../../../public');
 

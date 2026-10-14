@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **All configuration is read in `src/config/config.js`.** `JWT_ACCESS_EXPIRY`, `JWT_REFRESH_EXPIRY`, `JWT_SECRET`, the `SAVED_SEARCH_*` and `NOTIFICATION_*` limits, `SKIP_STARTUP_FILESYSTEM_CHECK` and `NODE_ENV` were read directly from `process.env` in services, models, routes and the CLI, where startup validation couldn't see them. They are now validated with everything else: a malformed token expiry, a saved-search minimum above its maximum, or a zero limit stops startup with the full list of problems. An ESLint rule now rejects `process.env` anywhere else under `src/`.
+
 ## [1.20.2] - 2026-10-14
 
 First release from the October 2026 API security review, carrying the high-severity findings. Medium and low findings follow in v1.21.0.

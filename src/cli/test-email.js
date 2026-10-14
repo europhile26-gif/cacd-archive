@@ -5,6 +5,7 @@
  * Sends a test data error email to verify email service configuration
  */
 
+const config = require('../config/config');
 const emailService = require('../services/email-service');
 const logger = require('../utils/logger');
 
@@ -27,7 +28,7 @@ async function testEmail() {
       url: 'https://www.court-tribunal-hearings.service.gov.uk/summary-of-publications?locationId=109',
       context: {
         testMode: true,
-        environment: process.env.NODE_ENV || 'development',
+        environment: config.env,
         timestamp: new Date().toISOString()
       },
       htmlSample:
@@ -35,7 +36,7 @@ async function testEmail() {
     });
 
     logger.info('Test email sent successfully!');
-    logger.info('Check your inbox at:', process.env.EMAIL_RECIPIENT_DATA_ERRORS);
+    logger.info('Check your inbox', { recipient: config.email.dataErrorRecipient });
 
     // Close email service
     await emailService.close();

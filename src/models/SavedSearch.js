@@ -4,21 +4,19 @@
  */
 
 const db = require('../config/database');
+const config = require('../config/config');
 
 class SavedSearch {
-  /**
-   * Configuration from environment
-   */
   static get MIN_LENGTH() {
-    return parseInt(process.env.SAVED_SEARCH_MIN_LENGTH || '3', 10);
+    return config.savedSearches.minLength;
   }
 
   static get MAX_LENGTH() {
-    return parseInt(process.env.SAVED_SEARCH_MAX_LENGTH || '255', 10);
+    return config.savedSearches.maxLength;
   }
 
   static get MAX_PER_USER() {
-    return parseInt(process.env.SAVED_SEARCH_MAX_PER_USER || '10', 10);
+    return config.savedSearches.maxPerUser;
   }
 
   /**
@@ -212,8 +210,7 @@ class SavedSearch {
    * @returns {Promise<boolean>} True if user can receive notification
    */
   static async canReceiveNotification(userId) {
-    const maxPerWindow = parseInt(process.env.NOTIFICATION_MAX_PER_WINDOW || '2', 10);
-    const windowHours = parseInt(process.env.NOTIFICATION_WINDOW_HOURS || '12', 10);
+    const { maxPerWindow, windowHours } = config.notifications;
 
     const sql = `
       SELECT COUNT(*) as count

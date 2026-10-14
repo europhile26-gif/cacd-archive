@@ -6,6 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const logger = require('./logger');
+const config = require('../config/config');
 
 /**
  * Check if the .env file has secure permissions (0600)
@@ -13,7 +14,7 @@ const logger = require('./logger');
  * @returns {boolean} - True if permissions are secure or check is skipped
  */
 function checkEnvFilePermissions(envPath) {
-  const skipCheck = process.env.SKIP_STARTUP_FILESYSTEM_CHECK === 'true';
+  const skipCheck = config.startup.skipFilesystemCheck;
 
   if (skipCheck) {
     logger.warn('SKIP_STARTUP_FILESYSTEM_CHECK is enabled - skipping .env permission check');

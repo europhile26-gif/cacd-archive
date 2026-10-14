@@ -9,6 +9,7 @@ const { formatHeader } = require('./utils/format');
 const userCommands = require('./commands/users');
 const dbCommands = require('./commands/db');
 const searchCommands = require('./commands/search');
+const config = require('../config/config');
 
 const program = new Command();
 
@@ -286,7 +287,7 @@ systemCommand
       table.push(['Database', chalk.green('✓ Connected')]);
       table.push(['Node.js', `v${process.version}`]);
       table.push(['Platform', `${process.platform} ${process.arch}`]);
-      table.push(['Environment', process.env.NODE_ENV || 'development']);
+      table.push(['Environment', config.env]);
 
       console.log(table.toString());
 

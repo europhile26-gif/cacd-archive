@@ -83,4 +83,57 @@ describe('config validation', () => {
     });
     expect(config.auth.cookieSecret).toBe('my-cookie-secret');
   });
+
+  describe('auth, saved search and notification options', () => {
+    const REQUIRED = { DB_USER: 'test', DB_PASSWORD: 'test', JWT_SECRET: 'test-secret' };
+
+    test('token expiries default to 15m and 7d', () => {
+      delete process.env.JWT_ACCESS_EXPIRY;
+      delete process.env.JWT_REFRESH_EXPIRY;
+      const config = requireConfig(REQUIRED);
+
+      expect(config.auth.accessTokenExpiry).toBe('15m');
+      expect(config.auth.refreshTokenExpiry).toBe('7d');
+    });
+
+    test('rejects a malformed token expiry', () => {
+      expect(() => requireConfig({ ...REQUIRED, JWT_ACCESS_EXPIRY: 'fifteen minutes' })).toThrow(
+        'JWT_ACCESS_EXPIRY'
+      );
+    });
+
+    test('rejects a saved search minimum above the maximum', () => {
+      expect(() =>
+        requireConfig({ ...REQUIRED, SAVED_SEARCH_MIN_LENGTH: '50', SAVED_SEARCH_MAX_LENGTH: '10' })
+      ).toThrow('SAVED_SEARCH_MIN_LENGTH');
+    });
+
+    test('reports every problem at once', () => {
+      let message = '';
+      try {
+        requireConfig({
+          DB_USER: 'test',
+          DB_PASSWORD: 'test',
+          JWT_ACCESS_EXPIRY: 'soon',
+          SAVED_SEARCH_MAX_PER_USER: '0'
+        });
+      } catch (error) {
+        message = error.message;
+      }
+
+      expect(message).toContain('auth.jwtSecret');
+      expect(message).toContain('JWT_ACCESS_EXPIRY');
+      expect(message).toContain('SAVED_SEARCH_MAX_PER_USER');
+    });
+
+    test('notification limits load from the environment', () => {
+      const config = requireConfig({
+        ...REQUIRED,
+        NOTIFICATION_MAX_PER_WINDOW: '5',
+        NOTIFICATION_WINDOW_HOURS: '24'
+      });
+
+      expect(config.notifications).toEqual({ maxPerWindow: 5, windowHours: 24 });
+    });
+  });
 });

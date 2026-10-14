@@ -34,6 +34,10 @@ const config = {
   baseUrl: process.env.BASE_URL || null,
   appInstance: parseInt(process.env.NODE_APP_INSTANCE, 10) || 0,
 
+  startup: {
+    skipFilesystemCheck: process.env.SKIP_STARTUP_FILESYSTEM_CHECK === 'true'
+  },
+
   logging: {
     level: process.env.LOG_LEVEL || 'info'
   },
@@ -119,6 +123,8 @@ const config = {
 
   auth: {
     jwtSecret: process.env.JWT_SECRET,
+    accessTokenExpiry: process.env.JWT_ACCESS_EXPIRY || '15m',
+    refreshTokenExpiry: process.env.JWT_REFRESH_EXPIRY || '7d',
     cookieSecret: process.env.COOKIE_SECRET || process.env.JWT_SECRET,
     allowPublicRegistration: process.env.ALLOW_PUBLIC_REGISTRATION !== 'false',
     requireAdminApproval: process.env.REQUIRE_ADMIN_APPROVAL !== 'false',
@@ -126,9 +132,14 @@ const config = {
   },
 
   savedSearches: {
-    minLength: parseInt(process.env.SAVED_SEARCH_MIN_LENGTH, 10) || 3,
-    maxLength: parseInt(process.env.SAVED_SEARCH_MAX_LENGTH, 10) || 255,
-    maxPerUser: parseInt(process.env.SAVED_SEARCH_MAX_PER_USER, 10) || 10
+    minLength: parseIntOption(process.env.SAVED_SEARCH_MIN_LENGTH, 3),
+    maxLength: parseIntOption(process.env.SAVED_SEARCH_MAX_LENGTH, 255),
+    maxPerUser: parseIntOption(process.env.SAVED_SEARCH_MAX_PER_USER, 10)
+  },
+
+  notifications: {
+    maxPerWindow: parseIntOption(process.env.NOTIFICATION_MAX_PER_WINDOW, 2),
+    windowHours: parseIntOption(process.env.NOTIFICATION_WINDOW_HOURS, 12)
   },
 
   frontend: {
@@ -181,6 +192,38 @@ if (config.analytics.enabled) {
   if (config.analytics.flushBatchSize < 1) {
     configProblems.push('ANALYTICS_FLUSH_BATCH_SIZE must be at least 1.');
   }
+}
+
+// jsonwebtoken accepts a number of seconds or a number with a unit suffix
+const TOKEN_EXPIRY_PATTERN = /^\d+[smhd]?$/;
+
+for (const [variable, value] of [
+  ['JWT_ACCESS_EXPIRY', config.auth.accessTokenExpiry],
+  ['JWT_REFRESH_EXPIRY', config.auth.refreshTokenExpiry]
+]) {
+  if (!TOKEN_EXPIRY_PATTERN.test(value)) {
+    configProblems.push(
+      `${variable} must be seconds or a number with s/m/h/d (e.g. "15m"); got "${value}".`
+    );
+  }
+}
+
+const { minLength, maxLength, maxPerUser } = config.savedSearches;
+
+if (minLength < 1 || maxLength < minLength || maxLength > 255) {
+  configProblems.push(
+    'SAVED_SEARCH_MIN_LENGTH and SAVED_SEARCH_MAX_LENGTH must satisfy 1 <= min <= max <= 255.'
+  );
+}
+
+if (maxPerUser < 1) {
+  configProblems.push('SAVED_SEARCH_MAX_PER_USER must be at least 1.');
+}
+
+if (config.notifications.maxPerWindow < 1 || config.notifications.windowHours < 1) {
+  configProblems.push(
+    'NOTIFICATION_MAX_PER_WINDOW and NOTIFICATION_WINDOW_HOURS must be at least 1.'
+  );
 }
 
 const invalidCountryCodes = config.geoip.blockedCountries.filter(

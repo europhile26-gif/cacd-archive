@@ -9,10 +9,9 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const db = require('../config/database');
 const logger = require('../utils/logger');
+const config = require('../config/config');
 
 const SALT_ROUNDS = 12;
-const ACCESS_TOKEN_EXPIRY = '15m';
-const REFRESH_TOKEN_EXPIRY = '7d';
 const RESET_TOKEN_EXPIRY = 60 * 60 * 1000; // 1 hour in milliseconds
 const JWT_ALGORITHM = 'HS256';
 
@@ -97,7 +96,7 @@ class AuthService {
 
     return jwt.sign(payload, this._getJwtSecret(), {
       algorithm: JWT_ALGORITHM,
-      expiresIn: process.env.JWT_ACCESS_EXPIRY || ACCESS_TOKEN_EXPIRY
+      expiresIn: config.auth.accessTokenExpiry
     });
   }
 
@@ -115,7 +114,7 @@ class AuthService {
 
     return jwt.sign(payload, this._getJwtSecret(), {
       algorithm: JWT_ALGORITHM,
-      expiresIn: process.env.JWT_REFRESH_EXPIRY || REFRESH_TOKEN_EXPIRY
+      expiresIn: config.auth.refreshTokenExpiry
     });
   }
 
@@ -374,17 +373,11 @@ class AuthService {
   }
 
   /**
-   * Get JWT secret from environment
+   * Returns the JWT signing secret (presence is validated at config load)
    * @private
    */
   static _getJwtSecret() {
-    const secret = process.env.JWT_SECRET;
-
-    if (!secret) {
-      throw new Error('JWT_SECRET environment variable not set');
-    }
-
-    return secret;
+    return config.auth.jwtSecret;
   }
 }
 
