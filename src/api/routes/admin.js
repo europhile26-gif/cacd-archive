@@ -10,6 +10,7 @@ const { clearCache } = require('../../services/data-source-service');
 const { requireAuth, requireCapability, requireAdmin } = require('../middleware/auth');
 const { getMigrationStatus } = require('../../db/migrator');
 const config = require('../../config/config');
+const logger = require('../../utils/logger');
 const { version } = require('../../../package.json');
 
 async function adminRoutes(fastify, _options) {
@@ -75,7 +76,7 @@ async function adminRoutes(fastify, _options) {
       try {
         migrations = await getMigrationStatus();
       } catch (error) {
-        fastify.log.error({ error }, 'System info: migration status query failed');
+        logger.error('System info: migration status query failed', { error: error.message });
         databaseStatus = 'disconnected';
       }
 
@@ -141,7 +142,7 @@ async function adminRoutes(fastify, _options) {
           offset
         });
       } catch (error) {
-        fastify.log.error({ error }, 'List users error');
+        logger.error('List users error', { error: error.message });
         return reply.code(500).send({
           error: 'Internal Server Error',
           message: 'Failed to list users'
@@ -170,6 +171,7 @@ async function adminRoutes(fastify, _options) {
         },
         body: {
           type: 'object',
+          additionalProperties: false,
           properties: {
             notes: { type: 'string' }
           }
@@ -194,14 +196,14 @@ async function adminRoutes(fastify, _options) {
         const user = await User.changeStatus(id, 2, request.user.id, notes);
 
         // TODO: Send approval email to user
-        fastify.log.info({ userId: id, approvedBy: request.user.id }, 'User approved');
+        logger.info('User approved', { userId: id, approvedBy: request.user.id });
 
         return reply.send({
           success: true,
           user
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Approve user error');
+        logger.error('Approve user error', { error: error.message });
         return reply.code(500).send({
           error: 'Internal Server Error',
           message: 'Failed to approve user'
@@ -230,6 +232,7 @@ async function adminRoutes(fastify, _options) {
         },
         body: {
           type: 'object',
+          additionalProperties: false,
           properties: {
             notes: { type: 'string' }
           }
@@ -261,14 +264,14 @@ async function adminRoutes(fastify, _options) {
         // Find "inactive" status (id = 3)
         const user = await User.changeStatus(id, 3, request.user.id, notes);
 
-        fastify.log.info({ userId: id, deactivatedBy: request.user.id }, 'User deactivated');
+        logger.info('User deactivated', { userId: id, deactivatedBy: request.user.id });
 
         return reply.send({
           success: true,
           user
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Deactivate user error');
+        logger.error('Deactivate user error', { error: error.message });
         return reply.code(500).send({
           error: 'Internal Server Error',
           message: 'Failed to deactivate user'
@@ -297,6 +300,7 @@ async function adminRoutes(fastify, _options) {
         },
         body: {
           type: 'object',
+          additionalProperties: false,
           properties: {
             notes: { type: 'string' }
           }
@@ -320,14 +324,14 @@ async function adminRoutes(fastify, _options) {
         // Find "active" status (id = 2)
         const user = await User.changeStatus(id, 2, request.user.id, notes);
 
-        fastify.log.info({ userId: id, activatedBy: request.user.id }, 'User activated');
+        logger.info('User activated', { userId: id, activatedBy: request.user.id });
 
         return reply.send({
           success: true,
           user
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Activate user error');
+        logger.error('Activate user error', { error: error.message });
         return reply.code(500).send({
           error: 'Internal Server Error',
           message: 'Failed to activate user'
@@ -379,14 +383,14 @@ async function adminRoutes(fastify, _options) {
 
         await User.softDelete(id);
 
-        fastify.log.info({ userId: id, deletedBy: request.user.id }, 'User deleted');
+        logger.info('User deleted', { userId: id, deletedBy: request.user.id });
 
         return reply.send({
           success: true,
           message: 'User deleted successfully'
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Delete user error');
+        logger.error('Delete user error', { error: error.message });
         return reply.code(500).send({
           error: 'Internal Server Error',
           message: 'Failed to delete user'
@@ -415,6 +419,7 @@ async function adminRoutes(fastify, _options) {
         },
         body: {
           type: 'object',
+          additionalProperties: false,
           required: ['roleId'],
           properties: {
             roleId: { type: 'integer' }
@@ -447,14 +452,14 @@ async function adminRoutes(fastify, _options) {
 
         await User.assignRole(id, roleId, request.user.id);
 
-        fastify.log.info({ userId: id, roleId, assignedBy: request.user.id }, 'Role assigned');
+        logger.info('Role assigned', { userId: id, roleId, assignedBy: request.user.id });
 
         return reply.send({
           success: true,
           message: `Role "${role.name}" assigned successfully`
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Assign role error');
+        logger.error('Assign role error', { error: error.message });
         return reply.code(500).send({
           error: 'Internal Server Error',
           message: 'Failed to assign role'
@@ -499,14 +504,14 @@ async function adminRoutes(fastify, _options) {
 
         await User.removeRole(id, roleId);
 
-        fastify.log.info({ userId: id, roleId, removedBy: request.user.id }, 'Role removed');
+        logger.info('Role removed', { userId: id, roleId, removedBy: request.user.id });
 
         return reply.send({
           success: true,
           message: 'Role removed successfully'
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Remove role error');
+        logger.error('Remove role error', { error: error.message });
         return reply.code(500).send({
           error: 'Internal Server Error',
           message: 'Failed to remove role'
@@ -554,7 +559,7 @@ async function adminRoutes(fastify, _options) {
 
         return reply.send({ sources });
       } catch (error) {
-        fastify.log.error({ error }, 'List data sources error');
+        logger.error('List data sources error', { error: error.message });
         return reply.code(500).send({
           error: 'Internal Server Error',
           message: 'Failed to list data sources'
@@ -583,6 +588,7 @@ async function adminRoutes(fastify, _options) {
         },
         body: {
           type: 'object',
+          additionalProperties: false,
           properties: {
             enabled: { type: 'boolean' },
             show_by_default: { type: 'boolean' },
@@ -644,17 +650,18 @@ async function adminRoutes(fastify, _options) {
           });
         }
 
-        fastify.log.info(
-          { dataSourceId: id, updates, updatedBy: request.user.id },
-          'Data source updated'
-        );
+        logger.info('Data source updated', {
+          dataSourceId: id,
+          updates,
+          updatedBy: request.user.id
+        });
 
         return reply.send({
           success: true,
           source: rows[0]
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Update data source error');
+        logger.error('Update data source error', { error: error.message });
         return reply.code(500).send({
           error: 'Internal Server Error',
           message: 'Failed to update data source'
@@ -706,15 +713,16 @@ async function adminRoutes(fastify, _options) {
           });
         }
 
-        fastify.log.info(
-          { dataSourceId: id, source: source.slug, triggeredBy: request.user.id },
-          'Manual scrape triggered'
-        );
+        logger.info('Manual scrape triggered', {
+          dataSourceId: id,
+          source: source.slug,
+          triggeredBy: request.user.id
+        });
 
         // Run scrape in the background so the request returns immediately
         const { scrapeAll } = require('../../services/scraper-service');
         scrapeAll('manual', source).catch((error) => {
-          fastify.log.error({ dataSourceId: id, error: error.message }, 'Manual scrape failed');
+          logger.error('Manual scrape failed', { dataSourceId: id, error: error.message });
         });
 
         return reply.send({
@@ -722,7 +730,7 @@ async function adminRoutes(fastify, _options) {
           message: `Scrape triggered for "${source.display_name}". Refresh to see results.`
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Trigger scrape error');
+        logger.error('Trigger scrape error', { error: error.message });
         return reply.code(500).send({
           error: 'Internal Server Error',
           message: 'Failed to trigger scrape'
@@ -774,7 +782,7 @@ async function adminRoutes(fastify, _options) {
           }
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Get user error');
+        logger.error('Get user error', { error: error.message });
         return reply.code(500).send({
           error: 'Internal Server Error',
           message: 'Failed to get user'
@@ -803,6 +811,7 @@ async function adminRoutes(fastify, _options) {
         },
         body: {
           type: 'object',
+          additionalProperties: false,
           properties: {
             name: { type: 'string' },
             email: { type: 'string', format: 'email' },
@@ -834,14 +843,14 @@ async function adminRoutes(fastify, _options) {
 
         const user = await User.findById(id);
 
-        fastify.log.info({ userId: id, updatedBy: request.user.id }, 'User updated');
+        logger.info('User updated', { userId: id, updatedBy: request.user.id });
 
         return reply.send({
           success: true,
           user
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Update user error');
+        logger.error('Update user error', { error: error.message });
         return reply.code(500).send({
           error: 'Internal Server Error',
           message: 'Failed to update user'

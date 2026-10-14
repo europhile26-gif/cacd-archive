@@ -6,6 +6,7 @@
 const AuthService = require('../../services/auth-service');
 const PermissionService = require('../../services/permission-service');
 const User = require('../../models/User');
+const logger = require('../../utils/logger');
 
 /**
  * Require authentication - Verify user is logged in
@@ -65,7 +66,7 @@ async function requireAuth(request, reply) {
     // Attach user to request
     request.user = user;
   } catch (error) {
-    request.log.error({ error }, 'Authentication error');
+    logger.error('Authentication error', { error: error.message });
     return reply.code(401).send({
       error: 'Unauthorized',
       message: 'Authentication failed'
@@ -251,8 +252,8 @@ async function optionalAuth(request, _reply) {
       request.user = user;
     }
   } catch (error) {
-    // Ignore errors, just continue without user
-    request.log.debug({ error }, 'Optional auth failed');
+    // Continue as a guest, but an unexpected failure here is a fault worth seeing
+    logger.warn('Optional auth failed', { error: error.message });
   }
 }
 

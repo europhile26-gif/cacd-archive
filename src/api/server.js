@@ -96,12 +96,40 @@ async function registerAnalytics(server) {
   }
 }
 
+/**
+ * Logs server errors and replies without exposing their messages to the client.
+ */
+function handleError(error, request, reply) {
+  const statusCode = error.statusCode && error.statusCode >= 400 ? error.statusCode : 500;
+  // Query strings can carry search terms, so only the path is logged.
+  const details = {
+    method: request.method,
+    path: request.url.split('?')[0],
+    statusCode,
+    error: error.message
+  };
+
+  if (statusCode >= 500) {
+    logger.error('Unhandled API error', { ...details, stack: error.stack });
+  } else {
+    logger.debug('API request rejected', details);
+  }
+
+  reply.status(statusCode).send({
+    success: false,
+    error: statusCode >= 500 ? 'Internal Server Error' : error.message
+  });
+}
+
 async function createServer() {
   const server = fastify({
     logger: false, // Disable Fastify's built-in logger
     disableRequestLogging: true,
     trustProxy: resolveTrustProxy()
   });
+
+  // Must be set before any plugin registers: child contexts copy the handler when created.
+  server.setErrorHandler(handleError);
 
   await registerAnalytics(server);
 
@@ -211,7 +239,8 @@ async function createServer() {
 
             // Valid access token - skip rate limiting
             return payload && payload.type === 'access';
-          } catch {
+          } catch (error) {
+            logger.error('Rate limit token check failed', { error: error.message });
             // Token invalid/expired - apply rate limiting
             return false;
           }
@@ -259,24 +288,6 @@ async function createServer() {
   await server.register(fastifyStatic, {
     root: staticDir,
     prefix: '/'
-  });
-
-  // Error handler
-  server.setErrorHandler((error, request, reply) => {
-    console.error('API Error:', {
-      method: request.method,
-      url: request.url,
-      error: error.message,
-      stack: error.stack
-    });
-
-    const statusCode = error.statusCode || 500;
-    const message = statusCode === 500 ? 'Internal Server Error' : error.message;
-
-    reply.status(statusCode).send({
-      success: false,
-      error: message
-    });
   });
 
   return server;

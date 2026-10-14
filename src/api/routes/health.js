@@ -1,5 +1,6 @@
 const { query } = require('../../config/database');
 const { version } = require('../../../package.json');
+const logger = require('../../utils/logger');
 
 async function healthRoutes(fastify, _options) {
   fastify.get(
@@ -30,7 +31,7 @@ async function healthRoutes(fastify, _options) {
         await query('SELECT 1');
         databaseStatus = 'connected';
       } catch (error) {
-        fastify.log.error('Database health check failed:', error);
+        logger.error('Database health check failed', { error: error.message });
       }
 
       return {

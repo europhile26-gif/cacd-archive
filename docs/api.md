@@ -58,7 +58,7 @@ curl "http://localhost:3000/api/v1/dates"
 | Method  | Path                      | Description                                 | Auth               |
 | ------- | ------------------------- | ------------------------------------------- | ------------------ |
 | `GET`   | `/users/me`               | Current user profile, roles, and navigation | Yes                |
-| `PATCH` | `/users/me`               | Update own profile                          | Yes                |
+| `PATCH` | `/users/me`               | Update own display name (`name` only)       | Yes                |
 | `PATCH` | `/users/me/notifications` | Toggle email notification preferences       | Yes                |
 | `GET`   | `/users/:id`              | Get user by ID                              | Yes (`users:view`) |
 

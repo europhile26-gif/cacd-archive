@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.2] - 2026-10-14
+
+First release from the October 2026 API security review, carrying the high-severity findings. Medium and low findings follow in v1.21.0.
+
+### Security
+
+- **Password hashes could be returned by `GET /users/me`.** Credential lookups switched on a class-wide "include password hash" flag, awaited a query, then switched it off — with nothing guaranteeing the switch-off. Other requests loading a user in that window got the hash on their user object, and if the lookup failed (a database blip during a login) the flag stayed on until restart. `GET /users/me` copied the user object into a response that allowed any property through, so from then on every signed-in user's profile response included their bcrypt hash. The flag is gone (credential lookups already read the hash with their own query), and `/users/me` now has an explicit response schema that lists exactly what it returns.
+- **Users could change their own email address.** `PATCH /users/me` documented only `name`, but extra body fields were passed through and the model accepted `email` — no verification, no re-authentication. It now updates `name` only, and every request body schema across auth, users, saved searches and admin rejects unlisted fields.
+- **Internal error text reached clients.** The global error handler was registered after the API routes, so it never applied to them: unhandled errors (e.g. a database failure in `/hearings`) went to Fastify's default handler and returned the raw message — SQL text included. It is now registered first, logs the failure, and returns a generic 500. Registration, login, password reset/change and saved-search routes likewise return only messages written for users, and log anything else.
+- **JWT verification pins `HS256`.** Tokens signed with any other algorithm are rejected. Token verification no longer swallows every error: expected rejections (expired, malformed) are logged at debug, and unexpected faults propagate.
+- **Password reset tokens can no longer reach the logs.** The forgot-password handler built the reset link and passed it to a logger. It now records only that a reset was requested.
+
+### Fixed
+
+- **API errors were never logged.** Fastify's own logger is disabled in favour of ours, which made the 46 `request.log` / `fastify.log` calls across the route files no-ops — every handled API error since they were written left no trace. They now go through the application logger.
+- **"Forgot password?" sends no email, and now says so in the logs.** Reset emails were never implemented; each request is now logged at warn so it is visible. Use `./bin/cacd users reset-password` meanwhile.
+- `PATCH /users/me`, `GET /users/:id` returned `user: {}` because their response schemas had no properties; they now return the profile.
+- `PATCH /searches/:id` with no updatable fields returns 400, not 500.
+
 ## [1.20.1] - 2026-10-14
 
 ### Fixed

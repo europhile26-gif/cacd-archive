@@ -4,7 +4,9 @@
  */
 
 const User = require('../../models/User');
+const logger = require('../../utils/logger');
 const { requireAuth, requireCapability } = require('../middleware/auth');
+const { roleSchema, userSchema } = require('../schemas/user-schemas');
 
 async function userRoutes(fastify, _options) {
   /**
@@ -21,7 +23,23 @@ async function userRoutes(fastify, _options) {
         response: {
           200: {
             type: 'object',
-            additionalProperties: true
+            properties: {
+              user: userSchema,
+              roles: { type: 'array', items: roleSchema },
+              capabilities: { type: 'array', items: { type: 'string' } },
+              navigation: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    label: { type: 'string' },
+                    url: { type: 'string' },
+                    icon: { type: 'string' },
+                    action: { type: 'string' }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -56,7 +74,7 @@ async function userRoutes(fastify, _options) {
           navigation
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Get user profile error');
+        logger.error('Get user profile error', { userId: request.user.id, error: error.message });
         return reply.code(500).send({
           error: 'Internal Server Error',
           message: 'Failed to get user profile'
@@ -78,8 +96,10 @@ async function userRoutes(fastify, _options) {
         description: 'Update current user profile',
         body: {
           type: 'object',
+          required: ['name'],
+          additionalProperties: false,
           properties: {
-            name: { type: 'string', minLength: 1 }
+            name: { type: 'string', minLength: 1, maxLength: 255 }
           }
         },
         response: {
@@ -87,7 +107,7 @@ async function userRoutes(fastify, _options) {
             type: 'object',
             properties: {
               success: { type: 'boolean' },
-              user: { type: 'object' }
+              user: userSchema
             }
           }
         }
@@ -95,19 +115,20 @@ async function userRoutes(fastify, _options) {
     },
     async (request, reply) => {
       try {
-        const updates = request.body;
-
-        const user = await User.update(request.user.id, updates);
+        const user = await User.update(request.user.id, { name: request.body.name });
 
         return reply.send({
           success: true,
           user
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Update user profile error');
-        return reply.code(400).send({
-          error: 'Bad Request',
-          message: error.message
+        logger.error('Update user profile error', {
+          userId: request.user.id,
+          error: error.message
+        });
+        return reply.code(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to update profile'
         });
       }
     }
@@ -135,8 +156,8 @@ async function userRoutes(fastify, _options) {
           200: {
             type: 'object',
             properties: {
-              user: { type: 'object' },
-              roles: { type: 'array' }
+              user: userSchema,
+              roles: { type: 'array', items: roleSchema }
             }
           }
         }
@@ -162,7 +183,7 @@ async function userRoutes(fastify, _options) {
           roles
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Get user error');
+        logger.error('Get user error', { userId: request.params.id, error: error.message });
         return reply.code(500).send({
           error: 'Internal Server Error',
           message: 'Failed to get user'
@@ -185,6 +206,7 @@ async function userRoutes(fastify, _options) {
         body: {
           type: 'object',
           required: ['email_notifications_enabled'],
+          additionalProperties: false,
           properties: {
             email_notifications_enabled: { type: 'boolean' }
           }
@@ -202,7 +224,10 @@ async function userRoutes(fastify, _options) {
           email_notifications_enabled
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Update notification preferences error');
+        logger.error('Update notification preferences error', {
+          userId: request.user.id,
+          error: error.message
+        });
         return reply.code(500).send({
           error: 'Internal Server Error',
           message: 'Failed to update notification preferences'

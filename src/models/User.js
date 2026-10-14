@@ -301,11 +301,6 @@ class User {
       updated_at: row.updated_at
     };
 
-    // Include password_hash only when explicitly needed (not in default formatting)
-    if (row.password_hash && this._includePasswordHash) {
-      user.password_hash = row.password_hash;
-    }
-
     return user;
   }
 
@@ -315,7 +310,6 @@ class User {
    * @returns {Promise<Object|null>} User object with password_hash
    */
   static async findForAuth(identifier) {
-    this._includePasswordHash = true;
     let user;
 
     if (typeof identifier === 'number') {
@@ -323,8 +317,6 @@ class User {
     } else {
       user = await this.findByEmail(identifier);
     }
-
-    this._includePasswordHash = false;
 
     if (user) {
       const sql = 'SELECT password_hash FROM users WHERE id = ?';

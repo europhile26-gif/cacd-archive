@@ -5,6 +5,7 @@
 
 const SavedSearch = require('../../models/SavedSearch');
 const config = require('../../config/config');
+const logger = require('../../utils/logger');
 const { requireAuth } = require('../middleware/auth');
 
 /**
@@ -32,11 +33,12 @@ async function savedSearchRoutes(fastify, _options) {
         const searches = await SavedSearch.listByUser(request.user.id);
         return reply.send({ searches });
       } catch (error) {
-        console.error('Error fetching saved searches:', error);
-        request.log.error(error);
+        logger.error('List saved searches error', {
+          userId: request.user.id,
+          error: error.message
+        });
         return reply.status(500).send({
-          error: 'Failed to fetch saved searches',
-          message: error.message
+          error: 'Failed to fetch saved searches'
         });
       }
     }
@@ -76,7 +78,7 @@ async function savedSearchRoutes(fastify, _options) {
 
         return reply.send({ search });
       } catch (error) {
-        request.log.error(error);
+        logger.error('Get saved search error', { userId: request.user.id, error: error.message });
         return reply.status(500).send({
           error: 'Failed to fetch saved search'
         });
@@ -98,6 +100,7 @@ async function savedSearchRoutes(fastify, _options) {
         description: 'Create a new saved search for the authenticated user',
         body: {
           type: 'object',
+          additionalProperties: false,
           required: ['search_text'],
           properties: {
             search_text: {
@@ -119,8 +122,6 @@ async function savedSearchRoutes(fastify, _options) {
 
         return reply.status(201).send({ search });
       } catch (error) {
-        request.log.error(error);
-
         // Handle validation errors
         if (
           error.message.includes('at least') ||
@@ -130,6 +131,10 @@ async function savedSearchRoutes(fastify, _options) {
           return reply.status(400).send({ error: error.message });
         }
 
+        logger.error('Create saved search error', {
+          userId: request.user.id,
+          error: error.message
+        });
         return reply.status(500).send({
           error: 'Failed to create saved search'
         });
@@ -158,6 +163,7 @@ async function savedSearchRoutes(fastify, _options) {
         },
         body: {
           type: 'object',
+          additionalProperties: false,
           properties: {
             search_text: {
               type: 'string',
@@ -179,16 +185,22 @@ async function savedSearchRoutes(fastify, _options) {
 
         return reply.send({ search });
       } catch (error) {
-        request.log.error(error);
-
         if (error.message === 'Saved search not found') {
           return reply.status(404).send({ error: error.message });
         }
 
-        if (error.message.includes('at least') || error.message.includes('exceed')) {
+        if (
+          error.message.includes('at least') ||
+          error.message.includes('exceed') ||
+          error.message === 'No valid fields to update'
+        ) {
           return reply.status(400).send({ error: error.message });
         }
 
+        logger.error('Update saved search error', {
+          userId: request.user.id,
+          error: error.message
+        });
         return reply.status(500).send({
           error: 'Failed to update saved search'
         });
@@ -225,12 +237,14 @@ async function savedSearchRoutes(fastify, _options) {
 
         return reply.status(204).send();
       } catch (error) {
-        request.log.error(error);
-
         if (error.message === 'Saved search not found') {
           return reply.status(404).send({ error: error.message });
         }
 
+        logger.error('Delete saved search error', {
+          userId: request.user.id,
+          error: error.message
+        });
         return reply.status(500).send({
           error: 'Failed to delete saved search'
         });

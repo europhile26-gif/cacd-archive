@@ -5,7 +5,26 @@
 
 const AuthService = require('../../services/auth-service');
 const config = require('../../config/config');
+const logger = require('../../utils/logger');
 const { requireAuth } = require('../middleware/auth');
+
+/**
+ * Sends a client-safe service error as-is; logs anything else and sends a generic 500.
+ */
+function sendServiceError(reply, error, context) {
+  if (error.statusCode && error.statusCode < 500) {
+    return reply.code(error.statusCode).send({
+      error: error.statusCode === 401 ? 'Unauthorized' : 'Bad Request',
+      message: error.message
+    });
+  }
+
+  logger.error(context, { error: error.message, stack: error.stack });
+  return reply.code(500).send({
+    error: 'Internal Server Error',
+    message: 'Something went wrong. Please try again later.'
+  });
+}
 
 async function authRoutes(fastify, _options) {
   /**
@@ -20,6 +39,7 @@ async function authRoutes(fastify, _options) {
         description: 'Register a new user account',
         body: {
           type: 'object',
+          additionalProperties: false,
           required: ['email', 'password', 'name'],
           properties: {
             email: { type: 'string', format: 'email' },
@@ -62,15 +82,10 @@ async function authRoutes(fastify, _options) {
         // Register user
         const user = await AuthService.register({ email, password, name });
 
-        // Send welcome email (account pending approval)
-        if (config.auth.requireAdminApproval) {
-          try {
-            // TODO: Implement welcome email template
-            fastify.log.info({ email: user.email }, 'User registered, pending approval');
-          } catch (emailError) {
-            fastify.log.error({ error: emailError }, 'Failed to send welcome email');
-          }
-        }
+        logger.info('User registered', {
+          userId: user.id,
+          pendingApproval: config.auth.requireAdminApproval
+        });
 
         return reply.code(201).send({
           success: true,
@@ -80,11 +95,7 @@ async function authRoutes(fastify, _options) {
           user
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Registration error');
-        return reply.code(400).send({
-          error: 'Bad Request',
-          message: error.message
-        });
+        return sendServiceError(reply, error, 'Registration error');
       }
     }
   );
@@ -101,6 +112,7 @@ async function authRoutes(fastify, _options) {
         description: 'Login with email and password',
         body: {
           type: 'object',
+          additionalProperties: false,
           required: ['email', 'password'],
           properties: {
             email: { type: 'string', format: 'email' },
@@ -155,7 +167,7 @@ async function authRoutes(fastify, _options) {
           maxAge: rememberMe ? 30 * 24 * 60 * 60 : 7 * 24 * 60 * 60
         });
 
-        fastify.log.info({ userId: user.id, email: user.email }, 'User logged in');
+        logger.info('User logged in', { userId: user.id });
 
         return reply.send({
           success: true,
@@ -164,11 +176,7 @@ async function authRoutes(fastify, _options) {
           refreshToken
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Login error');
-        return reply.code(401).send({
-          error: 'Unauthorized',
-          message: error.message
-        });
+        return sendServiceError(reply, error, 'Login error');
       }
     }
   );
@@ -200,8 +208,6 @@ async function authRoutes(fastify, _options) {
       reply.clearCookie('refreshToken', { path: '/' });
       reply.clearCookie('loggedIn', { path: '/' });
 
-      fastify.log.info('User logged out');
-
       return reply.send({
         success: true,
         message: 'Logged out successfully'
@@ -221,6 +227,7 @@ async function authRoutes(fastify, _options) {
         description: 'Refresh access token',
         body: {
           type: 'object',
+          additionalProperties: false,
           properties: {
             refreshToken: { type: 'string' }
           }
@@ -281,7 +288,7 @@ async function authRoutes(fastify, _options) {
           refreshToken: newRefreshToken
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Token refresh error');
+        logger.debug('Token refresh rejected', { error: error.message });
         return reply.code(401).send({
           error: 'Unauthorized',
           message: 'Invalid or expired refresh token'
@@ -302,6 +309,7 @@ async function authRoutes(fastify, _options) {
         description: 'Request password reset email',
         body: {
           type: 'object',
+          additionalProperties: false,
           required: ['email'],
           properties: {
             email: { type: 'string', format: 'email' }
@@ -324,18 +332,11 @@ async function authRoutes(fastify, _options) {
 
         const result = await AuthService.requestPasswordReset(email);
 
+        // The reset token must never be logged: it grants control of the account.
         if (result) {
-          const { token } = result;
-
-          // Send password reset email
-          const resetUrl = `${config.baseUrl || `http://localhost:${config.port}`}/reset-password?token=${token}`;
-
-          try {
-            // TODO: Implement password reset email template
-            fastify.log.info({ email, resetUrl }, 'Password reset requested');
-          } catch (emailError) {
-            fastify.log.error({ error: emailError }, 'Failed to send password reset email');
-          }
+          logger.warn('Password reset requested, but reset emails are not implemented', {
+            userId: result.user.id
+          });
         }
 
         // Always return success (don't reveal if email exists)
@@ -344,7 +345,7 @@ async function authRoutes(fastify, _options) {
           message: 'If an account exists with that email, a password reset link has been sent.'
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Forgot password error');
+        logger.error('Forgot password error', { error: error.message });
         return reply.code(500).send({
           error: 'Internal Server Error',
           message: 'Failed to process password reset request'
@@ -365,6 +366,7 @@ async function authRoutes(fastify, _options) {
         description: 'Reset password with token',
         body: {
           type: 'object',
+          additionalProperties: false,
           required: ['token', 'password'],
           properties: {
             token: { type: 'string' },
@@ -393,11 +395,7 @@ async function authRoutes(fastify, _options) {
           message: 'Password reset successfully. You can now log in with your new password.'
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Password reset error');
-        return reply.code(400).send({
-          error: 'Bad Request',
-          message: error.message
-        });
+        return sendServiceError(reply, error, 'Password reset error');
       }
     }
   );
@@ -415,6 +413,7 @@ async function authRoutes(fastify, _options) {
         description: 'Change password (requires authentication)',
         body: {
           type: 'object',
+          additionalProperties: false,
           required: ['currentPassword', 'newPassword'],
           properties: {
             currentPassword: { type: 'string' },
@@ -443,11 +442,7 @@ async function authRoutes(fastify, _options) {
           message: 'Password changed successfully'
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Change password error');
-        return reply.code(400).send({
-          error: 'Bad Request',
-          message: error.message
-        });
+        return sendServiceError(reply, error, 'Change password error');
       }
     }
   );

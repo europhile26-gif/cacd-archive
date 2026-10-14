@@ -8,11 +8,25 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
 const db = require('../config/database');
+const logger = require('../utils/logger');
 
 const SALT_ROUNDS = 12;
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '7d';
 const RESET_TOKEN_EXPIRY = 60 * 60 * 1000; // 1 hour in milliseconds
+const JWT_ALGORITHM = 'HS256';
+
+// jsonwebtoken errors that just mean "this token is not valid", as opposed to a fault
+const EXPECTED_TOKEN_ERRORS = ['TokenExpiredError', 'JsonWebTokenError', 'NotBeforeError'];
+
+/**
+ * Creates an error whose message is safe to return to the client, with its HTTP status.
+ */
+function clientError(message, statusCode) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+}
 
 class AuthService {
   /**
@@ -82,6 +96,7 @@ class AuthService {
     };
 
     return jwt.sign(payload, this._getJwtSecret(), {
+      algorithm: JWT_ALGORITHM,
       expiresIn: process.env.JWT_ACCESS_EXPIRY || ACCESS_TOKEN_EXPIRY
     });
   }
@@ -99,6 +114,7 @@ class AuthService {
     };
 
     return jwt.sign(payload, this._getJwtSecret(), {
+      algorithm: JWT_ALGORITHM,
       expiresIn: process.env.JWT_REFRESH_EXPIRY || REFRESH_TOKEN_EXPIRY
     });
   }
@@ -109,11 +125,18 @@ class AuthService {
    * @returns {Object|null} Decoded payload or null if invalid
    */
   static verifyToken(token) {
+    let payload = null;
+
     try {
-      return jwt.verify(token, this._getJwtSecret());
-    } catch {
-      return null;
+      payload = jwt.verify(token, this._getJwtSecret(), { algorithms: [JWT_ALGORITHM] });
+    } catch (error) {
+      if (!EXPECTED_TOKEN_ERRORS.includes(error.name)) {
+        throw error;
+      }
+      logger.debug('Token rejected', { reason: error.message });
     }
+
+    return payload;
   }
 
   /**
@@ -130,13 +153,13 @@ class AuthService {
     // Validate password strength
     const passwordValidation = this.validatePassword(password);
     if (!passwordValidation.valid) {
-      throw new Error(passwordValidation.errors.join(', '));
+      throw clientError(passwordValidation.errors.join(', '), 400);
     }
 
     // Check if email already exists
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
-      throw new Error('Email already registered');
+      throw clientError('Email already registered', 400);
     }
 
     // Hash password
@@ -164,21 +187,24 @@ class AuthService {
     const user = await User.findForAuth(email);
 
     if (!user) {
-      throw new Error('Invalid email or password');
+      throw clientError('Invalid email or password', 401);
     }
 
     // Verify password
     const isValid = await this.verifyPassword(password, user.password_hash);
     if (!isValid) {
-      throw new Error('Invalid email or password');
+      throw clientError('Invalid email or password', 401);
     }
 
     // Check if account is active
     if (!user.status.is_active) {
       if (user.status.slug === 'pending') {
-        throw new Error('Account is pending approval. Please wait for administrator approval.');
+        throw clientError(
+          'Account is pending approval. Please wait for administrator approval.',
+          401
+        );
       }
-      throw new Error(`Account is ${user.status.slug}. Please contact support.`);
+      throw clientError(`Account is ${user.status.slug}. Please contact support.`, 401);
     }
 
     // Remove password hash from user object before returning
@@ -282,7 +308,7 @@ class AuthService {
     // Validate new password
     const passwordValidation = this.validatePassword(newPassword);
     if (!passwordValidation.valid) {
-      throw new Error(passwordValidation.errors.join(', '));
+      throw clientError(passwordValidation.errors.join(', '), 400);
     }
 
     // Find valid token
@@ -293,7 +319,7 @@ class AuthService {
     const rows = await db.query(sql, [token]);
 
     if (rows.length === 0) {
-      throw new Error('Invalid or expired reset token');
+      throw clientError('Invalid or expired reset token', 400);
     }
 
     const resetToken = rows[0];
@@ -329,13 +355,13 @@ class AuthService {
     // Verify current password
     const isValid = await this.verifyPassword(currentPassword, user.password_hash);
     if (!isValid) {
-      throw new Error('Current password is incorrect');
+      throw clientError('Current password is incorrect', 400);
     }
 
     // Validate new password
     const passwordValidation = this.validatePassword(newPassword);
     if (!passwordValidation.valid) {
-      throw new Error(passwordValidation.errors.join(', '));
+      throw clientError(passwordValidation.errors.join(', '), 400);
     }
 
     // Hash new password
