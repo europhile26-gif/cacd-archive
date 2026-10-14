@@ -96,4 +96,5 @@ Severity reflects impact on this deployment. "Fixed in" is the release carrying 
 
 - **F10 — password reset.** Reset emails have never been sent: the endpoint creates a token and
   stops. Hashing tokens at rest and invalidating earlier ones belongs with implementing the
-  email. Until then, administrators reset passwords with `./bin/cacd users reset-password`.
+  email. Since v1.23.1 the login page no longer links to the reset page; users ask the operator,
+  who resets passwords with `./bin/cacd users reset-password`.

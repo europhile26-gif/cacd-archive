@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **"Forgot your password?" link on the login page.** Reset emails have never been sent, so the link led to a form that said an email was on its way when none was. Password resets go through the site operator, who uses `./bin/cacd users reset-password`. The reset page and API routes stay in place for when reset emails are implemented.
+
 ## [1.23.0] - 2026-10-14
 
 Guides for AI agents, and an API description complete enough for an agent to rely on. Some responses change shape; see Changed.
