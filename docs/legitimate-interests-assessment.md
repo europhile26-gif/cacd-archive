@@ -142,4 +142,4 @@ Proceed on Article 6(1)(f). Conditions:
 - `/privacy` — the published privacy notice (source: `public/privacy.html`)
 - `docs/configuration.md` — what each setting does and what is collected
 - `docs/security.md` — access control and reverse-proxy configuration
-- `dev-notes/00-project-tracker.md` — M2.2, the design decisions and their rationale
+- The M2.2 design decisions and their rationale are recorded in the project's internal planning notes
