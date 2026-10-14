@@ -87,9 +87,10 @@ Severity reflects impact on this deployment. "Fixed in" is the release carrying 
 - **F19 — public API documentation.** Swagger UI at `/api/docs` documents a public API and is
   useful to agents and integrators. The version number is no longer in `/health`, but the
   Swagger spec still carries it.
-- **Rate limits and the scrape guard are per process.** Under PM2 cluster mode each instance
-  keeps its own counters and its own in-progress flag. Moving rate limit counters to Redis is
-  planned alongside API keys.
+- **The scrape guard is per process.** Under PM2 cluster mode each instance keeps its own
+  in-progress flag; only instance 0 runs the scheduler, so overlap needs a manual scrape on
+  the other instance. Rate limit counters are shared through Redis when `REDIS_URL` is set
+  (since v1.22.0).
 
 ## Open
 

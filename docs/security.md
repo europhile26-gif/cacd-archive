@@ -31,7 +31,8 @@ API endpoints are protected with rate limiting:
 
 - **Default**: 100 requests per 15 minutes per IP, configurable via `API_RATE_LIMIT_MAX` and `API_RATE_LIMIT_WINDOW`. Signed-in users are exempt.
 - **Credential routes** (register, login, forgot/reset/change password): 10 requests per 15 minutes per IP per route, via `AUTH_RATE_LIMIT_MAX` and `AUTH_RATE_LIMIT_WINDOW`. No exemption for signed-in users, so a stolen session cannot brute-force `change-password`.
-- Counters are per process: under PM2 cluster mode each instance counts separately.
+- **Shared counters**: with `REDIS_URL` set, counters live in Redis and every PM2 instance draws on the same limit. Without it, each process counts separately, so under cluster mode each instance allows the full limit (production logs a warning at startup).
+- **Redis outage**: requests are let through rather than refused, so the public site stays up. The outage is logged once at `error`, and recovery at `info`.
 
 ### 3. CORS Configuration
 

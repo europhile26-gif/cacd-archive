@@ -108,6 +108,11 @@ const config = {
     }
   },
 
+  redis: {
+    // Empty keeps rate-limit counters in process memory
+    url: process.env.REDIS_URL || ''
+  },
+
   analytics: {
     enabled: process.env.ANALYTICS_ENABLED === 'true',
     retentionDays: parseIntOption(process.env.ANALYTICS_RETENTION_DAYS, 30),
@@ -211,6 +216,12 @@ for (const [variable, limit] of [
       `${variable}_MAX must be at least 1 and ${variable}_WINDOW at least 1000ms.`
     );
   }
+}
+
+if (config.redis.url && !/^rediss?:\/\//.test(config.redis.url)) {
+  configProblems.push(
+    'REDIS_URL must start with redis:// or rediss:// (e.g. "redis://127.0.0.1:6379").'
+  );
 }
 
 // jsonwebtoken accepts a number of seconds or a number with a unit suffix

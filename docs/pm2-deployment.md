@@ -7,6 +7,7 @@ This guide covers deploying CACD Archive with PM2 process manager for production
 - Node.js 22+ installed
 - PM2 installed globally: `npm install -g pm2`
 - MariaDB/MySQL database configured
+- Redis, for rate limits shared across instances (optional — without it each instance counts separately)
 - Environment variables configured in `.env`
 
 ## Basic Deployment
@@ -34,6 +35,7 @@ Key settings:
 - `SCRAPE_ON_STARTUP=true` (for first run)
 - Database credentials
 - Email settings (if using notifications)
+- `REDIS_URL` — in cluster mode, so the rate limits hold across instances
 
 ### 3. Run Database Migrations
 

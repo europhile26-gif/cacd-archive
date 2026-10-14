@@ -135,5 +135,17 @@ describe('config validation', () => {
 
       expect(config.notifications).toEqual({ maxPerWindow: 5, windowHours: 24 });
     });
+
+    test('REDIS_URL is optional', () => {
+      delete process.env.REDIS_URL;
+
+      expect(requireConfig(REQUIRED).redis.url).toBe('');
+    });
+
+    test('rejects a REDIS_URL that is not a redis:// URL', () => {
+      expect(() => requireConfig({ ...REQUIRED, REDIS_URL: '127.0.0.1:6379' })).toThrow(
+        'REDIS_URL'
+      );
+    });
   });
 });

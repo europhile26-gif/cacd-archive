@@ -81,6 +81,8 @@ cp .env.test.example .env.test
 # Edit .env.test with test database credentials
 ```
 
+The shared rate-limit store tests need Redis. Set `TEST_REDIS_URL` in `.env.test` to a spare database (e.g. `redis://127.0.0.1:6379/15`); without it those tests are reported as skipped.
+
 ### Running Tests
 
 ```bash

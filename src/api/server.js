@@ -12,7 +12,11 @@ const logger = require('../utils/logger');
 const { resolveCredentials, CREDENTIALS_VALID } = require('./middleware/auth');
 const analyticsService = require('../services/analytics-service');
 const geoipService = require('../services/geoip-service');
+const { createRedisClient, waitForFirstConnection } = require('../config/redis');
 const { version } = require('../../package.json');
+
+// Prefix for rate-limit counters in Redis
+const RATE_LIMIT_NAMESPACE = 'cacd-archive:rate-limit:';
 
 /**
  * Resolves the trustProxy value passed to Fastify, warning on the insecure setting.
@@ -137,6 +141,33 @@ async function isRateLimitExempt(request) {
 }
 
 /**
+ * Builds the general rate-limit options, counting in Redis when REDIS_URL is set.
+ */
+async function resolveRateLimitOptions(server) {
+  const options = {
+    max: config.api.rateLimit.max,
+    timeWindow: config.api.rateLimit.timeWindow,
+    allowList: isRateLimitExempt
+  };
+
+  if (config.redis.url) {
+    const redis = createRedisClient(config.redis.url, 'rate limiting');
+    server.addHook('onClose', async () => redis.disconnect());
+    // Commands sent before the connection is up are not queued, so their requests go uncounted
+    await waitForFirstConnection(redis);
+    // skipOnError lets requests through while Redis is down; the client logs the outage
+    Object.assign(options, { redis, nameSpace: RATE_LIMIT_NAMESPACE, skipOnError: true });
+  } else if (config.env === 'production') {
+    logger.warn(
+      'REDIS_URL is not set; rate limits are counted per process, so under PM2 cluster mode ' +
+        'each instance allows the full limit.'
+    );
+  }
+
+  return options;
+}
+
+/**
  * Logs server errors and replies without exposing their messages to the client.
  */
 function handleError(error, request, reply) {
@@ -242,11 +273,7 @@ async function createServer() {
   await server.register(
     async (apiServer) => {
       // allowList is the plugin's exemption hook; it has no 'skip' option.
-      await apiServer.register(fastifyRateLimit, {
-        max: config.api.rateLimit.max,
-        timeWindow: config.api.rateLimit.timeWindow,
-        allowList: isRateLimitExempt
-      });
+      await apiServer.register(fastifyRateLimit, await resolveRateLimitOptions(apiServer));
 
       // Register API routes
       await apiServer.register(require('./routes/health'), { prefix: '/api/v1' });
@@ -294,4 +321,4 @@ async function createServer() {
   return server;
 }
 
-module.exports = { createServer, resolveCorsOptions };
+module.exports = { createServer, resolveCorsOptions, RATE_LIMIT_NAMESPACE };

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Rate limits shared across PM2 instances.** With the new `REDIS_URL` set, rate-limit counters live in Redis, so the limits hold across both production instances instead of each one allowing the full amount. Unset, counters stay in each process as before, and production warns at startup. If Redis goes down, requests are let through rather than refused; the outage is logged once, and recovery when it reconnects. Adds `ioredis`.
+
 ### Changed
 
 - **One credential check per request.** `requireAuth`, `optionalAuth` and the rate-limit exemption now share a single resolver, run once per request, in preparation for API keys. The exemption from the general rate limit now requires the session to be current and the account active: a revoked or deactivated session's token used to exempt its holder until it expired (up to 15 minutes).

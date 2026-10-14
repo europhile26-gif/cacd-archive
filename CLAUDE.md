@@ -43,7 +43,7 @@ CACD Archive is a Node.js application that scrapes, parses, and archives UK Cour
 
 ### Key Layers
 
-- **API** (`src/api/`) — Route plugins under `src/api/routes/`. Auth middleware in `src/api/middleware/auth.js`. Rate limiting exempts signed-in users (via `allowList`) except on `/auth/*` credential routes, which have their own stricter limit. Routes prefixed under `/api/v1/`.
+- **API** (`src/api/`) — Route plugins under `src/api/routes/`. Auth middleware in `src/api/middleware/auth.js`. Rate limiting exempts signed-in users (via `allowList`) except on `/auth/*` credential routes, which have their own stricter limit. Counters live in Redis when `REDIS_URL` is set (`src/config/redis.js`), otherwise per process. Routes prefixed under `/api/v1/`.
 - **Services** (`src/services/`) — Business logic: `scraper-service.js` (orchestrates scraping), `auth-service.js` (authentication), `email-service.js` (notifications), `notification-service.js` (saved search alerts), `sync-service.js` (data persistence), `permission-service.js` (RBAC).
 - **Scrapers** (`src/scrapers/`) — `link-discovery.js` finds cause list URLs from the summary page, `table-parser.js` extracts hearing data from HTML, `scheduler.js` manages cron-based periodic scraping.
 - **Models** (`src/models/`) — Domain objects: `User.js`, `Role.js`, `Capability.js`, `AccountStatus.js`, `SavedSearch.js`.

@@ -73,6 +73,7 @@ All configuration is via environment variables in `.env`. See `.env.example` for
 | `API_RATE_LIMIT_WINDOW`         | `900000`   | Rate limit window in ms (15 min)                                                                               |
 | `AUTH_RATE_LIMIT_MAX`           | `10`       | Max requests per window to each login, registration and password route, per IP. Applies to signed-in users too |
 | `AUTH_RATE_LIMIT_WINDOW`        | `900000`   | Window for the above, in ms                                                                                    |
+| `REDIS_URL`                     | —          | Redis for rate-limit counters shared across PM2 instances (e.g. `redis://127.0.0.1:6379`). Unset: per process  |
 | `TRUSTED_PROXIES`               | `loopback` | Reverse proxies allowed to set `X-Forwarded-For`                                                               |
 
 ## Request Analytics
