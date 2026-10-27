@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.2] - 2026-10-27
+
+**Upgrading:** no migrations or new settings. `npm ci`, then reload.
+
+### Fixed
+
+- **Scrapes no longer fail on a single network blip.** A failed connection, DNS lookup or dropped response ("fetch failed") was thrown on the first attempt; it now gets the same three retries (5s, 10s, 20s) as a timeout. This covers the daily cause list summary page, each list, and the Future Hearing List.
+- **Failed scrapes record why the network failed.** Node reports the real reason (`ENOTFOUND`, `ECONNRESET`, `UND_ERR_CONNECT_TIMEOUT`, …) only as the error's cause, which was discarded. It is now stored in `scrape_history.error_details.cause`, included in the link-discovery alert emails, and logged on each retry.
+
+### Security
+
+- Dependency updates clearing every `npm audit` advisory: `undici` 7.30.1 (high: denial of service, via `cheerio`), `nodemailer` 10.2.1 (moderate: address parser could add unintended recipients) and `fast-uri` (moderate: URI spoofing, via Fastify). Also in-range updates to the `@fastify/*` plugins, `mysql2`, `prettier`, `globals` and `bootstrap-icons`.
+
 ## [1.23.1] - 2026-10-14
 
 ### Removed
