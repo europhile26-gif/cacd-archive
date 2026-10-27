@@ -12,6 +12,7 @@ const {
 const notificationService = require('./notification-service');
 const config = require('../config/config');
 const logger = require('../utils/logger');
+const { isNetworkError, describeErrorCause } = require('../utils/fetch-errors');
 
 /**
  * Scraper Service
@@ -335,6 +336,17 @@ async function fetchListHtml(url) {
           continue;
         }
         throw new Error('Request timeout after all retry attempts');
+      }
+
+      if (isNetworkError(error) && attempt < retryDelays.length) {
+        const delay = retryDelays[attempt];
+        logger.warn(`Network error, retrying in ${delay}ms`, {
+          attempt: attempt + 1,
+          url,
+          cause: describeErrorCause(error)
+        });
+        await sleep(delay);
+        continue;
       }
 
       throw error;

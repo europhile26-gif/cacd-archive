@@ -41,9 +41,8 @@ STEPS:
 
 **Error Handling:**
 
-- Network timeout: Retry up to 3 times with increasing delays (5s, 10s, 20s)
-- Connection refused: Log error and exit (possible maintenance)
-- DNS resolution failure: Log error and exit
+- Network timeout, connection failure (refused, reset) or DNS resolution failure: retry up to 3 times with increasing delays (5s, 10s, 20s), then log the error and exit
+- The underlying cause (e.g. `ENOTFOUND`, `ECONNRESET`) is logged on each retry and recorded in `scrape_history.error_details.cause` and the alert email
 
 ---
 

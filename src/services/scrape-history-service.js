@@ -1,5 +1,6 @@
 const { query } = require('../config/database');
 const logger = require('../utils/logger');
+const { describeErrorCause } = require('../utils/fetch-errors');
 
 /**
  * Scrape History Service
@@ -98,7 +99,8 @@ async function recordScrapeError(scrapeId, error) {
       JSON.stringify({
         name: error.name,
         stack: error.stack,
-        code: error.code
+        code: error.code,
+        cause: describeErrorCause(error)
       }),
       scrapeId
     ]
@@ -106,7 +108,8 @@ async function recordScrapeError(scrapeId, error) {
 
   logger.error('Scrape history recorded as failed', {
     scrapeId,
-    error: error.message
+    error: error.message,
+    cause: describeErrorCause(error)
   });
 }
 

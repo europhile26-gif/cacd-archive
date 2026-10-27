@@ -193,5 +193,55 @@ describe('fhl-link-discovery', () => {
 
       expect(result.publicUpdatedAt).toBeNull();
     });
+
+    describe('network errors', () => {
+      const emailService = require('../../src/services/email-service');
+
+      function networkError(code) {
+        const cause = Object.assign(new Error(`connect ${code}`), { code });
+        return new TypeError('fetch failed', { cause });
+      }
+
+      beforeEach(() => {
+        jest.useFakeTimers();
+        emailService.sendDataError.mockReset();
+      });
+
+      afterEach(() => {
+        jest.useRealTimers();
+      });
+
+      test('retries after a network error and succeeds', async () => {
+        mockFetch
+          .mockRejectedValueOnce(networkError('ECONNRESET'))
+          .mockResolvedValueOnce(mockJsonResponse(publicationResponse))
+          .mockResolvedValueOnce(mockJsonResponse(attachmentResponse));
+
+        const pending = discoverFHLLink(BASE_URL);
+        await jest.advanceTimersByTimeAsync(5000);
+        const result = await pending;
+
+        expect(result.success).toBe(true);
+        expect(mockFetch).toHaveBeenCalledTimes(3);
+      });
+
+      test('rethrows the network error after all retries, reporting its cause', async () => {
+        mockFetch.mockRejectedValue(networkError('ENOTFOUND'));
+
+        const pending = discoverFHLLink(BASE_URL);
+        const assertion = expect(pending).rejects.toThrow('fetch failed');
+        await jest.advanceTimersByTimeAsync(35000);
+        await assertion;
+
+        expect(mockFetch).toHaveBeenCalledTimes(4);
+        expect(emailService.sendDataError).toHaveBeenCalledWith(
+          expect.objectContaining({
+            context: expect.objectContaining({
+              cause: { name: 'Error', code: 'ENOTFOUND', message: 'connect ENOTFOUND' }
+            })
+          })
+        );
+      });
+    });
   });
 });

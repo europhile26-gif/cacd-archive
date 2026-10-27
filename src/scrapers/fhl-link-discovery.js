@@ -1,6 +1,7 @@
 const config = require('../config/config');
 const logger = require('../utils/logger');
 const emailService = require('../services/email-service');
+const { isNetworkError, describeErrorCause } = require('../utils/fetch-errors');
 
 /**
  * FHL Link Discovery Module
@@ -91,7 +92,7 @@ async function discoverFHLLink(baseUrl) {
         stack: error.stack,
         date: new Date().toISOString().slice(0, 10),
         url: baseUrl,
-        context: { baseUrl }
+        context: { baseUrl, cause: describeErrorCause(error) }
       });
     } catch (emailError) {
       logger.error('Failed to send FHL link discovery error email', {
@@ -181,6 +182,17 @@ async function fetchJson(url) {
           continue;
         }
         throw new Error('Request timeout after all retry attempts');
+      }
+
+      if (isNetworkError(error) && attempt < retryDelays.length) {
+        const delay = retryDelays[attempt];
+        logger.warn(`Network error, retrying in ${delay}ms`, {
+          attempt: attempt + 1,
+          url,
+          cause: describeErrorCause(error)
+        });
+        await sleep(delay);
+        continue;
       }
 
       throw error;

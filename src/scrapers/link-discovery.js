@@ -4,6 +4,7 @@ const { toZonedTime } = require('date-fns-tz');
 const config = require('../config/config');
 const logger = require('../utils/logger');
 const emailService = require('../services/email-service');
+const { isNetworkError, describeErrorCause } = require('../utils/fetch-errors');
 
 /**
  * Link Discovery Module
@@ -47,6 +48,7 @@ async function discoverLinks(division = 'Criminal') {
   } catch (error) {
     logger.error('Link discovery failed', {
       error: error.message,
+      cause: describeErrorCause(error),
       stack: error.stack,
       division
     });
@@ -61,7 +63,8 @@ async function discoverLinks(division = 'Criminal') {
         url: SUMMARY_URL,
         context: {
           division,
-          summaryUrl: SUMMARY_URL
+          summaryUrl: SUMMARY_URL,
+          cause: describeErrorCause(error)
         }
       });
     } catch (emailError) {
@@ -134,6 +137,16 @@ async function fetchSummaryPage() {
           continue;
         }
         throw new Error('Request timeout after all retry attempts');
+      }
+
+      if (isNetworkError(error) && attempt < retryDelays.length) {
+        const delay = retryDelays[attempt];
+        logger.warn(`Network error, retrying in ${delay}ms`, {
+          attempt: attempt + 1,
+          cause: describeErrorCause(error)
+        });
+        await sleep(delay);
+        continue;
       }
 
       // For other errors, throw immediately
