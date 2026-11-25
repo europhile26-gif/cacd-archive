@@ -55,6 +55,15 @@ const MONTHS = {
 };
 
 /**
+ * Collapse whitespace runs (wrapped source HTML, nbsp) to single spaces and trim
+ * @param {string} text - Raw text
+ * @returns {string} Normalised text
+ */
+function normalizeWhitespace(text) {
+  return text.replace(/\s+/g, ' ').trim();
+}
+
+/**
  * Parse FHL document table
  * @param {string} html - HTML document
  * @param {string} sourceUrl - Source URL
@@ -77,7 +86,7 @@ async function parseFHLTable(html, sourceUrl, division = 'Criminal') {
     const headers = [];
     const headerRow = table.find('thead tr').first();
     headerRow.find('th').each((i, cell) => {
-      headers.push($(cell).text().trim().toLowerCase());
+      headers.push(normalizeWhitespace($(cell).text()).toLowerCase());
     });
 
     logger.debug('FHL headers extracted', { headers });
@@ -179,12 +188,7 @@ function parseFHLRow(cells, columnIndices, rowNumber) {
     const idx = columnIndices[fieldName];
     if (idx === undefined) return '';
     const cell = cells.eq(idx);
-    return cell.length > 0
-      ? cheerio
-          .load(cell.html() || '')
-          .text()
-          .trim()
-      : '';
+    return cell.length > 0 ? normalizeWhitespace(cheerio.load(cell.html() || '').text()) : '';
   };
 
   // The split layout carries the list code in its own column; rejoin to match stored case numbers

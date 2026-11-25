@@ -178,6 +178,49 @@ describe('fhl-table-parser', () => {
       expect(records[1].listDate).toBe('2026-03-24');
     });
 
+    test('matches headers and cells that wrap across lines in the source HTML', async () => {
+      const html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Surname</th>
+              <th>Forenames</th>
+              <th>CAO Reference
+                number</th>
+              <th>Hearing Date</th>
+              <th>Time</th>
+              <th>Reporting&nbsp;
+                Restriction</th>
+              <th>Crown Court</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Smith</td>
+              <td>John</td>
+              <td>202500054
+                A4</td>
+              <td>10 March 2026</td>
+              <td>10:30am</td>
+              <td>1992 Sexual Offences
+                Act applies</td>
+              <td>Woolwich</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+
+      const records = await parseFHLTable(html, 'http://test.example.com');
+
+      expect(records).toHaveLength(1);
+      expect(records[0]).toMatchObject({
+        'case number': '202500054 A4',
+        listDate: '2026-03-10',
+        venue: null,
+        'reporting restriction': '1992 Sexual Offences Act applies'
+      });
+    });
+
     test('parses the split CAO REF / CODE layout', async () => {
       const html = `
         <div class="govspeak"><table>
