@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.3] - 2026-11-25
+
+**Upgrading:** no migrations or new settings. `npm ci`, then reload.
+
+### Fixed
+
+- **Future Hearing List scrapes work again.** GOV.UK's fixed-for-hearing page now wraps some column headings across lines in its HTML ("CAO Reference number", "Reporting Restriction"), so the parser couldn't find the case number column and every FHL scrape failed with "Critical FHL columns missing: case number". Headings and cell values are now read with whitespace collapsed, the way a browser shows them. The page currently has no Court column, so FHL hearings are stored without a venue until GOV.UK restores it.
+
+### Security
+
+- Dependency updates clearing every production `npm audit` advisory: `@fastify/static` 10.1.12 drops vulnerable `glob` (moderate: cancellation bypass allows filesystem traversal after a timeout) and `minimatch` (moderate: denial of service via pattern amplification). Also in-range updates to `fastify`, `@fastify/cors`, `@fastify/swagger`, `@fastify/swagger-ui`, `nodemailer`, `maxmind`, `bootstrap`, `prettier` and `globals`.
+- Remaining dev-only advisories (`glob`/`minimatch` via Jest's coverage tooling) have no fix within Jest 30; npm's suggested fix downgrades to Jest 29 and is not applied.
+
 ## [1.23.2] - 2026-10-27
 
 **Upgrading:** no migrations or new settings. `npm ci`, then reload.
