@@ -6,7 +6,7 @@
 const User = require('../../models/User');
 const Role = require('../../models/Role');
 const { query } = require('../../config/database');
-const { clearCache } = require('../../services/data-source-service');
+const { clearCache, listSourcesWithLastScrape } = require('../../services/data-source-service');
 const { requireAuth, requireCapability, requireAdmin } = require('../middleware/auth');
 const { getMigrationStatus } = require('../../db/migrator');
 const config = require('../../config/config');
@@ -561,25 +561,7 @@ async function adminRoutes(fastify, _options) {
     },
     async (request, reply) => {
       try {
-        const sources = await query(
-          `SELECT
-            ds.*,
-            sh.status AS last_scrape_status,
-            sh.started_at AS last_scrape_at,
-            sh.duration_ms AS last_scrape_duration_ms,
-            sh.records_added AS last_scrape_added,
-            sh.records_updated AS last_scrape_updated,
-            sh.records_deleted AS last_scrape_deleted,
-            sh.error_message AS last_scrape_error
-          FROM data_sources ds
-          LEFT JOIN scrape_history sh ON sh.id = (
-            SELECT id FROM scrape_history
-            WHERE data_source_id = ds.id
-            ORDER BY started_at DESC
-            LIMIT 1
-          )
-          ORDER BY ds.id`
-        );
+        const sources = await listSourcesWithLastScrape();
 
         return reply.send({ sources });
       } catch (error) {

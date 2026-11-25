@@ -212,6 +212,25 @@ Run the scraper immediately (outside the normal schedule). Scrapes all enabled d
 | --------------------- | ---------------------------------------------------------------------- |
 | `-s, --source <slug>` | Source to scrape: `dcl`, `fhl`, or full slug (e.g. `daily_cause_list`) |
 
+### `scraper status`
+
+Show each data source's most recent scrape: when it ran and whether it succeeded, records added / updated / deleted, duration, hearings currently stored, schedule, and whether the source is visible by default. The same information as the data source cards on `/admin`. When the last scrape didn't succeed, it also shows when the source last scraped successfully, and the error (with the network cause code, such as `ENOTFOUND`, where there is one).
+
+The Future Hearing List is replaced in full on every scrape, so its result always shows every previous row deleted, the new list added, and 0 updated.
+
+Exits with status 1 if any enabled source's last scrape failed, so it can be used from a monitoring check.
+
+```bash
+./bin/cacd scraper status                 # all sources
+./bin/cacd scraper status --source fhl    # Future Hearing List only
+./bin/cacd scraper status --json | jq     # machine-readable
+```
+
+| Option                | Description                                                     |
+| --------------------- | --------------------------------------------------------------- |
+| `-s, --source <slug>` | Only this source: `dcl`, `fhl`, or full slug                    |
+| `-j, --json`          | Output status as JSON (info logs suppressed; timestamps in UTC) |
+
 ### `search run`
 
 Run the saved-search matcher for a phrase and print the matching hearings. Uses the same exact, case-insensitive phrase matching as the on-site search and the notification alerts, so it's the quickest way to see exactly what a given saved search would match. Defaults to the today + tomorrow notification window.

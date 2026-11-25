@@ -10,6 +10,7 @@ const userCommands = require('./commands/users');
 const apiKeyCommands = require('./commands/api-keys');
 const dbCommands = require('./commands/db');
 const searchCommands = require('./commands/search');
+const scraperCommands = require('./commands/scraper');
 const config = require('../config/config');
 
 const program = new Command();
@@ -23,7 +24,7 @@ if (!process.argv.includes('--json')) {
 program
   .name('cacd')
   .description('CACD Archive administrative command-line interface')
-  .version('1.23.3');
+  .version('1.24.0');
 
 // User Management Commands
 const usersCommand = program.command('users').description('User management commands');
@@ -188,17 +189,11 @@ scraperCommand
       createSpinner
     } = require('./utils/format');
 
-    // Shorthand aliases
-    const slugAliases = {
-      dcl: 'daily_cause_list',
-      fhl: 'future_hearing_list'
-    };
-
     try {
       let sources;
 
       if (options.source) {
-        const slug = slugAliases[options.source.toLowerCase()] || options.source;
+        const slug = scraperCommands.resolveSourceSlug(options.source);
         const source = await getSourceBySlug(slug);
         if (!source) {
           formatError(`Data source '${options.source}' not found or disabled`);
@@ -258,6 +253,13 @@ scraperCommand
       process.exit(1);
     }
   });
+
+scraperCommand
+  .command('status')
+  .description("Show each data source's last scrape, result and schedule")
+  .option('-s, --source <slug>', 'Only this source: dcl, fhl, or full slug')
+  .option('-j, --json', 'Output status as JSON')
+  .action(scraperCommands.status);
 
 // Search Commands
 const searchCommand = program.command('search').description('Saved-search matching commands');

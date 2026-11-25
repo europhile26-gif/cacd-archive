@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.24.0] - 2026-11-25
+
+**Upgrading:** no migrations or new settings. `npm ci`, then reload.
+
+### Added
+
+- **`./bin/cacd scraper status`** shows each data source's last scrape (time, outcome, added / updated / deleted, duration), the hearings it currently holds and its schedule: the same information as the `/admin` source cards. A failing source also shows when it last succeeded and why it failed. `--json` gives machine-readable output, and the command exits 1 when an enabled source's last scrape failed. See `docs/cli.md`.
+- `GET /api/v1/admin/data-sources` also returns `last_success_at`, `last_scrape_error_cause` and `hearing_count` for each source.
+
 ## [1.23.3] - 2026-11-25
 
 **Upgrading:** no migrations or new settings. `npm ci`, then reload.

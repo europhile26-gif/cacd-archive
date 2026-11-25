@@ -48,6 +48,36 @@ async function getSourceById(id) {
 }
 
 /**
+ * List every data source (enabled or not) with its latest scrape and stored hearing count
+ * @returns {Promise<Array>} Data sources with last_scrape_* fields
+ */
+async function listSourcesWithLastScrape() {
+  return query(
+    `SELECT
+      ds.*,
+      sh.status AS last_scrape_status,
+      sh.started_at AS last_scrape_at,
+      sh.duration_ms AS last_scrape_duration_ms,
+      sh.records_added AS last_scrape_added,
+      sh.records_updated AS last_scrape_updated,
+      sh.records_deleted AS last_scrape_deleted,
+      sh.error_message AS last_scrape_error,
+      JSON_VALUE(sh.error_details, '$.cause.code') AS last_scrape_error_cause,
+      (SELECT MAX(started_at) FROM scrape_history
+        WHERE data_source_id = ds.id AND status = 'success') AS last_success_at,
+      (SELECT COUNT(*) FROM hearings WHERE data_source_id = ds.id) AS hearing_count
+    FROM data_sources ds
+    LEFT JOIN scrape_history sh ON sh.id = (
+      SELECT id FROM scrape_history
+      WHERE data_source_id = ds.id
+      ORDER BY started_at DESC
+      LIMIT 1
+    )
+    ORDER BY ds.id`
+  );
+}
+
+/**
  * Clear the source cache (useful after config changes)
  */
 function clearCache() {
@@ -59,5 +89,6 @@ module.exports = {
   getEnabledSources,
   getSourceBySlug,
   getSourceById,
+  listSourcesWithLastScrape,
   clearCache
 };
